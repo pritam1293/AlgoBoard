@@ -3,6 +3,7 @@ package com.algoboard.Service;
 import com.algoboard.Entities.Codeforces;
 import com.algoboard.Entities.User;
 import com.algoboard.Entities.Atcoder;
+import com.algoboard.Entities.Codechef;
 
 public interface IUserService {
     public User registerUser(User user);
@@ -14,4 +15,6 @@ public interface IUserService {
     public Codeforces getCodeforcesProfile(String username);
 
     public Atcoder getAtcoderProfile(String username);
+
+    public Codechef getCodechefProfile(String username);
 }

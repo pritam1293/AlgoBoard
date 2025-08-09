@@ -8,6 +8,7 @@ import com.algoboard.Entities.Codeforces;
 import com.algoboard.Entities.ContestHistory;
 import com.algoboard.Entities.Atcoder;
 import com.algoboard.DTO.Atcoder.ACcontestDTO;
+import com.algoboard.Entities.Codechef;
 
 import java.util.Map;
 import java.util.Set;
@@ -17,7 +18,17 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Objects;
 import org.springframework.web.client.RestTemplate;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
+//json import
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 public class UserService implements IUserService {
     private Map<String, User> userDatabase;
@@ -104,8 +115,10 @@ public class UserService implements IUserService {
             Set<AbstractMap.SimpleEntry<Long, String>> problemSet = new HashSet<>();
 
             while (true) {
-                String submissionsUrl = "https://codeforces.com/api/user.status?handle=" + username + "&from=" + from+ "&count=" + count;
-                CFSubmissionsDTO submissionsResponse = restTemplate.getForObject(submissionsUrl, CFSubmissionsDTO.class);
+                String submissionsUrl = "https://codeforces.com/api/user.status?handle=" + username + "&from=" + from
+                        + "&count=" + count;
+                CFSubmissionsDTO submissionsResponse = restTemplate.getForObject(submissionsUrl,
+                        CFSubmissionsDTO.class);
                 if (submissionsResponse == null || !Objects.equals(submissionsResponse.getStatus(), "OK")) {
                     break;
                 }
@@ -114,7 +127,8 @@ public class UserService implements IUserService {
                     if (submission.getVerdict().equals("OK")) {
                         acceptedSubmissions++;
                     }
-                    problemSet.add(new AbstractMap.SimpleEntry<>(submission.getProblem().getContestId(), submission.getProblem().getIndex()));
+                    problemSet.add(new AbstractMap.SimpleEntry<>(submission.getProblem().getContestId(),
+                            submission.getProblem().getIndex()));
                 }
                 if (submissionsResponse.getResult().size() < count) {
                     break;
@@ -148,8 +162,7 @@ public class UserService implements IUserService {
                     acceptedSubmissions,
                     contestHistory.size(),
                     contestHistory,
-                    problemSet
-            );
+                    problemSet);
         } catch (Exception e) {
             System.out.println("");
             System.out.println("Error fetching Codeforces profile: " + e.getMessage());
@@ -170,8 +183,8 @@ public class UserService implements IUserService {
             long currRating = -1;
             long maxRating = -1;
             List<ContestHistory> history = new ArrayList<>();
-            for(ACcontestDTO contest : contestHistory) {
-                if(contest.isRated()) {
+            for (ACcontestDTO contest : contestHistory) {
+                if (contest.isRated()) {
                     contestParticipations++;
                 }
                 maxRating = Math.max(maxRating, contest.getNewRating());
@@ -183,8 +196,7 @@ public class UserService implements IUserService {
                         contestName,
                         contest.getPlace(),
                         contest.getOldRating(),
-                        contest.getNewRating())
-                );
+                        contest.getNewRating()));
             }
             String currRank = getRankByRating(currRating);
             String maxRank = getRankByRating(maxRating);
@@ -192,7 +204,7 @@ public class UserService implements IUserService {
             System.out.println("");
             System.out.println("Profile data fetched successfully for user: " + username);
             System.out.println("");
-            
+
             return new Atcoder(
                     username,
                     currRank,
@@ -203,9 +215,8 @@ public class UserService implements IUserService {
                     contestParticipations,
                     0, // AtCoder does not provide total submissions
                     0, // AtCoder does not provide accepted submissions
-                    history
-            );
-        }catch (Exception e) {
+                    history);
+        } catch (Exception e) {
             System.out.println("");
             System.out.println("Error fetching AtCoder profile: " + e.getMessage());
             System.out.println("");
@@ -214,31 +225,12 @@ public class UserService implements IUserService {
     }
 
     private String contestNameExtractor(String originalName) {
-        StringBuilder contestName = new StringBuilder();
-        StringBuilder t = new StringBuilder();
-        for(char c : originalName.toCharArray()) {
-            if((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
-                t.append(c);
-            }
-            else {
-                if(t.length() > 0) {
-                    contestName.append(t).append(" ");
-                    t.setLength(0);
-                }
-            }
+        Pattern pattern = Pattern.compile("(atcoder\\s+.*?\\s+contest\\s+\\d+)", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(originalName);
+        if (matcher.find()) {
+            return matcher.group(1).replaceAll("\\s+", " ").trim();
         }
-        if(t.length() > 0) {
-            contestName.append(t).append(" ");
-        }
-        if(contestName.length() > 0) {
-            contestName.setLength(contestName.length() - 1);
-        }
-        contestName.reverse();
-        while (contestName.length() > 0 && ((contestName.charAt(contestName.length() - 1) >= '0' && contestName.charAt(contestName.length() - 1) <= '9') || contestName.charAt(contestName.length() - 1) == ' ')) {
-            contestName.setLength(contestName.length() - 1);
-        }
-        contestName.reverse();
-        return contestName.toString();
+        return originalName; // Return original if no pattern found
     }
 
     private String contestIdExtractor(String contestName) {
@@ -246,7 +238,8 @@ public class UserService implements IUserService {
         String[] words = contestName.split(" ");
 
         for (String word : words) {
-            if (!word.isEmpty() && ((word.charAt(0) >= 'A' && word.charAt(0) <= 'Z') || (word.charAt(0) >= 'a' && word.charAt(0) <= 'z'))) {
+            if (!word.isEmpty() && ((word.charAt(0) >= 'A' && word.charAt(0) <= 'Z')
+                    || (word.charAt(0) >= 'a' && word.charAt(0) <= 'z'))) {
                 contestId.append(Character.toLowerCase(word.charAt(0)));
             }
         }
@@ -281,4 +274,89 @@ public class UserService implements IUserService {
         }
         return rankTitle;
     }
+
+    public Codechef getCodechefProfile(String username) {
+        String url = "https://www.codechef.com/users/" + username;
+        try {
+            Document doc = Jsoup.connect(url).timeout(1000).userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36").get();
+            // String displayName 
+        }
+        catch (Exception e) {
+            System.out.println("");
+            System.out.println("Error fetching Codechef profile: " + e.getMessage());
+            System.out.println("");
+            throw new RuntimeException("Failed to fetch Codechef profile for user: " + username);
+        }
+        return null;
+    }
+
+    // private String extractDisplayName(Document doc) {
+    //     try {
+    //         Element nameElement = doc.select(".user-details-container h1").first();
+    //         return nameElement != null ? nameElement.text().trim() : ""; 
+    //     } catch(Exception e) {
+    //         System.out.println("");
+    //         System.out.println("Error extracting display name: " + e.getMessage());
+    //         System.out.println("");
+    //         return "";
+    //     }
+    // }
+
+    private long extractCurrentRating(Document doc) {
+        try {
+            Element ratingElement = doc.select(".rating-number").first();
+            if(ratingElement != null) {
+                String ratingText = ratingElement.text().replaceAll("[^0-9]", "");
+                if(!ratingText.isEmpty()) {
+                    return Long.parseLong(ratingText);
+                }
+            }
+            return 0;
+        } catch(Exception e) {
+            return 0;
+        }
+    }
+
+    private long extractMaxRating(Document doc)  {
+        try {
+            Element maxRatingElement = doc.select(".rating-header .small").first();
+            if(maxRatingElement != null) {
+                String text = maxRatingElement.text();
+                Pattern pattern = Pattern.compile("\\(max\\s*(\\d+)\\)");
+                Matcher matcher = pattern.matcher(text);
+                if(matcher.find()) {
+                    return Long.parseLong(matcher.group(1));
+                }
+            }
+            return extractCurrentRating(doc);
+        } catch(Exception e) {
+            return 0;
+        }
+    }
+
+    private String extractStars(Document doc) {
+        try {
+            Elements starElements = doc.select(".rating .star");
+            return starElements.size() + " Star";
+        } catch(Exception e) {
+            return "Unrated";
+        }
+    }
+
+    private long extractTotalProblemsSolved(Document doc) {
+        try {
+            Elements problemStats = doc.select(".problems-solved .number");
+            if(!problemStats.isEmpty()) {
+                String text = problemStats.first().text().replaceAll("[^0-9]", "");
+                if(!text.isEmpty()) {
+                    return Long.parseLong(text);
+                }
+            }
+            return 0;
+        } catch(Exception e) {
+            return 0;
+        }
+    }
+
+    
 }
