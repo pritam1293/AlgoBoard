@@ -3,14 +3,14 @@ package com.algoboard.Entities;
 public class ContestHistory {
     private String contestId;
     private String contestName;
-    private long rank;
+    private long standing;
     private long oldRating;
     private long newRating;
 
-    public ContestHistory(String contestId, String contestName, long rank, long oldRating, long newRating) {
+    public ContestHistory(String contestId, String contestName, long standing, long oldRating, long newRating) {
         this.contestId = contestId;
         this.contestName = contestName;
-        this.rank = rank;
+        this.standing = standing;
         this.oldRating = oldRating;
         this.newRating = newRating;
     }
@@ -31,12 +31,12 @@ public class ContestHistory {
         this.contestName = contestName;
     }
 
-    public long getRank() {
-        return rank;
+    public long getStanding() {
+        return standing;
     }
 
-    public void setRank(long rank) {
-        this.rank = rank;
+    public void setStanding(long standing) {
+        this.standing = standing;
     }
 
     public long getOldRating() {

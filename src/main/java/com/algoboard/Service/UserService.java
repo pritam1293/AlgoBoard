@@ -6,6 +6,8 @@ import com.algoboard.DTO.Codeforces.CFSubmissionsDTO;
 import com.algoboard.DTO.Codeforces.CFUserDTO;
 import com.algoboard.Entities.Codeforces;
 import com.algoboard.Entities.ContestHistory;
+import com.algoboard.Entities.Atcoder;
+import com.algoboard.DTO.Atcoder.ACcontestDTO;
 
 import java.util.Map;
 import java.util.Set;
@@ -15,6 +17,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Objects;
 import org.springframework.web.client.RestTemplate;
+
 
 public class UserService implements IUserService {
     private Map<String, User> userDatabase;
@@ -144,13 +147,138 @@ public class UserService implements IUserService {
                     totalSubmissions,
                     acceptedSubmissions,
                     contestHistory.size(),
-                    contestHistory
-                    );
+                    contestHistory,
+                    problemSet
+            );
         } catch (Exception e) {
             System.out.println("");
             System.out.println("Error fetching Codeforces profile: " + e.getMessage());
             System.out.println("");
             throw new RuntimeException("Failed to fetch Codeforces profile for user: " + username);
         }
+    }
+
+    @Override
+    public Atcoder getAtcoderProfile(String username) {
+        String url = "https://atcoder.jp/users/" + username + "/history/json";
+        System.out.println("");
+        System.out.println("url: " + url);
+        System.out.println("");
+        try {
+            ACcontestDTO[] contestHistory = restTemplate.getForObject(url, ACcontestDTO[].class);
+            long contestParticipations = 0;
+            long currRating = -1;
+            long maxRating = -1;
+            List<ContestHistory> history = new ArrayList<>();
+            for(ACcontestDTO contest : contestHistory) {
+                if(contest.isRated()) {
+                    contestParticipations++;
+                }
+                maxRating = Math.max(maxRating, contest.getNewRating());
+                currRating = contest.getNewRating();
+                String contestName = contestNameExtractor(contest.getContestName());
+                String contestId = contestIdExtractor(contestName);
+                history.add(new ContestHistory(
+                        contestId,
+                        contestName,
+                        contest.getPlace(),
+                        contest.getOldRating(),
+                        contest.getNewRating())
+                );
+            }
+            String currRank = getRankByRating(currRating);
+            String maxRank = getRankByRating(maxRating);
+
+            System.out.println("");
+            System.out.println("Profile data fetched successfully for user: " + username);
+            System.out.println("");
+            
+            return new Atcoder(
+                    username,
+                    currRank,
+                    currRating,
+                    maxRating,
+                    maxRank,
+                    0, // AtCoder does not provide problems solved
+                    contestParticipations,
+                    0, // AtCoder does not provide total submissions
+                    0, // AtCoder does not provide accepted submissions
+                    history
+            );
+        }catch (Exception e) {
+            System.out.println("");
+            System.out.println("Error fetching AtCoder profile: " + e.getMessage());
+            System.out.println("");
+            throw new RuntimeException("Failed to fetch AtCoder profile for user: " + username);
+        }
+    }
+
+    private String contestNameExtractor(String originalName) {
+        StringBuilder contestName = new StringBuilder();
+        StringBuilder t = new StringBuilder();
+        for(char c : originalName.toCharArray()) {
+            if((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
+                t.append(c);
+            }
+            else {
+                if(t.length() > 0) {
+                    contestName.append(t).append(" ");
+                    t.setLength(0);
+                }
+            }
+        }
+        if(t.length() > 0) {
+            contestName.append(t).append(" ");
+        }
+        if(contestName.length() > 0) {
+            contestName.setLength(contestName.length() - 1);
+        }
+        contestName.reverse();
+        while (contestName.length() > 0 && ((contestName.charAt(contestName.length() - 1) >= '0' && contestName.charAt(contestName.length() - 1) <= '9') || contestName.charAt(contestName.length() - 1) == ' ')) {
+            contestName.setLength(contestName.length() - 1);
+        }
+        contestName.reverse();
+        return contestName.toString();
+    }
+
+    private String contestIdExtractor(String contestName) {
+        StringBuilder contestId = new StringBuilder();
+        String[] words = contestName.split(" ");
+
+        for (String word : words) {
+            if (!word.isEmpty()) {
+                contestId.append(word.charAt(0));
+            }
+        }
+        for (char c : contestName.toCharArray()) {
+            if (Character.isDigit(c)) {
+                contestId.append(c);
+            }
+        }
+        return contestId.toString();
+    }
+
+    private String getRankByRating(long rating) {
+        String rankTitle;
+        if (rating >= 2800) {
+            rankTitle = "Legend";
+        } else if (rating >= 2400) {
+            rankTitle = "Red";
+        } else if (rating >= 2000) {
+            rankTitle = "Orange";
+        } else if (rating >= 1600) {
+            rankTitle = "Yellow";
+        } else if (rating >= 1200) {
+            rankTitle = "Green";
+        } else if (rating >= 800) {
+            rankTitle = "Cyan";
+        } else if (rating >= 400) {
+            rankTitle = "Blue";
+        } else if (rating >= 0) {
+            rankTitle = "Gray";
+        } else {
+            rankTitle = "Unrated / Newbie";
+        }
+        return rankTitle;
     }
 }

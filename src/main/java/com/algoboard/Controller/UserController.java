@@ -3,6 +3,7 @@ package com.algoboard.Controller;
 import com.algoboard.Service.IUserService;
 import com.algoboard.Service.UserService;
 import com.algoboard.Entities.User;
+import com.algoboard.Entities.Atcoder;
 import com.algoboard.Entities.Codeforces;
 
 import org.springframework.web.bind.annotation.RestController;
@@ -58,7 +59,7 @@ public class UserController {
         }
     }
 
-    @GetMapping("/api/codeforces/{username}")
+    @GetMapping("/codeforces/{username}")
     public ResponseEntity<?> getCodeforcesProfile(@PathVariable String username) {
         try {
             Codeforces codeforcesProfile = userService.getCodeforcesProfile(username);
@@ -69,6 +70,20 @@ public class UserController {
             }
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error fetching Codeforces profile: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/atcoder/{username}")
+    public ResponseEntity<?> getAtcoderProfile(@PathVariable String username) {
+        try {
+            Atcoder atcoderProfile = userService.getAtcoderProfile(username);
+            if (atcoderProfile != null) {
+                return ResponseEntity.ok(atcoderProfile);
+            } else {
+                return ResponseEntity.status(404).body("AtCoder profile not found");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error fetching AtCoder profile: " + e.getMessage());
         }
     }
 }
