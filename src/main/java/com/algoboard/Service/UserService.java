@@ -246,8 +246,8 @@ public class UserService implements IUserService {
         String[] words = contestName.split(" ");
 
         for (String word : words) {
-            if (!word.isEmpty()) {
-                contestId.append(word.charAt(0));
+            if (!word.isEmpty() && ((word.charAt(0) >= 'A' && word.charAt(0) <= 'Z') || (word.charAt(0) >= 'a' && word.charAt(0) <= 'z'))) {
+                contestId.append(Character.toLowerCase(word.charAt(0)));
             }
         }
         for (char c : contestName.toCharArray()) {
