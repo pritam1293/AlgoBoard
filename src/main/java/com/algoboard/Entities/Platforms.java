@@ -1,4 +1,4 @@
-package com.algoboard.Entities;
+package com.algoboard.entities;
 
 import java.util.List;
 
