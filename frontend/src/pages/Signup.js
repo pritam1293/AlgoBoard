@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 
 const Signup = ({ onSignup, switchToLogin, switchToTerms, switchToPrivacy }) => {
   const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
     username: '',
     email: '',
     password: '',
@@ -29,6 +31,14 @@ const Signup = ({ onSignup, switchToLogin, switchToTerms, switchToPrivacy }) => 
 
   const validateForm = () => {
     const newErrors = {};
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    }
 
     if (!formData.username.trim()) {
       newErrors.username = 'Username is required';
@@ -73,6 +83,8 @@ const Signup = ({ onSignup, switchToLogin, switchToTerms, switchToPrivacy }) => 
       setIsLoading(false);
       // Mock successful signup
       onSignup({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         username: formData.username,
         email: formData.email,
         isStudent: formData.isStudent
@@ -99,11 +111,54 @@ const Signup = ({ onSignup, switchToLogin, switchToTerms, switchToPrivacy }) => 
           </div>
 
           {/* Signup Form */}
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
+          <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-3">
+            {/* First Name and Last Name Fields */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-300 mb-1">
+                  First Name
+                </label>
+                <input
+                  id="firstName"
+                  name="firstName"
+                  type="text"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 bg-gray-800 border ${
+                    errors.firstName ? 'border-red-500' : 'border-gray-600'
+                  } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
+                  placeholder="First name"
+                />
+                {errors.firstName && (
+                  <p className="mt-1 text-sm text-red-400">{errors.firstName}</p>
+                )}
+              </div>
+              
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-300 mb-1">
+                  Last Name
+                </label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 bg-gray-800 border ${
+                    errors.lastName ? 'border-red-500' : 'border-gray-600'
+                  } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
+                  placeholder="Last name"
+                />
+                {errors.lastName && (
+                  <p className="mt-1 text-sm text-red-400">{errors.lastName}</p>
+                )}
+              </div>
+            </div>
+
             {/* Username Field */}
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-1">
                 Username
               </label>
               <input
@@ -112,7 +167,7 @@ const Signup = ({ onSignup, switchToLogin, switchToTerms, switchToPrivacy }) => 
                 type="text"
                 value={formData.username}
                 onChange={handleChange}
-                className={`w-full px-3 py-3 bg-gray-800 border ${
+                className={`w-full px-3 py-2 bg-gray-800 border ${
                   errors.username ? 'border-red-500' : 'border-gray-600'
                 } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
                 placeholder="Choose a username"
@@ -124,7 +179,7 @@ const Signup = ({ onSignup, switchToLogin, switchToTerms, switchToPrivacy }) => 
 
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
                 Email Address
               </label>
               <input
@@ -133,7 +188,7 @@ const Signup = ({ onSignup, switchToLogin, switchToTerms, switchToPrivacy }) => 
                 type="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full px-3 py-3 bg-gray-800 border ${
+                className={`w-full px-3 py-2 bg-gray-800 border ${
                   errors.email ? 'border-red-500' : 'border-gray-600'
                 } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
                 placeholder="Enter your email"
@@ -145,7 +200,7 @@ const Signup = ({ onSignup, switchToLogin, switchToTerms, switchToPrivacy }) => 
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
                 Password
               </label>
               <input
@@ -154,7 +209,7 @@ const Signup = ({ onSignup, switchToLogin, switchToTerms, switchToPrivacy }) => 
                 type="password"
                 value={formData.password}
                 onChange={handleChange}
-                className={`w-full px-3 py-3 bg-gray-800 border ${
+                className={`w-full px-3 py-2 bg-gray-800 border ${
                   errors.password ? 'border-red-500' : 'border-gray-600'
                 } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
                 placeholder="Create a password"
@@ -166,7 +221,7 @@ const Signup = ({ onSignup, switchToLogin, switchToTerms, switchToPrivacy }) => 
 
             {/* Confirm Password Field */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-1">
                 Confirm Password
               </label>
               <input
@@ -175,7 +230,7 @@ const Signup = ({ onSignup, switchToLogin, switchToTerms, switchToPrivacy }) => 
                 type="password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className={`w-full px-3 py-3 bg-gray-800 border ${
+                className={`w-full px-3 py-2 bg-gray-800 border ${
                   errors.confirmPassword ? 'border-red-500' : 'border-gray-600'
                 } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
                 placeholder="Confirm your password"
@@ -234,7 +289,7 @@ const Signup = ({ onSignup, switchToLogin, switchToTerms, switchToPrivacy }) => 
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white ${
+            className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white ${
               isLoading 
                 ? 'bg-gray-600 cursor-not-allowed' 
                 : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
@@ -266,9 +321,9 @@ const Signup = ({ onSignup, switchToLogin, switchToTerms, switchToPrivacy }) => 
         </form>
 
         {/* Features Preview */}
-        <div className="mt-8 pt-6 border-t border-gray-700">
-          <h3 className="text-center text-sm font-medium text-gray-300 mb-4">What you'll get:</h3>
-          <div className="space-y-3">
+        <div className="mt-6 pt-4 border-t border-gray-700">
+          <h3 className="text-center text-sm font-medium text-gray-300 mb-3">What you'll get:</h3>
+          <div className="space-y-2">
             <div className="flex items-center text-sm text-gray-400">
               <span className="text-green-400 mr-3">✓</span>
               Track progress across Codeforces, AtCoder, CodeChef & LeetCode
@@ -288,8 +343,8 @@ const Signup = ({ onSignup, switchToLogin, switchToTerms, switchToPrivacy }) => 
           </div>
 
           {/* Platform Logos */}
-          <div className="mt-6">
-            <p className="text-center text-xs text-gray-500 mb-3">Supported Platforms</p>
+          <div className="mt-4">
+            <p className="text-center text-xs text-gray-500 mb-2">Supported Platforms</p>
             <div className="flex justify-center space-x-4">
               <a 
                 href="https://codeforces.com" 
