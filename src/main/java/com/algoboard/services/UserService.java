@@ -3,7 +3,7 @@ package com.algoboard.services;
 import com.algoboard.DTO.Codeforces.CFContestDTO;
 import com.algoboard.DTO.Codeforces.CFSubmissionsDTO;
 import com.algoboard.DTO.Codeforces.CFUserDTO;
-import com.algoboard.DTO.RequestDTO.UserDTO;
+import com.algoboard.DTO.RequestDTO.User;
 import com.algoboard.entities.Atcoder;
 import com.algoboard.entities.Codechef;
 import com.algoboard.entities.Codeforces;
@@ -31,7 +31,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 public class UserService implements IUserService {
-    private Map<String, UserDTO> userDatabase;
+    private Map<String, User> userDatabase;
     private RestTemplate restTemplate = new RestTemplate();
 
     public UserService() {
@@ -42,11 +42,11 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public UserDTO registerUser(UserDTO user) {
+    public User registerUser(User user) {
         if (userDatabase.containsKey(user.getUsername())) {
             throw new IllegalArgumentException("User with the same username already exists.");
         }
-        for (UserDTO existingUser : userDatabase.values()) {
+        for (User existingUser : userDatabase.values()) {
             if (existingUser.getEmail().equals(user.getEmail())) {
                 throw new IllegalArgumentException("User with the same email already exists.");
             }
@@ -56,8 +56,8 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public UserDTO authenticateUser(String username, String password) {
-        UserDTO user = userDatabase.get(username);
+    public User authenticateUser(String username, String password) {
+        User user = userDatabase.get(username);
         if (user != null && user.getPassword().equals(password)) {
             return user;
         }
@@ -65,8 +65,8 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public UserDTO updateUserDetails(String username, UserDTO user) {
-        UserDTO existingUser = userDatabase.get(username);
+    public User updateUserDetails(String username, User user) {
+        User existingUser = userDatabase.get(username);
         if (existingUser != null) {
             if (user.getFirstName() != null) {
                 existingUser.setFirstName(user.getFirstName());
@@ -102,8 +102,8 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public UserDTO getUserByUsername(String username) {
-        UserDTO user = userDatabase.get(username);
+    public User getUserByUsername(String username) {
+        User user = userDatabase.get(username);
         if (user != null) {
             return user;
         }

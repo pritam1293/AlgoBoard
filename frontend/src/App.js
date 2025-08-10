@@ -5,14 +5,13 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('login'); // 'login', 'signup', 'dashboard', 'terms', 'privacy'
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(true);
 
   const handleLogin = (userData) => {
     setUser(userData);
-    setCurrentPage('dashboard');
   };
 
   const handleSignup = (userData) => {
@@ -24,76 +23,42 @@ function App() {
       atcoderRating: 0,
       codechefRating: 0
     });
-    setCurrentPage('dashboard');
   };
 
   const handleLogout = () => {
     setUser(null);
-    setCurrentPage('login');
   };
 
-  const switchToLogin = () => {
-    setCurrentPage('login');
-  };
-
-  const switchToSignup = () => {
-    setCurrentPage('signup');
-  };
-
-  const switchToTerms = () => {
-    setCurrentPage('terms');
-  };
-
-  const switchToPrivacy = () => {
-    setCurrentPage('privacy');
-  };
-
-  if (currentPage === 'login') {
-    return (
-      <Login 
-        onLogin={handleLogin}
-        switchToSignup={switchToSignup}
-      />
-    );
-  }
-
-  if (currentPage === 'signup') {
-    return (
-      <Signup 
-        onSignup={handleSignup}
-        switchToLogin={switchToLogin}
-        switchToTerms={switchToTerms}
-        switchToPrivacy={switchToPrivacy}
-      />
-    );
-  }
-
-  if (currentPage === 'terms') {
-    return (
-      <TermsOfService 
-        switchToSignup={switchToSignup}
-      />
-    );
-  }
-
-  if (currentPage === 'privacy') {
-    return (
-      <PrivacyPolicy 
-        switchToSignup={switchToSignup}
-      />
-    );
-  }
-
-  if (currentPage === 'dashboard') {
-    return (
-      <Dashboard 
-        user={user}
-        onLogout={handleLogout}
-      />
-    );
-  }
-
-  return null;
+  return (
+    <Router>
+      <Routes>
+        <Route 
+          path="/login" 
+          element={
+            user ? <Navigate to="/dashboard" replace /> : 
+            <Login onLogin={handleLogin} />
+          } 
+        />
+        <Route 
+          path="/signup" 
+          element={
+            user ? <Navigate to="/dashboard" replace /> : 
+            <Signup onSignup={handleSignup} />
+          } 
+        />
+        <Route 
+          path="/dashboard" 
+          element={
+            user ? <Dashboard user={user} onLogout={handleLogout} /> : 
+            <Navigate to="/login" replace />
+          } 
+        />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </Router>
+  );
 }
 
 export default App;

@@ -1,6 +1,6 @@
 package com.algoboard.DTO.RequestDTO;
 
-public class UserDTO {
+public class User {
     private String username;
     private String firstName;
     private String lastName;
@@ -12,7 +12,8 @@ public class UserDTO {
     private String codechefUsername;
     private String leetcodeUsername;
 
-    public UserDTO(String username, String firstName, String lastName, String password, String email, boolean student, String codeforcesUsername, String atcoderUsername, String codechefUsername, String leetcodeUsername) {
+    public User(String username, String firstName, String lastName, String password, String email, boolean student,
+            String codeforcesUsername, String atcoderUsername, String codechefUsername, String leetcodeUsername) {
         this.username = username;
         this.firstName = firstName;
         this.lastName = lastName;

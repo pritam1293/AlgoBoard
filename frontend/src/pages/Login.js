@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Login = ({ onLogin, switchToSignup }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -168,7 +170,7 @@ const Login = ({ onLogin, switchToSignup }) => {
               Don't have an account?{' '}
               <button
                 type="button"
-                onClick={switchToSignup}
+                onClick={() => navigate('/signup')}
                 className="text-blue-400 hover:text-blue-300 font-medium transition duration-200"
               >
                 Sign up here

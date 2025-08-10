@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const Signup = ({ onSignup, switchToLogin, switchToTerms, switchToPrivacy }) => {
+const Signup = ({ onSignup, switchToTerms, switchToPrivacy }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -311,7 +313,7 @@ const Signup = ({ onSignup, switchToLogin, switchToTerms, switchToPrivacy }) => 
               Already have an account?{' '}
               <button
                 type="button"
-                onClick={switchToLogin}
+                onClick={() => navigate('/login')}
                 className="text-blue-400 hover:text-blue-300 font-medium transition duration-200"
               >
                 Sign in here
