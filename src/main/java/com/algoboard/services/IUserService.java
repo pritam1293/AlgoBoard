@@ -12,8 +12,6 @@ public interface IUserService {
 
     public User updateUserDetails(String username, User user);
 
-    public User getUserByUsername(String username);
-
     public Codeforces getCodeforcesProfile(String username);
 
     public Atcoder getAtcoderProfile(String username);

@@ -9,6 +9,7 @@ import com.algoboard.entities.Codechef;
 import com.algoboard.entities.Codeforces;
 import com.algoboard.entities.ContestHistory;
 import com.algoboard.DTO.Atcoder.ACcontestDTO;
+import com.algoboard.repository.UserRepository;
 
 import java.util.Map;
 import java.util.Set;
@@ -29,35 +30,37 @@ import org.jsoup.select.Elements;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import org.springframework.stereotype.Service;
 
+@Service
 public class UserService implements IUserService {
     private Map<String, User> userDatabase;
+    private final UserRepository userRepository;
     private RestTemplate restTemplate = new RestTemplate();
 
-    public UserService() {
+    public UserService(UserRepository userRepository) {
         this.userDatabase = new java.util.HashMap<>();
+        this.userRepository = userRepository;
         System.out.println("");
-        System.out.println("The application has started successfully.");
+        System.out.println("MongoDB connected.");
         System.out.println("");
     }
 
     @Override
     public User registerUser(User user) {
-        if (userDatabase.containsKey(user.getUsername())) {
+        if (userRepository.existsById(user.getUsername())) {
             throw new IllegalArgumentException("User with the same username already exists.");
         }
-        for (User existingUser : userDatabase.values()) {
-            if (existingUser.getEmail().equals(user.getEmail())) {
-                throw new IllegalArgumentException("User with the same email already exists.");
-            }
+        if (userRepository.existsByEmail(user.getEmail())) {
+            throw new IllegalArgumentException("User with the same email already exists.");
         }
-        userDatabase.put(user.getUsername(), user);
+        userRepository.save(user);
         return user;
     }
 
     @Override
     public User authenticateUser(String username, String password) {
-        User user = userDatabase.get(username);
+        User user = userRepository.findByUsername(username);
         if (user != null && user.getPassword().equals(password)) {
             return user;
         }
@@ -66,7 +69,7 @@ public class UserService implements IUserService {
 
     @Override
     public User updateUserDetails(String username, User user) {
-        User existingUser = userDatabase.get(username);
+        User existingUser = userRepository.findByUsername(username);
         if (existingUser != null) {
             if (user.getFirstName() != null) {
                 existingUser.setFirstName(user.getFirstName());
@@ -95,17 +98,8 @@ public class UserService implements IUserService {
             if (user.getLeetcodeUsername() != null) {
                 existingUser.setLeetcodeUsername(user.getLeetcodeUsername());
             }
-            userDatabase.put(username, existingUser);
+            userRepository.save(existingUser);
             return existingUser;
-        }
-        throw new IllegalArgumentException("User does not exist with username: " + username);
-    }
-
-    @Override
-    public User getUserByUsername(String username) {
-        User user = userDatabase.get(username);
-        if (user != null) {
-            return user;
         }
         throw new IllegalArgumentException("User does not exist with username: " + username);
     }
@@ -130,8 +124,10 @@ public class UserService implements IUserService {
             Set<AbstractMap.SimpleEntry<Long, String>> problemSet = new HashSet<>();
 
             while (true) {
-                String submissionsUrl = "https://codeforces.com/api/user.status?handle=" + username + "&from=" + from + "&count=" + count;
-                CFSubmissionsDTO submissionsResponse = restTemplate.getForObject(submissionsUrl, CFSubmissionsDTO.class);
+                String submissionsUrl = "https://codeforces.com/api/user.status?handle=" + username + "&from=" + from
+                        + "&count=" + count;
+                CFSubmissionsDTO submissionsResponse = restTemplate.getForObject(submissionsUrl,
+                        CFSubmissionsDTO.class);
                 if (submissionsResponse == null || !Objects.equals(submissionsResponse.getStatus(), "OK")) {
                     break;
                 }
@@ -140,7 +136,8 @@ public class UserService implements IUserService {
                     if (submission.getVerdict().equals("OK")) {
                         acceptedSubmissions++;
                     }
-                    problemSet.add(new AbstractMap.SimpleEntry<>(submission.getProblem().getContestId(), submission.getProblem().getIndex()));
+                    problemSet.add(new AbstractMap.SimpleEntry<>(submission.getProblem().getContestId(),
+                            submission.getProblem().getIndex()));
                 }
                 if (submissionsResponse.getResult().size() < count) {
                     break;
@@ -156,8 +153,7 @@ public class UserService implements IUserService {
                         contestResult.getContestName(),
                         contestResult.getRank(),
                         contestResult.getOldRating(),
-                        contestResult.getNewRating())
-                );
+                        contestResult.getNewRating()));
             }
 
             return new Codeforces(

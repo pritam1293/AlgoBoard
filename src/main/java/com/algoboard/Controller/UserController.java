@@ -24,8 +24,8 @@ public class UserController {
 
     private final IUserService userService;
 
-    public UserController() {
-        this.userService = new UserService();
+    public UserController(IUserService userService) {
+        this.userService = userService;
     }
 
     @GetMapping("/home")
@@ -39,11 +39,9 @@ public class UserController {
             User registeredUser = userService.registerUser(user);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Signup successful", registeredUser));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400)
-                    .body(ResponseUtil.createErrorResponse("Signup failed: " + e.getMessage()));
+            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Signup failed: " + e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }
     }
 
@@ -55,8 +53,7 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Login failed: " + e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }
     }
 
@@ -66,11 +63,9 @@ public class UserController {
             User updatedUser = userService.updateUserDetails(username, user);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User updated successfully", updatedUser));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400)
-                    .body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
+            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }
     }
 
@@ -79,31 +74,26 @@ public class UserController {
         try {
             Codeforces codeforcesProfile = userService.getCodeforcesProfile(username);
             if (codeforcesProfile != null) {
-                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Codeforces profile retrieved successfully",
-                        codeforcesProfile));
+                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Codeforces profile retrieved successfully", codeforcesProfile));
             } else {
-                return ResponseEntity.status(404)
-                        .body(ResponseUtil.createErrorResponse("Codeforces profile not found"));
+                return ResponseEntity.status(404).body(ResponseUtil.createErrorResponse("Codeforces profile not found"));
             }
         } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Error fetching Codeforces profile: " + e.getMessage()));
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Error fetching Codeforces profile: " + e.getMessage()));
         }
     }
 
-    @GetMapping("/platforms/atcoder/{username}")
-    public ResponseEntity<?> getAtcoderProfile(@PathVariable String username) {
+    @GetMapping("/platforms/atcoder")
+    public ResponseEntity<?> getAtcoderProfile(@RequestParam String username) {
         try {
             Atcoder atcoderProfile = userService.getAtcoderProfile(username);
             if (atcoderProfile != null) {
-                return ResponseEntity.ok(
-                        ResponseUtil.createSuccessResponse("AtCoder profile retrieved successfully", atcoderProfile));
+                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("AtCoder profile retrieved successfully", atcoderProfile));
             } else {
                 return ResponseEntity.status(404).body(ResponseUtil.createErrorResponse("AtCoder profile not found"));
             }
         } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Error fetching AtCoder profile: " + e.getMessage()));
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Error fetching AtCoder profile: " + e.getMessage()));
         }
     }
 }
