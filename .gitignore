@@ -32,5 +32,10 @@ build/
 ### VS Code ###
 .vscode/
 
+### Environment Variables - Never commit these ###
+.env
+.env.local
+.env.production
+
 ###custom
 src/main/resources/application.properties
