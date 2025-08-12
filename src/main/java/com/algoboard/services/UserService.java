@@ -21,6 +21,7 @@ import java.util.Objects;
 import org.springframework.web.client.RestTemplate;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 //json import
 import org.jsoup.Jsoup;
@@ -36,11 +37,13 @@ import org.springframework.stereotype.Service;
 public class UserService implements IUserService {
     private Map<String, User> userDatabase;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
     private RestTemplate restTemplate = new RestTemplate();
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userDatabase = new java.util.HashMap<>();
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
         System.out.println("");
         System.out.println("MongoDB connected.");
         System.out.println("");
@@ -54,6 +57,10 @@ public class UserService implements IUserService {
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new IllegalArgumentException("User with the same email already exists.");
         }
+
+        // Hash the password before saving
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
         userRepository.save(user);
         return user;
     }
@@ -61,7 +68,7 @@ public class UserService implements IUserService {
     @Override
     public User authenticateUser(String username, String password) {
         User user = userRepository.findByUsername(username);
-        if (user != null && user.getPassword().equals(password)) {
+        if (user != null && passwordEncoder.matches(password, user.getPassword())) {
             return user;
         }
         throw new IllegalArgumentException("Invalid username or password.");
