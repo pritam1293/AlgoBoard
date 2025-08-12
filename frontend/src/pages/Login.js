@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
-const Login = ({ onLogin, switchToSignup }) => {
+const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -24,9 +26,10 @@ const Login = ({ onLogin, switchToSignup }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrors({});
     
     // Basic validation
     const newErrors = {};
@@ -43,17 +46,19 @@ const Login = ({ onLogin, switchToSignup }) => {
       return;
     }
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      // Mock successful login
-      onLogin({
+    try {
+      await login({
         username: formData.username,
-        codeforcesRating: 1200,
-        atcoderRating: 800,
-        codechefRating: 1400
+        password: formData.password
       });
-    }, 1000);
+      // Navigation will be handled by ProtectedRoute/PublicRoute
+    } catch (error) {
+      setErrors({
+        general: error.message || 'Login failed. Please check your credentials.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -76,7 +81,14 @@ const Login = ({ onLogin, switchToSignup }) => {
 
           {/* Login Form */}
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
+            {/* General Error Message */}
+            {errors.general && (
+              <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg">
+                {errors.general}
+              </div>
+            )}
+            
+            <div className="space-y-4">
             {/* Username Field */}
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">

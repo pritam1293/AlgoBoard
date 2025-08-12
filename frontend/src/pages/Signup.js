@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
-const Signup = ({ onSignup, switchToTerms, switchToPrivacy }) => {
+const Signup = () => {
   const navigate = useNavigate();
+  const { signup } = useAuth();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -10,18 +12,21 @@ const Signup = ({ onSignup, switchToTerms, switchToPrivacy }) => {
     email: '',
     password: '',
     confirmPassword: '',
-    isStudent: false
+    student: false
   });
 
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    
     setFormData({
       ...formData,
       [e.target.name]: value
     });
+    
     // Clear error when user starts typing
     if (errors[e.target.name]) {
       setErrors({
@@ -69,9 +74,10 @@ const Signup = ({ onSignup, switchToTerms, switchToPrivacy }) => {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrors({});
     
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
@@ -80,18 +86,29 @@ const Signup = ({ onSignup, switchToTerms, switchToPrivacy }) => {
       return;
     }
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      // Mock successful signup
-      onSignup({
+    try {
+      await signup({
         firstName: formData.firstName,
         lastName: formData.lastName,
         username: formData.username,
         email: formData.email,
-        isStudent: formData.isStudent
+        password: formData.password,
+        student: formData.student
       });
-    }, 1000);
+      
+      // Show success message and redirect to login after delay
+      setErrors({}); // Clear any existing errors
+      setSuccessMessage('Account created successfully! Please log in with your credentials.');
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000); // Redirect after 2 seconds
+    } catch (error) {
+      setErrors({
+        general: error.message || 'Signup failed. Please try again.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -114,7 +131,21 @@ const Signup = ({ onSignup, switchToTerms, switchToPrivacy }) => {
 
           {/* Signup Form */}
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-          <div className="space-y-3">
+            {/* Success Message */}
+            {successMessage && (
+              <div className="bg-green-900/50 border border-green-500 text-green-200 px-4 py-3 rounded-lg">
+                {successMessage}
+              </div>
+            )}
+
+            {/* General Error Message */}
+            {errors.general && (
+              <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg">
+                {errors.general}
+              </div>
+            )}
+            
+            <div className="space-y-3">
             {/* First Name and Last Name Fields */}
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -245,14 +276,14 @@ const Signup = ({ onSignup, switchToTerms, switchToPrivacy }) => {
             {/* Student Checkbox */}
             <div className="flex items-center">
               <input
-                id="isStudent"
-                name="isStudent"
+                id="student"
+                name="student"
                 type="checkbox"
-                checked={formData.isStudent}
+                checked={formData.student}
                 onChange={handleChange}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-800 rounded"
               />
-              <label htmlFor="isStudent" className="ml-2 block text-sm text-gray-300">
+              <label htmlFor="student" className="ml-2 block text-sm text-gray-300">
                 I am a student
               </label>
             </div>
@@ -272,7 +303,7 @@ const Signup = ({ onSignup, switchToTerms, switchToPrivacy }) => {
               <button 
                 type="button"
                 className="text-blue-400 hover:text-blue-300 bg-transparent border-none cursor-pointer underline"
-                onClick={switchToTerms}
+                onClick={() => navigate('/terms')}
               >
                 Terms of Service
               </button>
@@ -280,7 +311,7 @@ const Signup = ({ onSignup, switchToTerms, switchToPrivacy }) => {
               <button 
                 type="button"
                 className="text-blue-400 hover:text-blue-300 bg-transparent border-none cursor-pointer underline"
-                onClick={switchToPrivacy}
+                onClick={() => navigate('/privacy')}
               >
                 Privacy Policy
               </button>
