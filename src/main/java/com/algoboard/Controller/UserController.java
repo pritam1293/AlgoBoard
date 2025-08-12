@@ -3,6 +3,7 @@ package com.algoboard.controller;
 import com.algoboard.entities.Atcoder;
 import com.algoboard.entities.Codeforces;
 import com.algoboard.services.IUserService;
+import com.algoboard.services.EmailService;
 import com.algoboard.services.CustomUserDetailsService;
 import com.algoboard.jwt.JwtService;
 import com.algoboard.DTO.RequestDTO.LoginDTO;
@@ -13,8 +14,8 @@ import com.algoboard.utils.ResponseUtil;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,14 +27,17 @@ import org.springframework.web.bind.annotation.PutMapping;
 public class UserController {
 
     private final IUserService userService;
+    private final EmailService emailService;
     private final JwtService jwtService;
     private final CustomUserDetailsService customUserDetailsService;
 
     public UserController(
             IUserService userService,
+            EmailService emailService,
             JwtService jwtService,
             CustomUserDetailsService customUserDetailsService) {
         this.userService = userService;
+        this.emailService = emailService;
         this.jwtService = jwtService;
         this.customUserDetailsService = customUserDetailsService;
     }
@@ -47,9 +51,19 @@ public class UserController {
     public ResponseEntity<?> signup(@RequestBody User user) {
         try {
             User registeredUser = userService.registerUser(user);
+
+            // Send welcome email asynchronously (don't block the response)
+            try {
+                emailService.sendWelcomeEmail(registeredUser.getEmail(), registeredUser.getFirstName());
+            } catch (Exception emailException) {
+                // Log email error but don't fail the signup process
+                System.err.println("Failed to send welcome email: " + emailException.getMessage());
+            }
+
             // Remove password from response for security
             registeredUser.setPassword(null);
-            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Signup successful", registeredUser));
+            return ResponseEntity
+                    .ok(ResponseUtil.createSuccessResponse("Signup successful. Welcome email sent!", registeredUser));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400)
                     .body(ResponseUtil.createErrorResponse("Signup failed: " + e.getMessage()));
@@ -78,7 +92,16 @@ public class UserController {
                     jwtService.getExpirationTime() / 1000 // Convert to seconds
             );
 
-            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Login successful", authResponse));
+            // Send login notification email asynchronously (don't block the response)
+            try {
+                emailService.sendLoginNotification(user.getEmail(), user.getFirstName());
+            } catch (Exception emailException) {
+                // Log email error but don't fail the login process
+                System.err.println("Failed to send login notification: " + emailException.getMessage());
+            }
+
+            return ResponseEntity
+                    .ok(ResponseUtil.createSuccessResponse("Login successful. Notification sent!", authResponse));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Login failed: " + e.getMessage()));
         } catch (Exception e) {
@@ -87,14 +110,39 @@ public class UserController {
         }
     }
 
-    @PutMapping("/update/{username}")
-    public ResponseEntity<?> updateUser(@PathVariable String username, @RequestBody User user) {
+    @GetMapping("/users/profile")
+    public ResponseEntity<?> getUserProfile(@RequestParam String username) {
         try {
-            User updatedUser = userService.updateUserDetails(username, user);
+            User user = userService.getUserProfile(username);
+            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User profile retrieved successfully", user));
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Error fetching user profile: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/users/profile")
+    public ResponseEntity<?> updateUser(@RequestBody User user) {
+        try {
+            User updatedUser = userService.updateUserDetails(user);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User updated successfully", updatedUser));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400)
                     .body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/users/delete")
+    public ResponseEntity<?> deleteUser(@RequestParam String username) {
+        try {
+            String response = userService.deleteUser(username);
+            return ResponseEntity.ok(ResponseUtil.createSuccessResponse(response, null));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(400)
+                    .body(ResponseUtil.createErrorResponse("Delete failed: " + e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(500)
                     .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
@@ -131,6 +179,29 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.status(500)
                     .body(ResponseUtil.createErrorResponse("Error fetching AtCoder profile: " + e.getMessage()));
+        }
+    }
+
+    // Email Testing Endpoints - Remove in production
+    @PostMapping("/test/email/welcome")
+    public ResponseEntity<?> testWelcomeEmail(@RequestParam String email, @RequestParam String firstName) {
+        try {
+            emailService.sendWelcomeEmail(email, firstName);
+            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Welcome email sent to: " + email, null));
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Failed to send welcome email: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/test/email/login")
+    public ResponseEntity<?> testLoginEmail(@RequestParam String email, @RequestParam String firstName) {
+        try {
+            emailService.sendLoginNotification(email, firstName);
+            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Login notification sent to: " + email, null));
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Failed to send login notification: " + e.getMessage()));
         }
     }
 }

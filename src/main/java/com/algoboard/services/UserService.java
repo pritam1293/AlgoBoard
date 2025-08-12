@@ -5,13 +5,12 @@ import com.algoboard.DTO.Codeforces.CFSubmissionsDTO;
 import com.algoboard.DTO.Codeforces.CFUserDTO;
 import com.algoboard.DTO.RequestDTO.User;
 import com.algoboard.entities.Atcoder;
-import com.algoboard.entities.Codechef;
+// import com.algoboard.entities.Codechef;
 import com.algoboard.entities.Codeforces;
 import com.algoboard.entities.ContestHistory;
 import com.algoboard.DTO.Atcoder.ACcontestDTO;
 import com.algoboard.repository.UserRepository;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.AbstractMap;
@@ -22,26 +21,24 @@ import org.springframework.web.client.RestTemplate;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-//json import
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.springframework.stereotype.Service;
+
+// //json import
+// import org.jsoup.Jsoup;
+// import org.jsoup.nodes.Document;
+// import org.jsoup.nodes.Element;
+// import org.jsoup.select.Elements;
+// import com.fasterxml.jackson.databind.ObjectMapper;
+// import com.fasterxml.jackson.databind.node.ObjectNode;
+// import com.fasterxml.jackson.databind.node.ArrayNode;
 
 @Service
 public class UserService implements IUserService {
-    private Map<String, User> userDatabase;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private RestTemplate restTemplate = new RestTemplate();
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userDatabase = new java.util.HashMap<>();
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         System.out.println("");
@@ -60,7 +57,6 @@ public class UserService implements IUserService {
 
         // Hash the password before saving
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-
         userRepository.save(user);
         return user;
     }
@@ -75,8 +71,17 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public User updateUserDetails(String username, User user) {
-        User existingUser = userRepository.findByUsername(username);
+    public User getUserProfile(String username) {
+        User user = userRepository.findByUsername(username);
+        if (user != null) {
+            return user;
+        }
+        throw new IllegalArgumentException("User not found with username: " + username);
+    }
+
+    @Override
+    public User updateUserDetails(User user) {
+        User existingUser = userRepository.findByUsername(user.getUsername());
         if (existingUser != null) {
             if (user.getFirstName() != null) {
                 existingUser.setFirstName(user.getFirstName());
@@ -108,7 +113,17 @@ public class UserService implements IUserService {
             userRepository.save(existingUser);
             return existingUser;
         }
-        throw new IllegalArgumentException("User does not exist with username: " + username);
+        throw new IllegalArgumentException("User does not exist with username: " + user.getUsername());
+    }
+
+    @Override
+    public String deleteUser(String username) {
+        User user = userRepository.findByUsername(username);
+        if (user != null) {
+            userRepository.delete(user);
+            return "User deleted successfully.";
+        }
+        throw new IllegalArgumentException("User not found with username: " + username);
     }
 
     @Override
@@ -280,17 +295,17 @@ public class UserService implements IUserService {
         return rankTitle;
     }
 
-    public Codechef getCodechefProfile(String username) {
-        String url = "https://www.codechef.com/users/" + username;
-        try {
-            Document doc = Jsoup.connect(url).timeout(1000)
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36").get();
-            // String displayName
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch Codechef profile for user: " + username);
-        }
-        return null;
-    }
+    // public Codechef getCodechefProfile(String username) {
+    //     String url = "https://www.codechef.com/users/" + username;
+    //     try {
+    //         Document doc = Jsoup.connect(url).timeout(1000)
+    //                 .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36").get();
+    //         // String displayName
+    //     } catch (Exception e) {
+    //         throw new RuntimeException("Failed to fetch Codechef profile for user: " + username);
+    //     }
+    //     return null;
+    // }
 
     // private String extractDisplayName(Document doc) {
     // try {
@@ -304,60 +319,60 @@ public class UserService implements IUserService {
     // }
     // }
 
-    private long extractCurrentRating(Document doc) {
-        try {
-            Element ratingElement = doc.select(".rating-number").first();
-            if (ratingElement != null) {
-                String ratingText = ratingElement.text().replaceAll("[^0-9]", "");
-                if (!ratingText.isEmpty()) {
-                    return Long.parseLong(ratingText);
-                }
-            }
-            return 0;
-        } catch (Exception e) {
-            return 0;
-        }
-    }
+    // private long extractCurrentRating(Document doc) {
+    //     try {
+    //         Element ratingElement = doc.select(".rating-number").first();
+    //         if (ratingElement != null) {
+    //             String ratingText = ratingElement.text().replaceAll("[^0-9]", "");
+    //             if (!ratingText.isEmpty()) {
+    //                 return Long.parseLong(ratingText);
+    //             }
+    //         }
+    //         return 0;
+    //     } catch (Exception e) {
+    //         return 0;
+    //     }
+    // }
 
-    private long extractMaxRating(Document doc) {
-        try {
-            Element maxRatingElement = doc.select(".rating-header .small").first();
-            if (maxRatingElement != null) {
-                String text = maxRatingElement.text();
-                Pattern pattern = Pattern.compile("\\(max\\s*(\\d+)\\)");
-                Matcher matcher = pattern.matcher(text);
-                if (matcher.find()) {
-                    return Long.parseLong(matcher.group(1));
-                }
-            }
-            return extractCurrentRating(doc);
-        } catch (Exception e) {
-            return 0;
-        }
-    }
+    // private long extractMaxRating(Document doc) {
+    //     try {
+    //         Element maxRatingElement = doc.select(".rating-header .small").first();
+    //         if (maxRatingElement != null) {
+    //             String text = maxRatingElement.text();
+    //             Pattern pattern = Pattern.compile("\\(max\\s*(\\d+)\\)");
+    //             Matcher matcher = pattern.matcher(text);
+    //             if (matcher.find()) {
+    //                 return Long.parseLong(matcher.group(1));
+    //             }
+    //         }
+    //         return extractCurrentRating(doc);
+    //     } catch (Exception e) {
+    //         return 0;
+    //     }
+    // }
 
-    private String extractStars(Document doc) {
-        try {
-            Elements starElements = doc.select(".rating .star");
-            return starElements.size() + " Star";
-        } catch (Exception e) {
-            return "Unrated";
-        }
-    }
+    // private String extractStars(Document doc) {
+    //     try {
+    //         Elements starElements = doc.select(".rating .star");
+    //         return starElements.size() + " Star";
+    //     } catch (Exception e) {
+    //         return "Unrated";
+    //     }
+    // }
 
-    private long extractTotalProblemsSolved(Document doc) {
-        try {
-            Elements problemStats = doc.select(".problems-solved .number");
-            if (!problemStats.isEmpty()) {
-                String text = problemStats.first().text().replaceAll("[^0-9]", "");
-                if (!text.isEmpty()) {
-                    return Long.parseLong(text);
-                }
-            }
-            return 0;
-        } catch (Exception e) {
-            return 0;
-        }
-    }
+    // private long extractTotalProblemsSolved(Document doc) {
+    //     try {
+    //         Elements problemStats = doc.select(".problems-solved .number");
+    //         if (!problemStats.isEmpty()) {
+    //             String text = problemStats.first().text().replaceAll("[^0-9]", "");
+    //             if (!text.isEmpty()) {
+    //                 return Long.parseLong(text);
+    //             }
+    //         }
+    //         return 0;
+    //     } catch (Exception e) {
+    //         return 0;
+    //     }
+    // }
 
 }

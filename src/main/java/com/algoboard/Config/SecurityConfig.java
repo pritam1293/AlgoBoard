@@ -42,6 +42,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/platforms/**").permitAll()
                         .requestMatchers("/api/home").permitAll()
+                        .requestMatchers("/api/users/**").permitAll()
+                        // .requestMatchers("/api/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
