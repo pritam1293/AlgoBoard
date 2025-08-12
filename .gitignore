@@ -32,7 +32,7 @@ build/
 ### VS Code ###
 .vscode/
 
-### Environment Variables - Never commit these ###
+### Environment Variables
 .env
 .env.local
 .env.development
@@ -41,4 +41,4 @@ set-env.ps1
 set-env.sh
 
 ###custom
-src/main/resources/application.properties
+
