@@ -3,6 +3,7 @@ import './App.css';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Home';
+import Profile from './pages/Profile';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -36,6 +37,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             } 
           />

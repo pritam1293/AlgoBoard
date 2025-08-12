@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getPasswordStrength } from '../utils/validation';
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { signup } = useAuth();
+  const { signup, validateSignupForm } = useAuth();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -18,6 +19,7 @@ const Signup = () => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [passwordStrength, setPasswordStrength] = useState(getPasswordStrength(''));
 
   const handleChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -26,6 +28,11 @@ const Signup = () => {
       ...formData,
       [e.target.name]: value
     });
+    
+    // Update password strength when password changes
+    if (e.target.name === 'password') {
+      setPasswordStrength(getPasswordStrength(value));
+    }
     
     // Clear error when user starts typing
     if (errors[e.target.name]) {
@@ -36,52 +43,15 @@ const Signup = () => {
     }
   };
 
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required';
-    }
-
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
-    }
-
-    if (!formData.username.trim()) {
-      newErrors.username = 'Username is required';
-    } else if (formData.username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-
-    return newErrors;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setErrors({});
     
-    const newErrors = validateForm();
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    // Use AuthContext validation
+    const validationErrors = validateSignupForm(formData);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       setIsLoading(false);
       return;
     }
@@ -112,15 +82,19 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-neutral-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         
         {/* Main Container Box */}
-        <div className="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 p-8">
+        <div className="bg-neutral-800 rounded-xl shadow-2xl border border-neutral-700 p-8">
           {/* Header */}
           <div className="text-center">
             <div className="flex justify-center items-center mb-4">
-              <span className="text-blue-400 text-4xl mr-3">⚡</span>
+              <img 
+                src="/images/algoboard_logo.png" 
+                alt="AlgoBoard Logo" 
+                className="w-12 h-12 mr-3 bg-white rounded-lg p-2"
+              />
               <h1 className="text-3xl font-bold text-white">AlgoBoard</h1>
             </div>
             <h2 className="text-xl text-gray-300">Create your account</h2>
@@ -208,6 +182,15 @@ const Signup = () => {
               {errors.username && (
                 <p className="mt-1 text-sm text-red-400">{errors.username}</p>
               )}
+              {/* Username Warning Message */}
+              <div className="mt-2 flex items-start">
+                <svg className="w-4 h-4 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <p className="text-xs text-yellow-400">
+                  <strong>Choose carefully:</strong> Your username cannot be changed after account creation and will be publicly visible on leaderboards.
+                </p>
+              </div>
             </div>
 
             {/* Email Field */}
@@ -249,6 +232,52 @@ const Signup = () => {
               />
               {errors.password && (
                 <p className="mt-1 text-sm text-red-400">{errors.password}</p>
+              )}
+              
+              {/* Password Strength Indicator */}
+              {formData.password && (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm text-gray-400">Password strength:</span>
+                    <span className={`text-sm font-medium ${
+                      passwordStrength.strength === 'weak' ? 'text-red-400' :
+                      passwordStrength.strength === 'medium' ? 'text-yellow-400' :
+                      passwordStrength.strength === 'good' ? 'text-blue-400' :
+                      'text-green-400'
+                    }`}>
+                      {passwordStrength.strength.toUpperCase()}
+                    </span>
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        passwordStrength.strength === 'weak' ? 'bg-red-500' :
+                        passwordStrength.strength === 'medium' ? 'bg-yellow-500' :
+                        passwordStrength.strength === 'good' ? 'bg-blue-500' :
+                        'bg-green-500'
+                      }`}
+                      style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                    ></div>
+                  </div>
+                  
+                  {/* Requirements List */}
+                  <ul className="text-xs space-y-1">
+                    {passwordStrength.requirements.map((req, index) => (
+                      <li key={index} className={`flex items-center ${req.met ? 'text-green-400' : 'text-gray-400'}`}>
+                        <svg className={`w-3 h-3 mr-1 ${req.met ? 'text-green-400' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20">
+                          {req.met ? (
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          ) : (
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          )}
+                        </svg>
+                        {req.message}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </div>
 

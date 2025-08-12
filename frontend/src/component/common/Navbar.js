@@ -31,19 +31,22 @@ const handleLogout = () => {
 };
 
 return (
-    <nav className="bg-gray-900 shadow-lg sticky top-0 z-50">
+    <nav className="bg-neutral-800 shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
                 {/* Logo */}
                 <div className="flex items-center">
-                    <div className="text-white text-xl font-bold flex items-center">
+                    <button 
+                        onClick={() => navigate('/home')}
+                        className="text-white text-xl font-bold flex items-center hover:text-gray-300 transition duration-200"
+                    >
                         <img 
                             src="/images/algoboard_logo.png" 
                             alt="AlgoBoard Logo" 
-                            className="w-8 h-8 mr-2"
+                            className="w-10 h-10 mr-3 bg-white rounded-lg p-1"
                         />
                         AlgoBoard
-                    </div>
+                    </button>
                 </div>
 
                 {/* User Section */}
@@ -62,16 +65,31 @@ return (
                             </button>
                             
                             {userDropdownOpen && (
-                                <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 z-50">
+                                <div className="absolute right-0 mt-2 w-48 bg-neutral-800 rounded-lg shadow-lg border border-neutral-700 z-50">
                                     <div className="py-2">
-                                        <div className="px-4 py-2 text-gray-300 border-b border-gray-700">
+                                        <div className="px-4 py-2 text-neutral-300 border-b border-neutral-700">
                                             <p className="text-sm font-medium">{user.username}</p>
-                                            <p className="text-xs text-gray-400">{user.email}</p>
+                                            <p className="text-xs text-neutral-400">{user.email}</p>
                                         </div>
                                         <button
-                                            onClick={handleLogout}
-                                            className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 transition duration-200"
+                                            onClick={() => {
+                                                navigate('/profile');
+                                                setUserDropdownOpen(false);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-neutral-300 hover:bg-neutral-700 transition duration-200 flex items-center"
                                         >
+                                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                            My Profile
+                                        </button>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="w-full text-left px-4 py-2 text-neutral-300 hover:bg-neutral-700 transition duration-200 flex items-center"
+                                        >
+                                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                            </svg>
                                             Logout
                                         </button>
                                     </div>

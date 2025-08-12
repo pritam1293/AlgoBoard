@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, validateLoginForm } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -31,17 +31,10 @@ const Login = () => {
     setIsLoading(true);
     setErrors({});
     
-    // Basic validation
-    const newErrors = {};
-    if (!formData.username.trim()) {
-      newErrors.username = 'Username is required';
-    }
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    // Use AuthContext validation
+    const validationErrors = validateLoginForm(formData);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       setIsLoading(false);
       return;
     }
@@ -62,15 +55,19 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-neutral-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         
         {/* Main Container Box */}
-        <div className="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 p-8">
+        <div className="bg-neutral-800 rounded-xl shadow-2xl border border-neutral-700 p-8">
           {/* Header */}
           <div className="text-center">
             <div className="flex justify-center items-center mb-4">
-              <span className="text-blue-400 text-4xl mr-3">⚡</span>
+              <img 
+                src="/images/algoboard_logo.png" 
+                alt="AlgoBoard Logo" 
+                className="w-12 h-12 mr-3 bg-white rounded-lg p-2"
+              />
               <h1 className="text-3xl font-bold text-white">AlgoBoard</h1>
             </div>
             <h2 className="text-xl text-gray-300">Sign in to your account</h2>
