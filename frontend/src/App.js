@@ -8,7 +8,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 function App() {
-  const [user, setUser] = useState(true);
+  const [user, setUser] = useState(null);
 
   const handleLogin = (userData) => {
     setUser(userData);
