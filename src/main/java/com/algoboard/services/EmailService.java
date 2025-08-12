@@ -56,12 +56,28 @@ public class EmailService {
         }
     }
 
-    //send change notification email to user
+    //send profile update notification email to user
     @Async("emailTaskExecutor")
-    public void sendChangeNotification(String toEmail, String firstName) {
+    public void sendProfileUpdateNotification(String toEmail, String firstName, String changedField) {
         try {
-            String subject = "Your AlgoBoard account details have changed";
-            String htmlContent = processChangeTemplate(firstName);
+            String subject = "Your AlgoBoard account " + changedField + " has changed";
+            String message;
+            if(changedField.equals("password")) {
+                message = "the password has been changed";
+            }
+            else if(changedField.equals("email")) {
+                message = "the email has been changed to " + toEmail;
+            }
+            else if(changedField.equals("name")) {
+                message = "the name has been changed to " + firstName;
+            }
+            else if(changedField.equals("competitive programming username")) {
+                message = "the competitive programming username(s) has been changed";
+            }
+            else {
+                message = "details have been changed";
+            }
+            String htmlContent = processChangeTemplate(firstName, message);
 
             sendEmail(toEmail, subject, htmlContent);
             logger.info("Change notification sent successfully to: " + toEmail);
@@ -197,7 +213,7 @@ public class EmailService {
         return template.replace("{{firstName}}", firstName).replace("{{timestamp}}", timestamp);
     }
 
-    private String processChangeTemplate(String firstName) {
+    private String processChangeTemplate(String firstName, String message) {
         String template = """
                 <html>
                 <head>
@@ -216,9 +232,9 @@ public class EmailService {
                     <div class="content">
                         <p>Hi <strong>{{firstName}}</strong>,</p>
 
-                        <p>We wanted to let you know that your AlgoBoard account details have been changed.</p>
+                        <p>We wanted to let you know that in your AlgoBoard account, <strong>{{message}}</strong>.</p>
 
-                        <p>If you did not make this change, please contact our support team immediately and secure your account by changing your password.</p>
+                        <p>If you did not make this change, please contact our support team immediately or secure your account by changing your password.</p>
 
                         <p>Best regards,<br>
                         <strong>The AlgoBoard Security Team</strong></p>
@@ -232,7 +248,7 @@ public class EmailService {
                 </html>
                 """;
 
-        return template.replace("{{firstName}}", firstName);
+        return template.replace("{{firstName}}", firstName).replace("{{message}}", message);
     }
 
     // Core method to send email

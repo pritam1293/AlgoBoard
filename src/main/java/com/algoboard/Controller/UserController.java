@@ -62,14 +62,11 @@ public class UserController {
 
             // Remove password from response for security
             registeredUser.setPassword(null);
-            return ResponseEntity
-                    .ok(ResponseUtil.createSuccessResponse("Signup successful. Welcome email sent!", registeredUser));
+            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Signup successful. Welcome email sent!", registeredUser));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400)
-                    .body(ResponseUtil.createErrorResponse("Signup failed: " + e.getMessage()));
+            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Signup failed: " + e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }
     }
 
@@ -127,8 +124,31 @@ public class UserController {
     public ResponseEntity<?> updateUser(@RequestBody User user) {
         try {
             User updatedUser = userService.updateUserDetails(user);
-            updatedUser.setPassword(null); // Remove password for security
             //send an email notification
+            try {
+                // if(!user.getPassword().equals(updatedUser.getPassword())) {
+                //     emailService.sendProfileUpdateNotification(updatedUser.getEmail(), updatedUser.getFirstName(), "password");
+                // }
+                if(!user.getEmail().equals(updatedUser.getEmail())) {
+                    emailService.sendProfileUpdateNotification(updatedUser.getEmail(), updatedUser.getFirstName() , "email");
+                }
+                if(!user.getFirstName().equals(updatedUser.getFirstName()) || !user.getLastName().equals(updatedUser.getLastName())) {
+                    emailService.sendProfileUpdateNotification(updatedUser.getEmail(), updatedUser.getFirstName() + " " + updatedUser.getLastName(), "name");
+                }
+                if(user.getAtcoderUsername() != null && !user.getAtcoderUsername().equals(updatedUser.getAtcoderUsername())
+                    || user.getCodechefUsername() != null && !user.getCodechefUsername().equals(updatedUser.getCodechefUsername())
+                    || user.getLeetcodeUsername() != null && !user.getLeetcodeUsername().equals(updatedUser.getLeetcodeUsername())
+                    || user.getCodeforcesUsername() != null && !user.getCodeforcesUsername().equals(updatedUser.getCodeforcesUsername())) {
+                    emailService.sendProfileUpdateNotification(updatedUser.getEmail(), updatedUser.getFirstName(), "competitive programming username");
+                }
+                else {
+                    emailService.sendProfileUpdateNotification(updatedUser.getEmail(), updatedUser.getFirstName(), "profile");
+                }
+            } catch (Exception emailException) {
+                // Log email error but don't fail the update process
+                System.err.println("Failed to send profile update notification: " + emailException.getMessage());
+            }
+            updatedUser.setPassword(null); // Remove password for security
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User updated successfully", updatedUser));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
