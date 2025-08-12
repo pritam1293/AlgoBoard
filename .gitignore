@@ -35,7 +35,6 @@ build/
 ### Environment Variables
 .env
 .env.local
-.env.development
 .env.production
 set-env.ps1
 set-env.sh

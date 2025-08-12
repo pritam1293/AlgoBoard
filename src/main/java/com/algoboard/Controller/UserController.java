@@ -100,13 +100,11 @@ public class UserController {
                 System.err.println("Failed to send login notification: " + emailException.getMessage());
             }
 
-            return ResponseEntity
-                    .ok(ResponseUtil.createSuccessResponse("Login successful. Notification sent!", authResponse));
+            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Login successful. Notification sent!", authResponse));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Login failed: " + e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }
     }
 
@@ -114,10 +112,14 @@ public class UserController {
     public ResponseEntity<?> getUserProfile(@RequestParam String username) {
         try {
             User user = userService.getUserProfile(username);
-            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User profile retrieved successfully", user));
+            if (user != null) {
+                user.setPassword(null); // Remove password for security
+                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User profile retrieved successfully", user));
+            } else {
+                return ResponseEntity.status(404).body(ResponseUtil.createErrorResponse("User profile not found"));
+            }
         } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Error fetching user profile: " + e.getMessage()));
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Error fetching user profile: " + e.getMessage()));
         }
     }
 
@@ -125,13 +127,13 @@ public class UserController {
     public ResponseEntity<?> updateUser(@RequestBody User user) {
         try {
             User updatedUser = userService.updateUserDetails(user);
+            updatedUser.setPassword(null); // Remove password for security
+            //send an email notification
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User updated successfully", updatedUser));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400)
-                    .body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
+            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }
     }
 
@@ -141,11 +143,9 @@ public class UserController {
             String response = userService.deleteUser(username);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse(response, null));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400)
-                    .body(ResponseUtil.createErrorResponse("Delete failed: " + e.getMessage()));
+            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Delete failed: " + e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }
     }
 
@@ -154,15 +154,12 @@ public class UserController {
         try {
             Codeforces codeforcesProfile = userService.getCodeforcesProfile(username);
             if (codeforcesProfile != null) {
-                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Codeforces profile retrieved successfully",
-                        codeforcesProfile));
+                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Codeforces profile retrieved successfully", codeforcesProfile));
             } else {
-                return ResponseEntity.status(404)
-                        .body(ResponseUtil.createErrorResponse("Codeforces profile not found"));
+                return ResponseEntity.status(404).body(ResponseUtil.createErrorResponse("Codeforces profile not found"));
             }
         } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Error fetching Codeforces profile: " + e.getMessage()));
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Error fetching Codeforces profile: " + e.getMessage()));
         }
     }
 
@@ -171,28 +168,25 @@ public class UserController {
         try {
             Atcoder atcoderProfile = userService.getAtcoderProfile(username);
             if (atcoderProfile != null) {
-                return ResponseEntity.ok(
-                        ResponseUtil.createSuccessResponse("AtCoder profile retrieved successfully", atcoderProfile));
+                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("AtCoder profile retrieved successfully", atcoderProfile));
             } else {
                 return ResponseEntity.status(404).body(ResponseUtil.createErrorResponse("AtCoder profile not found"));
             }
         } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Error fetching AtCoder profile: " + e.getMessage()));
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Error fetching AtCoder profile: " + e.getMessage()));
         }
     }
 
-    // Email Testing Endpoints - Remove in production
-    @PostMapping("/test/email/welcome")
-    public ResponseEntity<?> testWelcomeEmail(@RequestParam String email, @RequestParam String firstName) {
-        try {
-            emailService.sendWelcomeEmail(email, firstName);
-            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Welcome email sent to: " + email, null));
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Failed to send welcome email: " + e.getMessage()));
-        }
-    }
+    // // Email Testing Endpoints - Remove in production
+    // @PostMapping("/test/email/welcome")
+    // public ResponseEntity<?> testWelcomeEmail(@RequestParam String email, @RequestParam String firstName) {
+    //     try {
+    //         emailService.sendWelcomeEmail(email, firstName);
+    //         return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Welcome email sent to: " + email, null));
+    //     } catch (Exception e) {
+    //         return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Failed to send welcome email: " + e.getMessage()));
+    //     }
+    // }
 
     @PostMapping("/test/email/login")
     public ResponseEntity<?> testLoginEmail(@RequestParam String email, @RequestParam String firstName) {
@@ -200,8 +194,7 @@ public class UserController {
             emailService.sendLoginNotification(email, firstName);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Login notification sent to: " + email, null));
         } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Failed to send login notification: " + e.getMessage()));
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Failed to send login notification: " + e.getMessage()));
         }
     }
 }

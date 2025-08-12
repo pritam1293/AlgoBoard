@@ -28,9 +28,7 @@ public class EmailService {
     @Value("${app.email.from-name}")
     private String fromName;
 
-    /**
-     * Send welcome email to newly registered user
-     */
+    // Send welcome email to newly registered user
     @Async("emailTaskExecutor")
     public void sendWelcomeEmail(String toEmail, String firstName) {
         try {
@@ -44,9 +42,7 @@ public class EmailService {
         }
     }
 
-    /**
-     * Send login notification email to user
-     */
+    // Send login notification email to user
     @Async("emailTaskExecutor")
     public void sendLoginNotification(String toEmail, String firstName) {
         try {
@@ -60,9 +56,21 @@ public class EmailService {
         }
     }
 
-    /**
-     * Process welcome email template with user data
-     */
+    //send change notification email to user
+    @Async("emailTaskExecutor")
+    public void sendChangeNotification(String toEmail, String firstName) {
+        try {
+            String subject = "Your AlgoBoard account details have changed";
+            String htmlContent = processChangeTemplate(firstName);
+
+            sendEmail(toEmail, subject, htmlContent);
+            logger.info("Change notification sent successfully to: " + toEmail);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to send change notification to: " + toEmail, e);
+        }
+    }
+
+    // Process welcome email template with user data
     private String processWelcomeTemplate(String firstName) {
         String template = """
                 <!DOCTYPE html>
@@ -123,9 +131,7 @@ public class EmailService {
         return template.replace("{{firstName}}", firstName);
     }
 
-    /**
-     * Process login notification template with user data
-     */
+    //Process login notification template with user data
     private String processLoginTemplate(String firstName) {
         LocalDateTime now = LocalDateTime.now();
         String timestamp = now.format(DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' hh:mm a"));
@@ -191,9 +197,45 @@ public class EmailService {
         return template.replace("{{firstName}}", firstName).replace("{{timestamp}}", timestamp);
     }
 
-    /**
-     * Core method to send email
-     */
+    private String processChangeTemplate(String firstName) {
+        String template = """
+                <html>
+                <head>
+                    <style>
+                        .header { text-align: center; padding: 20px; }
+                        .content { margin: 20px; }
+                        .footer { text-align: center; margin-top: 20px; color: #7f8c8d; font-size: 14px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="logo">🔐 AlgoBoard Security</div>
+                        <p>Account Change Notification</p>
+                    </div>
+
+                    <div class="content">
+                        <p>Hi <strong>{{firstName}}</strong>,</p>
+
+                        <p>We wanted to let you know that your AlgoBoard account details have been changed.</p>
+
+                        <p>If you did not make this change, please contact our support team immediately and secure your account by changing your password.</p>
+
+                        <p>Best regards,<br>
+                        <strong>The AlgoBoard Security Team</strong></p>
+                    </div>
+
+                    <div class="footer">
+                        <p>This is an automated security notification from AlgoBoard.</p>
+                        <p>© 2025 AlgoBoard. All rights reserved.</p>
+                    </div>
+                </body>
+                </html>
+                """;
+
+        return template.replace("{{firstName}}", firstName);
+    }
+
+    // Core method to send email
     private void sendEmail(String to, String subject, String htmlContent) throws MessagingException {
         try {
             MimeMessage message = mailSender.createMimeMessage();
@@ -211,9 +253,7 @@ public class EmailService {
         }
     }
 
-    /**
-     * Utility method to validate email format
-     */
+    // Utility method to validate email format
     public boolean isEmailValid(String email) {
         if (email == null || email.trim().isEmpty()) {
             return false;
