@@ -1,14 +1,19 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import authService from '../services/authService';
-import userService from '../services/userService';
-import { validateFormData, validationSchemas, sanitizeData, getPasswordStrength } from '../utils/validation';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import authService from "../services/authService";
+import userService from "../services/userService";
+import {
+  validateFormData,
+  validationSchemas,
+  sanitizeData,
+  getPasswordStrength,
+} from "../utils/validation";
 
 const AuthContext = createContext();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -18,7 +23,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
-  const [profileMessage, setProfileMessage] = useState({ type: '', text: '' });
+  const [profileMessage, setProfileMessage] = useState({ type: "", text: "" });
 
   useEffect(() => {
     // Check if user is already logged in on app start
@@ -36,22 +41,42 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
-      // Validate login data
+      // Accepts credentials with either username or email
       const sanitizedCredentials = sanitizeData(credentials);
-      const validationErrors = validateFormData(sanitizedCredentials, validationSchemas.login);
-      
-      if (Object.keys(validationErrors).length > 0) {
-        // Create a user-friendly error message
-        const firstError = Object.values(validationErrors)[0];
-        throw new Error(firstError);
+      // Custom validation for identifier (username or email)
+      let identifier =
+        sanitizedCredentials.username || sanitizedCredentials.email;
+      let errors = {};
+      if (
+        !identifier ||
+        (typeof identifier === "string" && !identifier.trim())
+      ) {
+        errors.identifier = "Username or Email is required";
       }
-
+      if (
+        !sanitizedCredentials.password ||
+        (typeof sanitizedCredentials.password === "string" &&
+          !sanitizedCredentials.password.trim())
+      ) {
+        errors.password = "Password is required";
+      }
+      if (Object.keys(errors).length > 0) {
+        // Throw the first error as a string
+        throw new Error(Object.values(errors)[0]);
+      }
       const userData = await authService.login(sanitizedCredentials);
       setUser(userData);
       setIsAuthenticated(true);
       return userData;
     } catch (error) {
-      throw error;
+      // Always throw a string error message
+      if (typeof error === "object" && error.message) {
+        throw new Error(String(error.message));
+      } else if (typeof error === "string") {
+        throw new Error(error);
+      } else {
+        throw new Error("Login failed. Please check your credentials.");
+      }
     }
   };
 
@@ -59,8 +84,11 @@ export const AuthProvider = ({ children }) => {
     try {
       // Validate signup data
       const sanitizedUserData = sanitizeData(userData);
-      const validationErrors = validateFormData(sanitizedUserData, validationSchemas.signup);
-      
+      const validationErrors = validateFormData(
+        sanitizedUserData,
+        validationSchemas.signup
+      );
+
       if (Object.keys(validationErrors).length > 0) {
         // Create a user-friendly error message
         const firstError = Object.values(validationErrors)[0];
@@ -83,66 +111,74 @@ export const AuthProvider = ({ children }) => {
   const updateUser = (updatedUserData) => {
     setUser(updatedUserData);
     // Also update localStorage to persist the changes
-    const currentUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+    const currentUserData = JSON.parse(
+      localStorage.getItem("userData") || "{}"
+    );
     const newUserData = { ...currentUserData, ...updatedUserData };
-    localStorage.setItem('userData', JSON.stringify(newUserData));
+    localStorage.setItem("userData", JSON.stringify(newUserData));
   };
 
   const updateProfile = async (formData) => {
     setProfileLoading(true);
-    setProfileMessage({ type: '', text: '' });
-    
+    setProfileMessage({ type: "", text: "" });
+
     try {
       // Validate and sanitize profile data
       const sanitizedData = sanitizeData(formData);
-      const validationErrors = validateFormData(sanitizedData, validationSchemas.profile);
-      
+      const validationErrors = validateFormData(
+        sanitizedData,
+        validationSchemas.profile
+      );
+
       if (Object.keys(validationErrors).length > 0) {
         // Show first validation error
         const firstError = Object.values(validationErrors)[0];
-        setProfileMessage({ 
-          type: 'error', 
-          text: firstError 
+        setProfileMessage({
+          type: "error",
+          text: firstError,
         });
         return { success: false, validationErrors };
       }
-      
+
       // Prepare complete user data for backend
       const updateData = {
         username: user?.username,
+        // password: sanitizedData.password,
         firstName: sanitizedData.firstName,
         lastName: sanitizedData.lastName,
         email: sanitizedData.email,
-        student: sanitizedData.student
+        student: sanitizedData.student,
       };
-      
+
       // Call backend API to update profile
       const response = await userService.updateUserProfile(updateData);
-      
-      if (response.status === 'success') {
+
+      if (response.status === "success") {
         // Update user in context with new data
         updateUser({
           ...user,
-          ...sanitizedData
+          ...sanitizedData,
         });
-        
-        setProfileMessage({ 
-          type: 'success', 
-          text: 'Profile updated successfully!' 
+
+        setProfileMessage({
+          type: "success",
+          text: "Profile updated successfully!",
         });
-        
+
         // Clear success message after 3 seconds
         setTimeout(() => {
-          setProfileMessage({ type: '', text: '' });
+          setProfileMessage({ type: "", text: "" });
         }, 3000);
-        
+
         return { success: true };
       }
     } catch (error) {
-      console.error('Error updating profile:', error);
-      setProfileMessage({ 
-        type: 'error', 
-        text: error.response?.data?.message || 'Failed to update profile. Please try again.' 
+      console.error("Error updating profile:", error);
+      setProfileMessage({
+        type: "error",
+        text:
+          error.response?.data?.message ||
+          "Failed to update profile. Please try again.",
       });
       return { success: false, error };
     } finally {
@@ -151,7 +187,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const clearProfileMessage = () => {
-    setProfileMessage({ type: '', text: '' });
+    setProfileMessage({ type: "", text: "" });
   };
 
   // Validation helpers for real-time field validation
@@ -212,9 +248,5 @@ export const AuthProvider = ({ children }) => {
     getPasswordStrength,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

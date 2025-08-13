@@ -84,6 +84,18 @@ return (
                                             My Profile
                                         </button>
                                         <button
+                                            onClick={() => {
+                                                navigate('/account-settings');
+                                                setUserDropdownOpen(false);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-neutral-300 hover:bg-neutral-700 transition duration-200 flex items-center"
+                                        >
+                                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                            </svg>
+                                            Account Settings
+                                        </button>
+                                        <button
                                             onClick={handleLogout}
                                             className="w-full text-left px-4 py-2 text-neutral-300 hover:bg-neutral-700 transition duration-200 flex items-center"
                                         >
