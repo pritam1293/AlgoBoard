@@ -1,44 +1,47 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { getPasswordStrength } from '../utils/validation';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { getPasswordStrength } from "../utils/validation";
 
 const Signup = () => {
   const navigate = useNavigate();
   const { signup, validateSignupForm } = useAuth();
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    student: false
+    firstName: "",
+    lastName: "",
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    student: false,
   });
 
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [passwordStrength, setPasswordStrength] = useState(getPasswordStrength(''));
+  const [successMessage, setSuccessMessage] = useState("");
+  const [passwordStrength, setPasswordStrength] = useState(
+    getPasswordStrength("")
+  );
 
   const handleChange = (e) => {
-    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    
+    const value =
+      e.target.type === "checkbox" ? e.target.checked : e.target.value;
+
     setFormData({
       ...formData,
-      [e.target.name]: value
+      [e.target.name]: value,
     });
-    
+
     // Update password strength when password changes
-    if (e.target.name === 'password') {
+    if (e.target.name === "password") {
       setPasswordStrength(getPasswordStrength(value));
     }
-    
+
     // Clear error when user starts typing
     if (errors[e.target.name]) {
       setErrors({
         ...errors,
-        [e.target.name]: ''
+        [e.target.name]: "",
       });
     }
   };
@@ -47,7 +50,7 @@ const Signup = () => {
     e.preventDefault();
     setIsLoading(true);
     setErrors({});
-    
+
     // Use AuthContext validation
     const validationErrors = validateSignupForm(formData);
     if (Object.keys(validationErrors).length > 0) {
@@ -63,18 +66,19 @@ const Signup = () => {
         username: formData.username,
         email: formData.email,
         password: formData.password,
-        student: formData.student
+        student: formData.student,
       });
-      
       // Show success message and redirect to login after delay
-      setErrors({}); // Clear any existing errors
-      setSuccessMessage('Account created successfully! Please log in with your credentials.');
+      setErrors({});
+      setSuccessMessage(
+        "Account created successfully! Please log in with your credentials."
+      );
       setTimeout(() => {
-        navigate('/login');
-      }, 2000); // Redirect after 2 seconds
+        navigate("/login");
+      }, 2000);
     } catch (error) {
       setErrors({
-        general: error.message || 'Signup failed. Please try again.'
+        general: error.message || "Signup failed. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -84,22 +88,22 @@ const Signup = () => {
   return (
     <div className="min-h-screen bg-neutral-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        
         {/* Main Container Box */}
         <div className="bg-neutral-800 rounded-xl shadow-2xl border border-neutral-700 p-8">
           {/* Header */}
           <div className="text-center">
             <div className="flex justify-center items-center mb-4">
-              <img 
-                src="/images/algoboard_logo.png" 
-                alt="AlgoBoard Logo" 
+              <img
+                src="/images/algoboard_logo.png"
+                alt="AlgoBoard Logo"
                 className="w-12 h-12 mr-3 bg-white rounded-lg p-2"
               />
               <h1 className="text-3xl font-bold text-white">AlgoBoard</h1>
             </div>
             <h2 className="text-xl text-gray-300">Create your account</h2>
             <p className="mt-2 text-sm text-gray-400">
-              Join the community and start tracking your competitive programming progress
+              Join the community and start tracking your competitive programming
+              progress
             </p>
           </div>
 
@@ -118,357 +122,434 @@ const Signup = () => {
                 {errors.general}
               </div>
             )}
-            
+
             <div className="space-y-3">
-            {/* First Name and Last Name Fields */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-300 mb-1">
-                  First Name
-                </label>
-                <input
-                  id="firstName"
-                  name="firstName"
-                  type="text"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-2 bg-gray-800 border ${
-                    errors.firstName ? 'border-red-500' : 'border-gray-600'
-                  } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
-                  placeholder="First name"
-                />
-                {errors.firstName && (
-                  <p className="mt-1 text-sm text-red-400">{errors.firstName}</p>
-                )}
-              </div>
-              
-              <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-300 mb-1">
-                  Last Name
-                </label>
-                <input
-                  id="lastName"
-                  name="lastName"
-                  type="text"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-2 bg-gray-800 border ${
-                    errors.lastName ? 'border-red-500' : 'border-gray-600'
-                  } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
-                  placeholder="Last name"
-                />
-                {errors.lastName && (
-                  <p className="mt-1 text-sm text-red-400">{errors.lastName}</p>
-                )}
-              </div>
-            </div>
-
-            {/* Username Field */}
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-1">
-                Username
-              </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                value={formData.username}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 bg-gray-800 border ${
-                  errors.username ? 'border-red-500' : 'border-gray-600'
-                } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
-                placeholder="Choose a username"
-              />
-              {errors.username && (
-                <p className="mt-1 text-sm text-red-400">{errors.username}</p>
-              )}
-              {/* Username Warning Message */}
-              <div className="mt-2 flex items-start">
-                <svg className="w-4 h-4 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                <p className="text-xs text-yellow-400">
-                  <strong>Choose carefully:</strong> Your username cannot be changed after account creation and will be publicly visible on leaderboards.
-                </p>
-              </div>
-            </div>
-
-            {/* Email Field */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
-                Email Address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 bg-gray-800 border ${
-                  errors.email ? 'border-red-500' : 'border-gray-600'
-                } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
-                placeholder="Enter your email"
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-400">{errors.email}</p>
-              )}
-            </div>
-
-            {/* Password Field */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 bg-gray-800 border ${
-                  errors.password ? 'border-red-500' : 'border-gray-600'
-                } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
-                placeholder="Create a password"
-              />
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-400">{errors.password}</p>
-              )}
-              
-              {/* Password Strength Indicator */}
-              {formData.password && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm text-gray-400">Password strength:</span>
-                    <span className={`text-sm font-medium ${
-                      passwordStrength.strength === 'weak' ? 'text-red-400' :
-                      passwordStrength.strength === 'medium' ? 'text-yellow-400' :
-                      passwordStrength.strength === 'good' ? 'text-blue-400' :
-                      'text-green-400'
-                    }`}>
-                      {passwordStrength.strength.toUpperCase()}
-                    </span>
-                  </div>
-                  
-                  {/* Progress Bar */}
-                  <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
-                    <div 
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        passwordStrength.strength === 'weak' ? 'bg-red-500' :
-                        passwordStrength.strength === 'medium' ? 'bg-yellow-500' :
-                        passwordStrength.strength === 'good' ? 'bg-blue-500' :
-                        'bg-green-500'
-                      }`}
-                      style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
-                    ></div>
-                  </div>
-                  
-                  {/* Requirements List */}
-                  <ul className="text-xs space-y-1">
-                    {passwordStrength.requirements.map((req, index) => (
-                      <li key={index} className={`flex items-center ${req.met ? 'text-green-400' : 'text-gray-400'}`}>
-                        <svg className={`w-3 h-3 mr-1 ${req.met ? 'text-green-400' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20">
-                          {req.met ? (
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          ) : (
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                          )}
-                        </svg>
-                        {req.message}
-                      </li>
-                    ))}
-                  </ul>
+              {/* First Name and Last Name Fields */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label
+                    htmlFor="firstName"
+                    className="block text-sm font-medium text-gray-300 mb-1"
+                  >
+                    First Name
+                  </label>
+                  <input
+                    id="firstName"
+                    name="firstName"
+                    type="text"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    className={`w-full px-3 py-2 bg-gray-800 border ${
+                      errors.firstName ? "border-red-500" : "border-gray-600"
+                    } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
+                    placeholder="First name"
+                  />
+                  {errors.firstName && (
+                    <p className="mt-1 text-sm text-red-400">
+                      {errors.firstName}
+                    </p>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Confirm Password Field */}
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-1">
-                Confirm Password
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 bg-gray-800 border ${
-                  errors.confirmPassword ? 'border-red-500' : 'border-gray-600'
-                } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
-                placeholder="Confirm your password"
-              />
-              {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-400">{errors.confirmPassword}</p>
-              )}
-            </div>
+                <div>
+                  <label
+                    htmlFor="lastName"
+                    className="block text-sm font-medium text-gray-300 mb-1"
+                  >
+                    Last Name
+                  </label>
+                  <input
+                    id="lastName"
+                    name="lastName"
+                    type="text"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    className={`w-full px-3 py-2 bg-gray-800 border ${
+                      errors.lastName ? "border-red-500" : "border-gray-600"
+                    } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
+                    placeholder="Last name"
+                  />
+                  {errors.lastName && (
+                    <p className="mt-1 text-sm text-red-400">
+                      {errors.lastName}
+                    </p>
+                  )}
+                </div>
+              </div>
 
-            {/* Student Checkbox */}
-            <div className="flex items-center">
-              <input
-                id="student"
-                name="student"
-                type="checkbox"
-                checked={formData.student}
-                onChange={handleChange}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-800 rounded"
-              />
-              <label htmlFor="student" className="ml-2 block text-sm text-gray-300">
-                I am a student
-              </label>
-            </div>
-          </div>
+              {/* Username Field */}
+              <div>
+                <label
+                  htmlFor="username"
+                  className="block text-sm font-medium text-gray-300 mb-1"
+                >
+                  Username
+                </label>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  value={formData.username}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 bg-gray-800 border ${
+                    errors.username ? "border-red-500" : "border-gray-600"
+                  } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
+                  placeholder="Choose a username"
+                />
+                {errors.username && (
+                  <p className="mt-1 text-sm text-red-400">{errors.username}</p>
+                )}
+                {/* Username Warning Message */}
+                <div className="mt-2 flex items-start">
+                  <svg
+                    className="w-4 h-4 text-yellow-500 mt-0.5 mr-2 flex-shrink-0"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <p className="text-xs text-yellow-400">
+                    <strong>Choose carefully:</strong> Your username cannot be
+                    changed after account creation and will be publicly visible
+                    on leaderboards.
+                  </p>
+                </div>
+              </div>
 
-          {/* Terms and Conditions */}
-          <div className="flex items-start">
-            <input
-              id="terms"
-              name="terms"
-              type="checkbox"
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-800 rounded mt-1"
-              required
-            />
-            <label htmlFor="terms" className="ml-2 block text-sm text-gray-300">
-              I agree to the{' '}
-              <button 
-                type="button"
-                className="text-blue-400 hover:text-blue-300 bg-transparent border-none cursor-pointer underline"
-                onClick={() => navigate('/terms')}
-              >
-                Terms of Service
-              </button>
-              {' '}and{' '}
-              <button 
-                type="button"
-                className="text-blue-400 hover:text-blue-300 bg-transparent border-none cursor-pointer underline"
-                onClick={() => navigate('/privacy')}
-              >
-                Privacy Policy
-              </button>
-            </label>
-          </div>
+              {/* Email Field */}
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-300 mb-1"
+                >
+                  Email Address
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 bg-gray-800 border ${
+                    errors.email ? "border-red-500" : "border-gray-600"
+                  } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
+                  placeholder="Enter your email"
+                />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-400">{errors.email}</p>
+                )}
+              </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white ${
-              isLoading 
-                ? 'bg-gray-600 cursor-not-allowed' 
-                : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-            } transition duration-200`}
-          >
-            {isLoading ? (
+              {/* Password Field */}
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-300 mb-1"
+                >
+                  Password
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 bg-gray-800 border ${
+                    errors.password ? "border-red-500" : "border-gray-600"
+                  } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
+                  placeholder="Create a password"
+                />
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-400">{errors.password}</p>
+                )}
+
+                {/* Password Strength Indicator */}
+                {formData.password && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm text-gray-400">
+                        Password strength:
+                      </span>
+                      <span
+                        className={`text-sm font-medium ${
+                          passwordStrength.strength === "weak"
+                            ? "text-red-400"
+                            : passwordStrength.strength === "medium"
+                            ? "text-yellow-400"
+                            : passwordStrength.strength === "good"
+                            ? "text-blue-400"
+                            : "text-green-400"
+                        }`}
+                      >
+                        {passwordStrength.strength.toUpperCase()}
+                      </span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
+                      <div
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          passwordStrength.strength === "weak"
+                            ? "bg-red-500"
+                            : passwordStrength.strength === "medium"
+                            ? "bg-yellow-500"
+                            : passwordStrength.strength === "good"
+                            ? "bg-blue-500"
+                            : "bg-green-500"
+                        }`}
+                        style={{
+                          width: `${(passwordStrength.score / 5) * 100}%`,
+                        }}
+                      ></div>
+                    </div>
+
+                    {/* Requirements List */}
+                    <ul className="text-xs space-y-1">
+                      {passwordStrength.requirements.map((req, index) => (
+                        <li
+                          key={index}
+                          className={`flex items-center ${
+                            req.met ? "text-green-400" : "text-gray-400"
+                          }`}
+                        >
+                          <svg
+                            className={`w-3 h-3 mr-1 ${
+                              req.met ? "text-green-400" : "text-gray-400"
+                            }`}
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            {req.met ? (
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
+                            ) : (
+                              <path
+                                fillRule="evenodd"
+                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                clipRule="evenodd"
+                              />
+                            )}
+                          </svg>
+                          {req.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* Confirm Password Field */}
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-300 mb-1"
+                >
+                  Confirm Password
+                </label>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 bg-gray-800 border ${
+                    errors.confirmPassword
+                      ? "border-red-500"
+                      : "border-gray-600"
+                  } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
+                  placeholder="Confirm your password"
+                />
+                {errors.confirmPassword && (
+                  <p className="mt-1 text-sm text-red-400">
+                    {errors.confirmPassword}
+                  </p>
+                )}
+              </div>
+
+              {/* Student Checkbox */}
               <div className="flex items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Creating account...
+                <input
+                  id="student"
+                  name="student"
+                  type="checkbox"
+                  checked={formData.student}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-800 rounded"
+                />
+                <label
+                  htmlFor="student"
+                  className="ml-2 block text-sm text-gray-300"
+                >
+                  I am a student
+                </label>
               </div>
-            ) : (
-              'Create Account'
-            )}
-          </button>
+            </div>
 
-          {/* Login Link */}
-          <div className="text-center">
-            <p className="text-sm text-gray-400">
-              Already have an account?{' '}
-              <button
-                type="button"
-                onClick={() => navigate('/login')}
-                className="text-blue-400 hover:text-blue-300 font-medium transition duration-200"
+            {/* Terms and Conditions */}
+            <div className="flex items-start">
+              <input
+                id="terms"
+                name="terms"
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-800 rounded mt-1"
+                required
+              />
+              <label
+                htmlFor="terms"
+                className="ml-2 block text-sm text-gray-300"
               >
-                Sign in here
-              </button>
-            </p>
-          </div>
-        </form>
+                I agree to the{" "}
+                <button
+                  type="button"
+                  className="text-blue-400 hover:text-blue-300 bg-transparent border-none cursor-pointer underline"
+                  onClick={() => navigate("/terms")}
+                >
+                  Terms of Service
+                </button>{" "}
+                and{" "}
+                <button
+                  type="button"
+                  className="text-blue-400 hover:text-blue-300 bg-transparent border-none cursor-pointer underline"
+                  onClick={() => navigate("/privacy")}
+                >
+                  Privacy Policy
+                </button>
+              </label>
+            </div>
 
-        {/* Features Preview */}
-        <div className="mt-6 pt-4 border-t border-gray-700">
-          <h3 className="text-center text-sm font-medium text-gray-300 mb-3">What you'll get:</h3>
-          <div className="space-y-2">
-            <div className="flex items-center text-sm text-gray-400">
-              <span className="text-green-400 mr-3">✓</span>
-              Track progress across Codeforces, AtCoder, CodeChef & LeetCode
-            </div>
-            <div className="flex items-center text-sm text-gray-400">
-              <span className="text-green-400 mr-3">✓</span>
-              Compare your performance with friends
-            </div>
-            <div className="flex items-center text-sm text-gray-400">
-              <span className="text-green-400 mr-3">✓</span>
-              Get insights and analytics on your coding journey
-            </div>
-            <div className="flex items-center text-sm text-gray-400">
-              <span className="text-green-400 mr-3">✓</span>
-              Never miss a contest with our notification system
-            </div>
-          </div>
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white ${
+                isLoading
+                  ? "bg-gray-600 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              } transition duration-200`}
+            >
+              {isLoading ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating account...
+                </div>
+              ) : (
+                "Create Account"
+              )}
+            </button>
 
-          {/* Platform Logos */}
-          <div className="mt-4">
-            <p className="text-center text-xs text-gray-500 mb-2">Supported Platforms</p>
-            <div className="flex justify-center space-x-4">
-              <a 
-                href="https://codeforces.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="block"
-              >
-                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center hover:bg-gray-100 transition duration-200 cursor-pointer">
-                  <img 
-                    src="/images/platforms/codeforces_logo.png" 
-                    alt="Codeforces" 
-                    className="w-6 h-6 object-contain"
-                  />
-                </div>
-              </a>
-              <a 
-                href="https://atcoder.jp" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="block"
-              >
-                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center hover:bg-gray-100 transition duration-200 cursor-pointer">
-                  <img 
-                    src="/images/platforms/atcoder_logo.png" 
-                    alt="AtCoder" 
-                    className="w-6 h-6 object-contain"
-                  />
-                </div>
-              </a>
-              <a 
-                href="https://www.codechef.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="block"
-              >
-                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center hover:bg-gray-100 transition duration-200 cursor-pointer">
-                  <img 
-                    src="/images/platforms/codechef_logo.jpg" 
-                    alt="CodeChef" 
-                    className="w-6 h-6 object-contain"
-                  />
-                </div>
-              </a>
-              <a 
-                href="https://leetcode.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="block"
-              >
-                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center hover:bg-gray-100 transition duration-200 cursor-pointer">
-                  <img 
-                    src="/images/platforms/LeetCode_logo.png" 
-                    alt="LeetCode" 
-                    className="w-6 h-6 object-contain"
-                  />
-                </div>
-              </a>
+            {/* Login Link */}
+            <div className="text-center">
+              <p className="text-sm text-gray-400">
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => navigate("/login")}
+                  className="text-blue-400 hover:text-blue-300 font-medium transition duration-200"
+                >
+                  Sign in here
+                </button>
+              </p>
+            </div>
+          </form>
+
+          {/* Features Preview */}
+          <div className="mt-6 pt-4 border-t border-gray-700">
+            <h3 className="text-center text-sm font-medium text-gray-300 mb-3">
+              What you'll get:
+            </h3>
+            <div className="space-y-2">
+              <div className="flex items-center text-sm text-gray-400">
+                <span className="text-green-400 mr-3">✓</span>
+                Track progress across Codeforces, AtCoder, CodeChef & LeetCode
+              </div>
+              <div className="flex items-center text-sm text-gray-400">
+                <span className="text-green-400 mr-3">✓</span>
+                Compare your performance with friends
+              </div>
+              <div className="flex items-center text-sm text-gray-400">
+                <span className="text-green-400 mr-3">✓</span>
+                Get insights and analytics on your coding journey
+              </div>
+              <div className="flex items-center text-sm text-gray-400">
+                <span className="text-green-400 mr-3">✓</span>
+                Never miss a contest with our notification system
+              </div>
+            </div>
+
+            {/* Platform Logos */}
+            <div className="mt-4">
+              <p className="text-center text-xs text-gray-500 mb-2">
+                Supported Platforms
+              </p>
+              <div className="flex justify-center space-x-4">
+                <a
+                  href="https://codeforces.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center hover:bg-gray-100 transition duration-200 cursor-pointer">
+                    <img
+                      src="/images/platforms/codeforces_logo.png"
+                      alt="Codeforces"
+                      className="w-6 h-6 object-contain"
+                    />
+                  </div>
+                </a>
+                <a
+                  href="https://atcoder.jp"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center hover:bg-gray-100 transition duration-200 cursor-pointer">
+                    <img
+                      src="/images/platforms/atcoder_logo.png"
+                      alt="AtCoder"
+                      className="w-6 h-6 object-contain"
+                    />
+                  </div>
+                </a>
+                <a
+                  href="https://www.codechef.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center hover:bg-gray-100 transition duration-200 cursor-pointer">
+                    <img
+                      src="/images/platforms/codechef_logo.jpg"
+                      alt="CodeChef"
+                      className="w-6 h-6 object-contain"
+                    />
+                  </div>
+                </a>
+                <a
+                  href="https://leetcode.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center hover:bg-gray-100 transition duration-200 cursor-pointer">
+                    <img
+                      src="/images/platforms/LeetCode_logo.png"
+                      alt="LeetCode"
+                      className="w-6 h-6 object-contain"
+                    />
+                  </div>
+                </a>
+              </div>
             </div>
           </div>
-        </div>
-        
-        </div> {/* End of Main Container Box */}
+        </div>{" "}
+        {/* End of Main Container Box */}
       </div>
     </div>
   );

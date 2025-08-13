@@ -43,7 +43,6 @@ export const AuthProvider = ({ children }) => {
     try {
       // Accepts credentials with either username or email
       const sanitizedCredentials = sanitizeData(credentials);
-      // Custom validation for identifier (username or email)
       let identifier =
         sanitizedCredentials.username || sanitizedCredentials.email;
       let errors = {};
@@ -61,15 +60,14 @@ export const AuthProvider = ({ children }) => {
         errors.password = "Password is required";
       }
       if (Object.keys(errors).length > 0) {
-        // Throw the first error as a string
         throw new Error(Object.values(errors)[0]);
       }
-      const userData = await authService.login(sanitizedCredentials);
-      setUser(userData);
+      const response = await authService.login(sanitizedCredentials);
+      // response is AuthenticationResponse: { token, username, ...profile fields, expiresIn }
+      setUser(response); // Store the whole profile/response object
       setIsAuthenticated(true);
-      return userData;
+      return response;
     } catch (error) {
-      // Always throw a string error message
       if (typeof error === "object" && error.message) {
         throw new Error(String(error.message));
       } else if (typeof error === "string") {
@@ -82,20 +80,17 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (userData) => {
     try {
-      // Validate signup data
       const sanitizedUserData = sanitizeData(userData);
       const validationErrors = validateFormData(
         sanitizedUserData,
         validationSchemas.signup
       );
-
       if (Object.keys(validationErrors).length > 0) {
-        // Create a user-friendly error message
         const firstError = Object.values(validationErrors)[0];
         throw new Error(firstError);
       }
-
       const response = await authService.signup(sanitizedUserData);
+      // response is the profile object
       return response;
     } catch (error) {
       throw error;
@@ -108,72 +103,38 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
   };
 
-  const updateUser = (updatedUserData) => {
-    setUser(updatedUserData);
-    // Also update localStorage to persist the changes
-    const currentUserData = JSON.parse(
-      localStorage.getItem("userData") || "{}"
-    );
-    const newUserData = { ...currentUserData, ...updatedUserData };
-    localStorage.setItem("userData", JSON.stringify(newUserData));
+  const updateUser = (updatedProfile) => {
+    setUser(updatedProfile);
+    localStorage.setItem("userData", JSON.stringify(updatedProfile));
   };
 
   const updateProfile = async (formData) => {
     setProfileLoading(true);
     setProfileMessage({ type: "", text: "" });
-
     try {
-      // Validate and sanitize profile data
       const sanitizedData = sanitizeData(formData);
       const validationErrors = validateFormData(
         sanitizedData,
         validationSchemas.profile
       );
-
       if (Object.keys(validationErrors).length > 0) {
-        // Show first validation error
         const firstError = Object.values(validationErrors)[0];
-        setProfileMessage({
-          type: "error",
-          text: firstError,
-        });
+        setProfileMessage({ type: "error", text: firstError });
         return { success: false, validationErrors };
       }
-
-      // Prepare complete user data for backend
-      const updateData = {
-        username: user?.username,
-        // password: sanitizedData.password,
-        firstName: sanitizedData.firstName,
-        lastName: sanitizedData.lastName,
-        email: sanitizedData.email,
-        student: sanitizedData.student,
-      };
-
-      // Call backend API to update profile
-      const response = await userService.updateUserProfile(updateData);
-
+      const response = await userService.updateUserProfile(sanitizedData);
       if (response.status === "success") {
-        // Update user in context with new data
-        updateUser({
-          ...user,
-          ...sanitizedData,
-        });
-
+        updateUser(response.data); // response.data is the updated profile
         setProfileMessage({
           type: "success",
           text: "Profile updated successfully!",
         });
-
-        // Clear success message after 3 seconds
         setTimeout(() => {
           setProfileMessage({ type: "", text: "" });
         }, 3000);
-
         return { success: true };
       }
     } catch (error) {
-      console.error("Error updating profile:", error);
       setProfileMessage({
         type: "error",
         text:
