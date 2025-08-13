@@ -3,25 +3,26 @@ package com.algoboard.services;
 import com.algoboard.DTO.Codeforces.CFContestDTO;
 import com.algoboard.DTO.Codeforces.CFSubmissionsDTO;
 import com.algoboard.DTO.Codeforces.CFUserDTO;
-import com.algoboard.DTO.RequestDTO.User;
 import com.algoboard.entities.Atcoder;
 // import com.algoboard.entities.Codechef;
 import com.algoboard.entities.Codeforces;
 import com.algoboard.entities.ContestHistory;
+import com.algoboard.entities.User;
 import com.algoboard.DTO.Atcoder.ACcontestDTO;
 import com.algoboard.repository.UserRepository;
-import com.algoboard.DTO.RequestDTO.PasswordDTO;
-import com.algoboard.DTO.RequestDTO.LoginDTO;
+import com.algoboard.DTO.RequestDTO.Profile;
 
 import java.util.Set;
 import java.util.HashSet;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Objects;
 import org.springframework.web.client.RestTemplate;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -50,7 +51,7 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public User registerUser(User user) {
+    public Profile registerUser(User user) {
         if (userRepository.existsById(user.getUsername())) {
             throw new IllegalArgumentException("User with the same username already exists.");
         }
@@ -61,82 +62,129 @@ public class UserService implements IUserService {
         // Hash the password before saving
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
-        return user;
+        return new Profile(
+                user.getUsername(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                user.isStudent(),
+                user.getCodeforcesUsername(),
+                user.getAtcoderUsername(),
+                user.getCodechefUsername(),
+                user.getLeetcodeUsername()
+        );
     }
 
     @Override
-    public User authenticateUser(LoginDTO loginDTO) {
-        if(loginDTO.getUsername() != null) {
-            System.out.println("");
-            System.out.println("login via username: " + loginDTO.getUsername());
-            System.out.println("");
-            User user = userRepository.findByUsername(loginDTO.getUsername());
-            if (user != null && passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
-                return user;
+    public Profile authenticateUser(String username, String email, String password) {
+        if(username != null && !username.isEmpty()) {
+            User user = userRepository.findByUsername(username);
+            if (user != null && passwordEncoder.matches(password, user.getPassword())) {
+                return new Profile(
+                        user.getUsername(),
+                        user.getFirstName(),
+                        user.getLastName(),
+                        user.getEmail(),
+                        user.isStudent(),
+                        user.getCodeforcesUsername(),
+                        user.getAtcoderUsername(),
+                        user.getCodechefUsername(),
+                        user.getLeetcodeUsername()
+                );
             }
         }
-        if(loginDTO.getEmail() != null) {
-            System.out.println("");
-            System.out.println("login via email: " + loginDTO.getEmail());
-            System.out.println("");
-            User user = userRepository.findByEmail(loginDTO.getEmail());
-            if (user != null && passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
-                return user;
+        if(email != null && !email.isEmpty()) {
+            User user = userRepository.findByEmail(email);
+            if (user != null && passwordEncoder.matches(password, user.getPassword())) {
+                return new Profile(
+                        user.getUsername(),
+                        user.getFirstName(),
+                        user.getLastName(),
+                        user.getEmail(),
+                        user.isStudent(),
+                        user.getCodeforcesUsername(),
+                        user.getAtcoderUsername(),
+                        user.getCodechefUsername(),
+                        user.getLeetcodeUsername()
+                );
             }
         }
         throw new IllegalArgumentException("Invalid username or password.");
     }
 
     @Override
-    public User getUserProfile(String username) {
+    public Profile getUserProfile(String username) {
         User user = userRepository.findByUsername(username);
         if (user != null) {
-            return user;
+            return new Profile(
+                    user.getUsername(),
+                    user.getFirstName(),
+                    user.getLastName(),
+                    user.getEmail(),
+                    user.isStudent(),
+                    user.getCodeforcesUsername(),
+                    user.getAtcoderUsername(),
+                    user.getCodechefUsername(),
+                    user.getLeetcodeUsername()
+            );
         }
         throw new IllegalArgumentException("User not found with username: " + username);
     }
 
     @Override
-    public User updateUserDetails(User user) {
-        User existingUser = userRepository.findByUsername(user.getUsername());
+    public Profile updateUserDetails(Profile profile) {
+        User existingUser = userRepository.findByUsername(profile.getUsername());
         if (existingUser != null) {
-            if (user.getFirstName() != null) {
-                existingUser.setFirstName(user.getFirstName());
+            if (profile.getFirstName() != null) {
+                existingUser.setFirstName(profile.getFirstName());
             }
-            if (user.getLastName() != null) {
-                existingUser.setLastName(user.getLastName());
+            if (profile.getLastName() != null) {
+                existingUser.setLastName(profile.getLastName());
             }
-            if (user.getEmail() != null) {
-                existingUser.setEmail(user.getEmail());
+            if (profile.getEmail() != null) {
+                existingUser.setEmail(profile.getEmail());
             }
-            if (user.isStudent() != existingUser.isStudent()) {
-                existingUser.setStudent(user.isStudent());
+            if (profile.isStudent() != existingUser.isStudent()) {
+                existingUser.setStudent(profile.isStudent());
             }
-            if (user.getCodeforcesUsername() != null) {
-                existingUser.setCodeforcesUsername(user.getCodeforcesUsername());
+            if (profile.getCodeforcesUsername() != null) {
+                existingUser.setCodeforcesUsername(profile.getCodeforcesUsername());
             }
-            if (user.getAtcoderUsername() != null) {
-                existingUser.setAtcoderUsername(user.getAtcoderUsername());
+            if (profile.getAtcoderUsername() != null) {
+                existingUser.setAtcoderUsername(profile.getAtcoderUsername());
             }
-            if (user.getCodechefUsername() != null) {
-                existingUser.setCodechefUsername(user.getCodechefUsername());
+            if (profile.getCodechefUsername() != null) {
+                existingUser.setCodechefUsername(profile.getCodechefUsername());
             }
-            if (user.getLeetcodeUsername() != null) {
-                existingUser.setLeetcodeUsername(user.getLeetcodeUsername());
+            if (profile.getLeetcodeUsername() != null) {
+                existingUser.setLeetcodeUsername(profile.getLeetcodeUsername());
             }
             userRepository.save(existingUser);
-            return existingUser;
+            return new Profile(
+                    existingUser.getUsername(),
+                    existingUser.getFirstName(),
+                    existingUser.getLastName(),
+                    existingUser.getEmail(),
+                    existingUser.isStudent(),
+                    existingUser.getCodeforcesUsername(),
+                    existingUser.getAtcoderUsername(),
+                    existingUser.getCodechefUsername(),
+                    existingUser.getLeetcodeUsername()
+            );
         }
-        throw new IllegalArgumentException("User does not exist with username: " + user.getUsername());
+        throw new IllegalArgumentException("User does not exist with username: " + profile.getUsername());
     }
 
     @Override
-    public User updatePassword(PasswordDTO password) {
-        User user = userRepository.findByUsername(password.getUsername());
-        if (user != null && passwordEncoder.matches(password.getOldPassword(), user.getPassword())) {
-            user.setPassword(passwordEncoder.encode(password.getNewPassword()));
+    public Map<String, String> updatePassword(String username, String oldPassword, String newPassword) {
+        User user = userRepository.findByUsername(username);
+        if (user != null && passwordEncoder.matches(oldPassword, user.getPassword())) {
+            user.setPassword(passwordEncoder.encode(newPassword));
             userRepository.save(user);
-            return user;
+            return Map.of(
+                    "email", user.getEmail(),
+                    "firstName", user.getFirstName()
+            );
         }
         throw new IllegalArgumentException("Invalid username or password.");
     }

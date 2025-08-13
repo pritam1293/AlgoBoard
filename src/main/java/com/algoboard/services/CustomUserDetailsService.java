@@ -1,6 +1,6 @@
 package com.algoboard.services;
 
-import com.algoboard.DTO.RequestDTO.User;
+import com.algoboard.entities.User;
 import com.algoboard.repository.UserRepository;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

@@ -1,4 +1,4 @@
-package com.algoboard.DTO.RequestDTO;
+package com.algoboard.entities;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;

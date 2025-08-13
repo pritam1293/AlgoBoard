@@ -2,16 +2,15 @@ package com.algoboard.controller;
 
 import com.algoboard.entities.Atcoder;
 import com.algoboard.entities.Codeforces;
+import com.algoboard.entities.User;
 import com.algoboard.services.IUserService;
 import com.algoboard.services.EmailService;
 import com.algoboard.services.CustomUserDetailsService;
 import com.algoboard.jwt.JwtService;
-import com.algoboard.DTO.RequestDTO.LoginDTO;
-import com.algoboard.DTO.RequestDTO.User;
 import com.algoboard.DTO.RequestDTO.AuthenticationResponse;
 import com.algoboard.utils.ResponseUtil;
-import com.algoboard.DTO.RequestDTO.PasswordDTO;
 import java.util.Map;
+import com.algoboard.DTO.RequestDTO.Profile;
 
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.ResponseEntity;
@@ -52,19 +51,18 @@ public class UserController {
     @PostMapping("/auth/signup")
     public ResponseEntity<?> signup(@RequestBody User user) {
         try {
-            User registeredUser = userService.registerUser(user);
+            Profile newProfile = userService.registerUser(user);
 
             // Send welcome email asynchronously (don't block the response)
             try {
-                emailService.sendWelcomeEmail(registeredUser.getEmail(), registeredUser.getFirstName());
+                emailService.sendWelcomeEmail(newProfile.getEmail(), newProfile.getFirstName());
             } catch (Exception emailException) {
                 // Log email error but don't fail the signup process
                 System.err.println("Failed to send welcome email: " + emailException.getMessage());
             }
 
             // Remove password from response for security
-            registeredUser.setPassword(null);
-            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Signup successful. Welcome email sent!", registeredUser));
+            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Signup successful. Welcome email sent!", newProfile));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Signup failed: " + e.getMessage()));
         } catch (Exception e) {
@@ -73,13 +71,16 @@ public class UserController {
     }
 
     @PostMapping("/auth/login")
-    public ResponseEntity<?> login(@RequestBody LoginDTO loginDTO) {
+    public ResponseEntity<?> login(@RequestBody Map<String, String> payload) {
         try {
             // Authenticate user
-            User user = userService.authenticateUser(loginDTO);
+            String username = payload.get("username");
+            String email = payload.get("email");
+            String password = payload.get("password");
+            Profile profile = userService.authenticateUser(username, email, password);
 
             // Load UserDetails for JWT generation
-            UserDetails userDetails = customUserDetailsService.loadUserByUsername(user.getUsername());
+            UserDetails userDetails = customUserDetailsService.loadUserByUsername(profile.getUsername());
 
             // Generate JWT token
             String jwtToken = jwtService.generateToken(userDetails);
@@ -87,18 +88,17 @@ public class UserController {
             // Create authentication response
             AuthenticationResponse authResponse = new AuthenticationResponse(
                     jwtToken,
-                    user,
+                    profile,
                     jwtService.getExpirationTime() / 1000 // Convert to seconds
             );
 
             // Send login notification email asynchronously (don't block the response)
             try {
-                emailService.sendLoginNotification(user.getEmail(), user.getFirstName());
+                emailService.sendLoginNotification(profile.getEmail(), profile.getFirstName());
             } catch (Exception emailException) {
                 // Log email error but don't fail the login process
                 System.err.println("Failed to send login notification: " + emailException.getMessage());
             }
-
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Login successful. Notification sent!", authResponse));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Login failed: " + e.getMessage()));
@@ -110,10 +110,9 @@ public class UserController {
     @GetMapping("/users/profile")
     public ResponseEntity<?> getUserProfile(@RequestParam String username) {
         try {
-            User user = userService.getUserProfile(username);
-            if (user != null) {
-                user.setPassword(null); // Remove password for security
-                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User profile retrieved successfully", user));
+            Profile profile = userService.getUserProfile(username);
+            if (profile != null) {
+                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User profile retrieved successfully", profile));
             } else {
                 return ResponseEntity.status(404).body(ResponseUtil.createErrorResponse("User profile not found"));
             }
@@ -123,32 +122,31 @@ public class UserController {
     }
 
     @PutMapping("/users/profile")
-    public ResponseEntity<?> updateUser(@RequestBody User user) {
+    public ResponseEntity<?> updateUser(@RequestBody Profile profile) {
         try {
-            User updatedUser = userService.updateUserDetails(user);
-            updatedUser.setPassword(null); // Remove password for security
+            Profile updatedProfile = userService.updateUserDetails(profile);
             //send an email notification
             try {
-                if(!user.getEmail().equals(updatedUser.getEmail())) {
-                    emailService.sendProfileUpdateNotification(updatedUser.getEmail(), updatedUser.getFirstName() , "email");
+                if(!profile.getEmail().equals(updatedProfile.getEmail())) {
+                    emailService.sendProfileUpdateNotification(updatedProfile.getEmail(), updatedProfile.getFirstName() , "email");
                 }
-                if(!user.getFirstName().equals(updatedUser.getFirstName()) || !user.getLastName().equals(updatedUser.getLastName())) {
-                    emailService.sendProfileUpdateNotification(updatedUser.getEmail(), updatedUser.getFirstName() + " " + updatedUser.getLastName(), "name");
+                if(!profile.getFirstName().equals(updatedProfile.getFirstName()) || !profile.getLastName().equals(updatedProfile.getLastName())) {
+                    emailService.sendProfileUpdateNotification(updatedProfile.getEmail(), updatedProfile.getFirstName() + " " + updatedProfile.getLastName(), "name");
                 }
-                if(user.getAtcoderUsername() != null && !user.getAtcoderUsername().equals(updatedUser.getAtcoderUsername())
-                    || user.getCodechefUsername() != null && !user.getCodechefUsername().equals(updatedUser.getCodechefUsername())
-                    || user.getLeetcodeUsername() != null && !user.getLeetcodeUsername().equals(updatedUser.getLeetcodeUsername())
-                    || user.getCodeforcesUsername() != null && !user.getCodeforcesUsername().equals(updatedUser.getCodeforcesUsername())) {
-                    emailService.sendProfileUpdateNotification(updatedUser.getEmail(), updatedUser.getFirstName(), "competitive programming username");
+                if(profile.getAtcoderUsername() != null && !profile.getAtcoderUsername().equals(updatedProfile.getAtcoderUsername())
+                    || profile.getCodechefUsername() != null && !profile.getCodechefUsername().equals(updatedProfile.getCodechefUsername())
+                    || profile.getLeetcodeUsername() != null && !profile.getLeetcodeUsername().equals(updatedProfile.getLeetcodeUsername())
+                    || profile.getCodeforcesUsername() != null && !profile.getCodeforcesUsername().equals(updatedProfile.getCodeforcesUsername())) {
+                    emailService.sendProfileUpdateNotification(updatedProfile.getEmail(), updatedProfile.getFirstName(), "competitive programming username");
                 }
                 else {
-                    emailService.sendProfileUpdateNotification(updatedUser.getEmail(), updatedUser.getFirstName(), "profile");
+                    emailService.sendProfileUpdateNotification(updatedProfile.getEmail(), updatedProfile.getFirstName(), "profile");
                 }
             } catch (Exception emailException) {
                 // Log email error but don't fail the update process
                 System.err.println("Failed to send profile update notification: " + emailException.getMessage());
             }
-            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User updated successfully", updatedUser));
+            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User updated successfully", updatedProfile));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
         } catch (Exception e) {
@@ -157,11 +155,13 @@ public class UserController {
     }
 
     @PutMapping("auth/change-password")
-    public ResponseEntity<?> updatePassword(@RequestBody PasswordDTO password) {
+    public ResponseEntity<?> updatePassword(@RequestBody Map<String, String> payload) {
+        String username = payload.get("username");
+        String oldPassword = payload.get("oldPassword");
+        String newPassword = payload.get("newPassword");
         try {
-            User user = userService.updatePassword(password);
-            user.setPassword(null);
-            emailService.sendProfileUpdateNotification(user.getEmail(), user.getFirstName(), "password");
+            Map<String, String> user = userService.updatePassword(username, oldPassword, newPassword);
+            emailService.sendProfileUpdateNotification(user.get("email"), user.get("firstName"), "password");
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Password updated successfully", null));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
@@ -191,9 +191,8 @@ public class UserController {
             String resetToken = userService.verifyOtpAndGenerateResetToken(email, otp);
             if (resetToken != null) {
                 return ResponseEntity.ok(ResponseUtil.createSuccessResponse("OTP verified successfully. Use this token to reset your password.", resetToken));
-            } else {
-                return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Invalid OTP or OTP expired"));
             }
+            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Invalid OTP or OTP expired"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Verification failed: " + e.getMessage()));
         } catch (Exception e) {

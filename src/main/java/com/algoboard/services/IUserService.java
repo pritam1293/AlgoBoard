@@ -1,23 +1,25 @@
 package com.algoboard.services;
 
-import com.algoboard.DTO.RequestDTO.User;
 import com.algoboard.entities.Atcoder;
 // import com.algoboard.entities.Codechef;
 import com.algoboard.entities.Codeforces;
-import com.algoboard.DTO.RequestDTO.PasswordDTO;
-import com.algoboard.DTO.RequestDTO.LoginDTO;
+import com.algoboard.entities.User;
+
+import java.util.Map;
+
+import com.algoboard.DTO.RequestDTO.Profile;
 
 
 public interface IUserService {
-    public User registerUser(User user);
+    public Profile registerUser(User user);
 
-    public User authenticateUser(LoginDTO loginDTO);
+    public Profile authenticateUser(String username, String email, String password);
 
-    public User getUserProfile(String username);
+    public Profile getUserProfile(String username);
 
-    public User updateUserDetails(User user);
+    public Profile updateUserDetails(Profile profile);
 
-    public User updatePassword(PasswordDTO password);
+    public Map<String, String> updatePassword(String username, String oldPassword, String newPassword);
 
     public boolean generateAndSendOtp(String email);
 

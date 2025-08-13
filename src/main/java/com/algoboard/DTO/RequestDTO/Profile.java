@@ -1,7 +1,6 @@
 package com.algoboard.DTO.RequestDTO;
 
-public class AuthenticationResponse {
-    private String token;
+public class Profile {
     private String username;
     private String firstName;
     private String lastName;
@@ -11,30 +10,18 @@ public class AuthenticationResponse {
     private String atcoderUsername;
     private String codechefUsername;
     private String leetcodeUsername;
-    private long expiresIn;
 
-    // Constructor with User and token
-    public AuthenticationResponse(String token, Profile profile, long expiresIn) {
-        this.token = token;
-        this.username = profile.getUsername();
-        this.firstName = profile.getFirstName();
-        this.lastName = profile.getLastName();
-        this.email = profile.getEmail();
-        this.student = profile.isStudent();
-        this.codeforcesUsername = profile.getCodeforcesUsername();
-        this.atcoderUsername = profile.getAtcoderUsername();
-        this.codechefUsername = profile.getCodechefUsername();
-        this.leetcodeUsername = profile.getLeetcodeUsername();
-        this.expiresIn = expiresIn;
-    }
-
-    // Getters and Setters
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
+    public Profile(String username, String firstName, String lastName, String email, boolean student,
+                   String codeforcesUsername, String atcoderUsername, String codechefUsername, String leetcodeUsername) {
+        this.username = username;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.student = student;
+        this.codeforcesUsername = codeforcesUsername;
+        this.atcoderUsername = atcoderUsername;
+        this.codechefUsername = codechefUsername;
+        this.leetcodeUsername = leetcodeUsername;
     }
 
     public String getUsername() {
@@ -107,13 +94,5 @@ public class AuthenticationResponse {
 
     public void setLeetcodeUsername(String leetcodeUsername) {
         this.leetcodeUsername = leetcodeUsername;
-    }
-
-    public long getExpiresIn() {
-        return expiresIn;
-    }
-
-    public void setExpiresIn(long expiresIn) {
-        this.expiresIn = expiresIn;
     }
 }
