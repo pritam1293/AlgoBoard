@@ -86,6 +86,20 @@ public class EmailService {
         }
     }
 
+    //send otp to email for the password reset
+    @Async("emailTaskExecutor")
+    public void sendOtpForPasswordReset(String toEmail, String otp) {
+        try {
+            String subject = "Your OTP for Password Reset";
+            String htmlContent = processOtpTemplate(otp);
+
+            sendEmail(toEmail, subject, htmlContent);
+            logger.info("OTP sent successfully to: " + toEmail);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to send OTP to: " + toEmail, e);
+        }
+    }
+
     // Process welcome email template with user data
     private String processWelcomeTemplate(String firstName) {
         String template = """
@@ -249,6 +263,45 @@ public class EmailService {
                 """;
 
         return template.replace("{{firstName}}", firstName).replace("{{message}}", message);
+    }
+
+    //email content format of generation ot otp
+    private String processOtpTemplate(String otp) {
+        String template = """
+                <html>
+                <head>
+                    <style>
+                        .header { text-align: center; padding: 20px; }
+                        .content { margin: 20px; }
+                        .footer { text-align: center; margin-top: 20px; color: #7f8c8d; font-size: 14px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="logo">🔐 AlgoBoard Security</div>
+                        <p>Password Reset OTP</p>
+                    </div>
+
+                    <div class="content">
+                        <p>Hi,</p>
+
+                        <p>Your OTP for password reset is: <strong>{{otp}}</strong></p>
+
+                        <p>If you did not request this, please ignore this email.</p>
+
+                        <p>Best regards,<br>
+                        <strong>The AlgoBoard Security Team</strong></p>
+                    </div>
+
+                    <div class="footer">
+                        <p>This is an automated security notification from AlgoBoard.</p>
+                        <p>© 2025 AlgoBoard. All rights reserved.</p>
+                    </div>
+                </body>
+                </html>
+                """;
+
+        return template.replace("{{otp}}", otp);
     }
 
     // Core method to send email

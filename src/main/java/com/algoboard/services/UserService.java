@@ -10,6 +10,8 @@ import com.algoboard.entities.Codeforces;
 import com.algoboard.entities.ContestHistory;
 import com.algoboard.DTO.Atcoder.ACcontestDTO;
 import com.algoboard.repository.UserRepository;
+import com.algoboard.DTO.RequestDTO.PasswordDTO;
+import com.algoboard.DTO.RequestDTO.LoginDTO;
 
 import java.util.Set;
 import java.util.HashSet;
@@ -36,11 +38,12 @@ import org.springframework.stereotype.Service;
 public class UserService implements IUserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
     private RestTemplate restTemplate = new RestTemplate();
-
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
         System.out.println("");
         System.out.println("MongoDB connected.");
         System.out.println("");
@@ -62,10 +65,24 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public User authenticateUser(String username, String password) {
-        User user = userRepository.findByUsername(username);
-        if (user != null && passwordEncoder.matches(password, user.getPassword())) {
-            return user;
+    public User authenticateUser(LoginDTO loginDTO) {
+        if(loginDTO.getUsername() != null) {
+            System.out.println("");
+            System.out.println("login via username: " + loginDTO.getUsername());
+            System.out.println("");
+            User user = userRepository.findByUsername(loginDTO.getUsername());
+            if (user != null && passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
+                return user;
+            }
+        }
+        if(loginDTO.getEmail() != null) {
+            System.out.println("");
+            System.out.println("login via email: " + loginDTO.getEmail());
+            System.out.println("");
+            User user = userRepository.findByEmail(loginDTO.getEmail());
+            if (user != null && passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
+                return user;
+            }
         }
         throw new IllegalArgumentException("Invalid username or password.");
     }
@@ -92,9 +109,6 @@ public class UserService implements IUserService {
             if (user.getEmail() != null) {
                 existingUser.setEmail(user.getEmail());
             }
-            if (user.getPassword() != null) {
-                existingUser.setPassword(user.getPassword());
-            }
             if (user.isStudent() != existingUser.isStudent()) {
                 existingUser.setStudent(user.isStudent());
             }
@@ -114,6 +128,37 @@ public class UserService implements IUserService {
             return existingUser;
         }
         throw new IllegalArgumentException("User does not exist with username: " + user.getUsername());
+    }
+
+    @Override
+    public User updatePassword(PasswordDTO password) {
+        User user = userRepository.findByUsername(password.getUsername());
+        if (user != null && passwordEncoder.matches(password.getOldPassword(), user.getPassword())) {
+            user.setPassword(passwordEncoder.encode(password.getNewPassword()));
+            userRepository.save(user);
+            return user;
+        }
+        throw new IllegalArgumentException("Invalid username or password.");
+    }
+
+    @Override
+    public boolean generateAndSendOtp(String email) {
+        if(userRepository.existsByEmail(email)) {
+            String otp = String.valueOf((int)(Math.random() * 900000) + 100000); // Generate a 6-digit OTP
+            emailService.sendOtpForPasswordReset(email, otp);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public String verifyOtpAndGenerateResetToken(String email, String otp) {
+        return null;
+    }
+
+    @Override
+    public boolean resetPassword(String email, String newPassword, String resetToken) {
+        return false;
     }
 
     @Override

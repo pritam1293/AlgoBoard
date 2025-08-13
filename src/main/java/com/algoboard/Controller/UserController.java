@@ -10,6 +10,8 @@ import com.algoboard.DTO.RequestDTO.LoginDTO;
 import com.algoboard.DTO.RequestDTO.User;
 import com.algoboard.DTO.RequestDTO.AuthenticationResponse;
 import com.algoboard.utils.ResponseUtil;
+import com.algoboard.DTO.RequestDTO.PasswordDTO;
+import java.util.Map;
 
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.ResponseEntity;
@@ -74,7 +76,7 @@ public class UserController {
     public ResponseEntity<?> login(@RequestBody LoginDTO loginDTO) {
         try {
             // Authenticate user
-            User user = userService.authenticateUser(loginDTO.getUsername(), loginDTO.getPassword());
+            User user = userService.authenticateUser(loginDTO);
 
             // Load UserDetails for JWT generation
             UserDetails userDetails = customUserDetailsService.loadUserByUsername(user.getUsername());
@@ -124,11 +126,9 @@ public class UserController {
     public ResponseEntity<?> updateUser(@RequestBody User user) {
         try {
             User updatedUser = userService.updateUserDetails(user);
+            updatedUser.setPassword(null); // Remove password for security
             //send an email notification
             try {
-                // if(!user.getPassword().equals(updatedUser.getPassword())) {
-                //     emailService.sendProfileUpdateNotification(updatedUser.getEmail(), updatedUser.getFirstName(), "password");
-                // }
                 if(!user.getEmail().equals(updatedUser.getEmail())) {
                     emailService.sendProfileUpdateNotification(updatedUser.getEmail(), updatedUser.getFirstName() , "email");
                 }
@@ -148,10 +148,73 @@ public class UserController {
                 // Log email error but don't fail the update process
                 System.err.println("Failed to send profile update notification: " + emailException.getMessage());
             }
-            updatedUser.setPassword(null); // Remove password for security
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User updated successfully", updatedUser));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("auth/change-password")
+    public ResponseEntity<?> updatePassword(@RequestBody PasswordDTO password) {
+        try {
+            User user = userService.updatePassword(password);
+            user.setPassword(null);
+            emailService.sendProfileUpdateNotification(user.getEmail(), user.getFirstName(), "password");
+            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Password updated successfully", null));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("auth/request-reset")
+    public ResponseEntity<?> requestPasswordReset(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        try {
+            userService.generateAndSendOtp(email);
+            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("OTP sent to your email", null));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Invalid email or the email is not registered: " + e.getMessage()));
+        } catch(Exception e) {
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("auth/verify-otp")
+    public ResponseEntity<?> verifyOtpAndGenerateResetToken(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String otp = payload.get("otp");
+        try {
+            String resetToken = userService.verifyOtpAndGenerateResetToken(email, otp);
+            if (resetToken != null) {
+                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("OTP verified successfully. Use this token to reset your password.", resetToken));
+            } else {
+                return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Invalid OTP or OTP expired"));
+            }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Verification failed: " + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("auth/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String newPassword = payload.get("newPassword");
+        String resetToken = payload.get("resetToken");
+        try {
+            boolean success = userService.resetPassword(email, newPassword, resetToken);
+            if (success) {
+                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Password reset successfully", null));
+            } else {
+                return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Invalid reset token or token expired"));
+            }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Reset failed: " + e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }

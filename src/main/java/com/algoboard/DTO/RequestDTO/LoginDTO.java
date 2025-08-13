@@ -2,10 +2,12 @@ package com.algoboard.DTO.RequestDTO;
 
 public class LoginDTO {
     private String username;
+    private String email;
     private String password;
 
-    public LoginDTO(String username, String password) {
+    public LoginDTO(String username, String email, String password) {
         this.username = username;
+        this.email = email;
         this.password = password;
     }
 
@@ -15,6 +17,14 @@ public class LoginDTO {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getPassword() {
