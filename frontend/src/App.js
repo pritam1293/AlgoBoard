@@ -8,6 +8,7 @@ import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import AccountSettings from "./pages/AccountSettings";
 import CpStatistics from "./pages/CpStatistics";
+import ForgotPassword from "./pages/ForgotPassword";
 import {
   BrowserRouter as Router,
   Routes,
@@ -71,6 +72,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/" element={<Navigate to="/login" replace />} />

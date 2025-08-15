@@ -23,9 +23,9 @@ public interface IUserService {
 
     public boolean generateAndSendOtp(String email);
 
-    public String verifyOtpAndGenerateResetToken(String email, String otp);
+    public boolean verifyOtp(String email, String otp);
 
-    public boolean resetPassword(String email, String newPassword, String resetToken);
+    public boolean resetPassword(String email, String newPassword);
 
     public String deleteUser(String username);
 

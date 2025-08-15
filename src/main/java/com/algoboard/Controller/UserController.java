@@ -173,6 +173,8 @@ public class UserController {
     @PostMapping("auth/request-reset")
     public ResponseEntity<?> requestPasswordReset(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
+        System.out.println("");
+        System.out.println("password reset request with email: " + email);
         try {
             userService.generateAndSendOtp(email);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("OTP sent to your email", null));
@@ -184,13 +186,15 @@ public class UserController {
     }
 
     @PostMapping("auth/verify-otp")
-    public ResponseEntity<?> verifyOtpAndGenerateResetToken(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         String otp = payload.get("otp");
+        System.out.println("");
+        System.out.println("OTP verification request for email: " + email + " with OTP: " + otp);
         try {
-            String resetToken = userService.verifyOtpAndGenerateResetToken(email, otp);
-            if (resetToken != null) {
-                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("OTP verified successfully. Use this token to reset your password.", resetToken));
+            boolean valid = userService.verifyOtp(email, otp);
+            if (valid) {
+                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("OTP verified successfully.", null));
             }
             return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Invalid OTP or OTP expired"));
         } catch (IllegalArgumentException e) {
@@ -204,9 +208,10 @@ public class UserController {
     public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         String newPassword = payload.get("newPassword");
-        String resetToken = payload.get("resetToken");
+        System.out.println("");
+        System.out.println("new password request with email: " + email);
         try {
-            boolean success = userService.resetPassword(email, newPassword, resetToken);
+            boolean success = userService.resetPassword(email, newPassword);
             if (success) {
                 return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Password reset successfully", null));
             } else {

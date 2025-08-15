@@ -3,6 +3,8 @@ package com.algoboard.entities;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import java.time.LocalDateTime;
+
 
 @Document(collection = "users")
 public class User {
@@ -19,9 +21,11 @@ public class User {
     private String atcoderUsername;
     private String codechefUsername;
     private String leetcodeUsername;
+    private String resetOtp;
+    private LocalDateTime resetOtpExpiry;
 
     public User(String username, String firstName, String lastName, String password, String email, boolean student,
-            String codeforcesUsername, String atcoderUsername, String codechefUsername, String leetcodeUsername) {
+            String codeforcesUsername, String atcoderUsername, String codechefUsername, String leetcodeUsername, String resetOtp, LocalDateTime resetOtpExpiry) {
         this.username = username;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -32,6 +36,8 @@ public class User {
         this.atcoderUsername = atcoderUsername;
         this.codechefUsername = codechefUsername;
         this.leetcodeUsername = leetcodeUsername;
+        this.resetOtp = resetOtp;
+        this.resetOtpExpiry = resetOtpExpiry;
     }
 
     public String getUsername() {
@@ -112,5 +118,21 @@ public class User {
 
     public void setLeetcodeUsername(String leetcodeUsername) {
         this.leetcodeUsername = leetcodeUsername;
+    }
+
+    public String getResetOtp() {
+        return resetOtp;
+    }
+
+    public void setResetOtp(String resetOtp) {
+        this.resetOtp = resetOtp;
+    }
+
+    public LocalDateTime getResetOtpExpiry() {
+        return resetOtpExpiry;
+    }
+
+    public void setResetOtpExpiry(LocalDateTime resetOtpExpiry) {
+        this.resetOtpExpiry = resetOtpExpiry;
     }
 }

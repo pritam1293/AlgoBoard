@@ -22,6 +22,7 @@ import java.util.Objects;
 import org.springframework.web.client.RestTemplate;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.time.LocalDateTime;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -193,19 +194,41 @@ public class UserService implements IUserService {
     public boolean generateAndSendOtp(String email) {
         if(userRepository.existsByEmail(email)) {
             String otp = String.valueOf((int)(Math.random() * 900000) + 100000); // Generate a 6-digit OTP
+            User user = userRepository.findByEmail(email);
+            user.setResetOtp(otp);
+            user.setResetOtpExpiry(LocalDateTime.now().plusMinutes(15)); // Set OTP
+            userRepository.save(user);
             emailService.sendOtpForPasswordReset(email, otp);
+            System.out.println("");
+            System.out.println("OTP generated and email sent successfully");
             return true;
         }
         return false;
     }
 
     @Override
-    public String verifyOtpAndGenerateResetToken(String email, String otp) {
-        return null;
+    public boolean verifyOtp(String email, String otp) {
+        User user = userRepository.findByEmail(email);
+        if (user != null && user.getResetOtp().equals(otp) && user.getResetOtpExpiry().isAfter(LocalDateTime.now())) {
+            user.setResetOtp(null);
+            user.setResetOtpExpiry(null);
+            userRepository.save(user);
+            System.out.println("OTP verified successfully for email: " + email);
+            return true;
+        }
+        return false;
     }
 
     @Override
-    public boolean resetPassword(String email, String newPassword, String resetToken) {
+    public boolean resetPassword(String email, String newPassword) {
+        User user = userRepository.findByEmail(email);
+        if (user != null) {
+            user.setPassword(passwordEncoder.encode(newPassword));
+            userRepository.save(user);
+            System.out.println("");
+            System.out.println("Password reset successfully for email: " + email);
+            return true;
+        }
         return false;
     }
 

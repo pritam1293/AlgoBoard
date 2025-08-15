@@ -177,11 +177,7 @@ const Login = () => {
                 <button
                   type="button"
                   className="text-blue-400 hover:text-blue-300 transition duration-200 bg-transparent border-none cursor-pointer"
-                  onClick={() =>
-                    alert(
-                      "Forgot password functionality will be implemented later"
-                    )
-                  }
+                  onClick={() => navigate("/forgot-password")}
                 >
                   Forgot password?
                 </button>
