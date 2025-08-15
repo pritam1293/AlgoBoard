@@ -37,13 +37,50 @@ const CpStatistics = () => {
           <h2 className="text-2xl font-bold text-white mb-4">CP Statistics</h2>
           <div className="space-y-6">
             <div className="bg-neutral-700 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-blue-400 mb-2">
-                Codeforces
-              </h3>
-              <p className="text-white">
-                Username: {user?.codeforcesUsername || "Not linked"}
-              </p>
-              {/* Add more Codeforces stats here */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <img
+                    src="/images/platforms/codeforces_logo.png"
+                    alt="Codeforces"
+                    className="w-8 h-8 mr-3"
+                  />
+                  <div>
+                    <h3 className="text-lg font-semibold text-blue-400">
+                      Codeforces
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      {user?.codeforcesUsername
+                        ? `@${user.codeforcesUsername}`
+                        : "Not linked"}
+                    </p>
+                  </div>
+                </div>
+                {user?.codeforcesUsername && (
+                  <button
+                    onClick={() => navigate("/profile")}
+                    className="text-sm text-blue-400 hover:text-blue-300"
+                  >
+                    Change
+                  </button>
+                )}
+              </div>
+              {user?.codeforcesUsername ? (
+                {
+                  /* CodeforcesStats component removed because the file does not exist */
+                }
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-gray-400 mb-2">
+                    Connect your Codeforces account to see your statistics
+                  </p>
+                  <button
+                    onClick={() => navigate("/profile")}
+                    className="text-sm text-blue-400 hover:text-blue-300"
+                  >
+                    Connect Now
+                  </button>
+                </div>
+              )}
             </div>
             <div className="bg-neutral-700 rounded-lg p-4">
               <h3 className="text-lg font-semibold text-green-400 mb-2">

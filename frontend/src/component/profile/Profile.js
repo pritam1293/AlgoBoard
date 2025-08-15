@@ -1,11 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../common/Navbar";
 import { useAuth } from "../../context/AuthContext";
+import ApiService from "../../services/api";
+
+const api = new ApiService();
 
 const Profile = () => {
-  const { user, logout, profileMessage } = useAuth();
+  const { user, logout, profileMessage, setUser } = useAuth();
   const navigate = useNavigate();
+  const [isEditingCF, setIsEditingCF] = useState(false);
+  const [cfUsername, setCfUsername] = useState("");
+  const [cfError, setCfError] = useState("");
 
   return (
     <div className="min-h-screen bg-neutral-900">
@@ -196,18 +202,137 @@ const Profile = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Codeforces */}
-            <div className="flex items-center justify-between p-4 bg-neutral-700 rounded-lg">
-              <div className="flex items-center">
-                <img
-                  src="/images/platforms/codeforces_logo.png"
-                  alt="Codeforces"
-                  className="w-8 h-8 mr-3"
-                />
-                <span className="text-white">Codeforces</span>
+            <div className="p-4 bg-neutral-700 rounded-lg space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <img
+                    src="/images/platforms/codeforces_logo.png"
+                    alt="Codeforces"
+                    className="w-8 h-8 mr-3"
+                  />
+                  <div>
+                    <span className="text-white">Codeforces</span>
+                    {user?.codeforcesUsername && !isEditingCF && (
+                      <p className="text-sm text-gray-400">
+                        @{user.codeforcesUsername}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {user?.codeforcesUsername && !isEditingCF ? (
+                  <div className="flex items-center">
+                    <span className="text-sm text-green-400 mr-2">
+                      Connected
+                    </span>
+                    <button
+                      onClick={() => {
+                        setIsEditingCF(true);
+                        setCfUsername(user.codeforcesUsername);
+                      }}
+                      className="text-xs text-gray-400 hover:text-white transition duration-200"
+                    >
+                      Change
+                    </button>
+                  </div>
+                ) : !isEditingCF ? (
+                  <button
+                    onClick={() => setIsEditingCF(true)}
+                    className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition duration-200"
+                  >
+                    Connect
+                  </button>
+                ) : null}
               </div>
-              <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition duration-200">
-                Connect
-              </button>
+
+              {/* Connection Form */}
+              {isEditingCF && (
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={cfUsername}
+                      onChange={(e) => setCfUsername(e.target.value)}
+                      placeholder="Enter Codeforces handle"
+                      className="flex-1 px-3 py-1 bg-neutral-600 border border-neutral-500 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                    <button
+                      onClick={() => {
+                        if (cfUsername) {
+                          // First validate the Codeforces username
+                          api.axiosInstance
+                            .get(`/platforms/codeforces?username=${cfUsername}`)
+                            .then((cfResponse) => {
+                              if (cfResponse.data.success) {
+                                // If Codeforces profile is valid, update user profile
+                                const profileUpdate = {
+                                  username: user.username,
+                                  email: user.email,
+                                  firstName: user.firstName,
+                                  lastName: user.lastName,
+                                  codeforcesUsername: cfUsername,
+                                  atcoderUsername: user.atcoderUsername,
+                                  codechefUsername: user.codechefUsername,
+                                  leetcodeUsername: user.leetcodeUsername,
+                                  student: user.student,
+                                };
+
+                                return api.axiosInstance.put(
+                                  "/users/profile",
+                                  profileUpdate
+                                );
+                              } else {
+                                throw new Error(
+                                  cfResponse.data.message ||
+                                    "Invalid Codeforces username"
+                                );
+                              }
+                            })
+                            .then((response) => {
+                              if (response.data.success) {
+                                setUser({
+                                  ...user,
+                                  codeforcesUsername: cfUsername,
+                                });
+                                setIsEditingCF(false);
+                                navigate("/cp-statistics");
+                              } else {
+                                setCfError(
+                                  response.data.message ||
+                                    "Failed to update profile"
+                                );
+                              }
+                            })
+                            .catch((error) => {
+                              setCfError(
+                                error.response?.data?.message ||
+                                  error.message ||
+                                  "Failed to connect account"
+                              );
+                              console.error(
+                                "Error details:",
+                                error.response?.data || error.message
+                              );
+                            });
+                        }
+                      }}
+                      className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition duration-200"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditingCF(false);
+                        setCfUsername("");
+                        setCfError("");
+                      }}
+                      className="px-3 py-1 bg-neutral-600 text-white text-sm rounded hover:bg-neutral-700 transition duration-200"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  {cfError && <p className="text-red-400 text-sm">{cfError}</p>}
+                </div>
+              )}
             </div>
 
             {/* AtCoder */}
