@@ -1,14 +1,14 @@
 import React from "react";
 import "./App.css";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Dashboard from "./pages/Home";
-import Profile from "./pages/Profile";
-import TermsOfService from "./pages/TermsOfService";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import AccountSettings from "./pages/AccountSettings";
-import CpStatistics from "./pages/CpStatistics";
-import ForgotPassword from "./pages/ForgotPassword";
+import Login from "./component/pages/Login";
+import Signup from "./component/pages/Signup";
+import Dashboard from "./component/pages/Home";
+import Profile from "./component/profile/Profile";
+import TermsOfService from "./component/pages/TermsOfService";
+import PrivacyPolicy from "./component/pages/PrivacyPolicy";
+import AccountSettings from "./component/profile/AccountSettings";
+import CpStatistics from "./component/profile/CPStatistics";
+import ForgotPassword from "./component/pages/ForgotPassword";
 import {
   BrowserRouter as Router,
   Routes,

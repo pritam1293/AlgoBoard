@@ -1,6 +1,6 @@
 import React from "react";
-import { useAuth } from "../context/AuthContext";
-import Navbar from "../component/common/Navbar";
+import { useAuth } from "../../context/AuthContext";
+import Navbar from "../common/Navbar";
 import { useNavigate } from "react-router-dom";
 
 const CpStatistics = () => {

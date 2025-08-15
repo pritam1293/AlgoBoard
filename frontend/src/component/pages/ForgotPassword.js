@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import authService from "../services/authService";
-import { validationRules } from "../utils/validation";
+import authService from "../../services/authService";
+import { validationRules } from "../../utils/validation";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();

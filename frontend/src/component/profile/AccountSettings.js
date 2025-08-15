@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import Navbar from "../component/common/Navbar";
+import { useAuth } from "../../context/AuthContext";
+import Navbar from "../common/Navbar";
 
 const AccountSettings = () => {
   const {
