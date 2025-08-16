@@ -29,6 +29,8 @@ public interface IUserService {
 
     public String deleteUser(String username);
 
+    public boolean addCPProfiles(String username, String codeforcesId, String atcoderId, String codechefId, String leetcodeId);
+
     public Codeforces getCodeforcesProfile(String username);
 
     public Atcoder getAtcoderProfile(String username);

@@ -33,13 +33,22 @@ const AccountSettings = () => {
   };
 
   const handleSaveProfile = async () => {
+    if (!user?.username) {
+      setValidationErrors({
+        username: "Username is missing. Please re-login.",
+      });
+      return;
+    }
     const errors = validateProfileForm(formData);
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       return;
     }
     setValidationErrors({});
-    const result = await updateProfile(formData);
+    const result = await updateProfile({
+      ...formData,
+      username: user.username,
+    });
     if (result.success) {
       setIsEditing(false);
     }

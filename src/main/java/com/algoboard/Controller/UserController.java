@@ -99,7 +99,7 @@ public class UserController {
                 // Log email error but don't fail the login process
                 System.err.println("Failed to send login notification: " + emailException.getMessage());
             }
-            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Login successful. Notification sent!", authResponse));
+            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Login successful", authResponse));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Login failed: " + e.getMessage()));
         } catch (Exception e) {
@@ -170,7 +170,7 @@ public class UserController {
         }
     }
 
-    @PostMapping("auth/request-reset")
+    @PostMapping("auth/request-reset")//forgot password - enter email
     public ResponseEntity<?> requestPasswordReset(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         System.out.println("");
@@ -185,7 +185,7 @@ public class UserController {
         }
     }
 
-    @PostMapping("auth/verify-otp")
+    @PostMapping("auth/verify-otp")//forgot password - enter otp
     public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         String otp = payload.get("otp");
@@ -204,7 +204,7 @@ public class UserController {
         }
     }
 
-    @PostMapping("auth/reset-password")
+    @PostMapping("auth/reset-password")//forgot password enter new password
     public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         String newPassword = payload.get("newPassword");
@@ -231,6 +231,31 @@ public class UserController {
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse(response, null));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Delete failed: " + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/add/cp/profiles")
+    public ResponseEntity<?> addCodeforcesProfile(@RequestBody Map<String, String> payload) {
+        String username = payload.get("username");
+        String codeforcesId = payload.get("codeforcesId");
+        String codechefId = payload.get("codechefId");
+        String atcoderId = payload.get("atcoderId");
+        String leetcodeId = payload.get("leetcodeId");
+        try {
+            boolean success = userService.addCPProfiles(username, codeforcesId, atcoderId, codechefId, leetcodeId);
+            if (success) {
+                if(codeforcesId != null) return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Codeforces profile added successfully", null));
+                if(atcoderId != null) return ResponseEntity.ok(ResponseUtil.createSuccessResponse("AtCoder profile added successfully", null));
+                if(codechefId != null) return ResponseEntity.ok(ResponseUtil.createSuccessResponse("CodeChef profile added successfully", null));
+                if(leetcodeId != null) return ResponseEntity.ok(ResponseUtil.createSuccessResponse("LeetCode profile added successfully", null));
+                else {
+                    return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Error in updating the profile", null));
+                }
+            } else {
+                return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Failed to add Codeforces profile"));
+            }
         } catch (Exception e) {
             return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }

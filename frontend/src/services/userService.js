@@ -40,6 +40,17 @@ const userService = {
       console.error('Error deleting user account:', error);
       throw error;
     }
+  },
+
+  // Add competitive programming platform
+  async addCPPlatform(payload) {
+    try {
+      const response = await apiService.post('/add/cp/profiles', payload);
+      return response;
+    } catch (error) {
+      console.error('Error adding competitive programming platform:', error);
+      throw error;
+    }
   }
 };
 

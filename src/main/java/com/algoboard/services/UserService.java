@@ -243,6 +243,20 @@ public class UserService implements IUserService {
     }
 
     @Override
+    public boolean addCPProfiles(String username, String codeforcesId, String atcoderId, String codechefId, String leetcodeId) {
+        User user = userRepository.findByUsername(username);
+        if (user != null) {
+            if (codeforcesId != null) user.setCodeforcesUsername(codeforcesId);
+            if (atcoderId != null) user.setAtcoderUsername(atcoderId);
+            if (codechefId != null) user.setCodechefUsername(codechefId);
+            if (leetcodeId != null) user.setLeetcodeUsername(leetcodeId);
+            userRepository.save(user);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     public Codeforces getCodeforcesProfile(String username) {
         String profileUrl = "https://codeforces.com/api/user.info?handles=" + username;
         String contestUrl = "https://codeforces.com/api/user.rating?handle=" + username;
@@ -262,10 +276,8 @@ public class UserService implements IUserService {
             Set<AbstractMap.SimpleEntry<Long, String>> problemSet = new HashSet<>();
 
             while (true) {
-                String submissionsUrl = "https://codeforces.com/api/user.status?handle=" + username + "&from=" + from
-                        + "&count=" + count;
-                CFSubmissionsDTO submissionsResponse = restTemplate.getForObject(submissionsUrl,
-                        CFSubmissionsDTO.class);
+                String submissionsUrl = "https://codeforces.com/api/user.status?handle=" + username + "&from=" + from + "&count=" + count;
+                CFSubmissionsDTO submissionsResponse = restTemplate.getForObject(submissionsUrl, CFSubmissionsDTO.class);
                 if (submissionsResponse == null || !Objects.equals(submissionsResponse.getStatus(), "OK")) {
                     break;
                 }
@@ -274,8 +286,10 @@ public class UserService implements IUserService {
                     if (submission.getVerdict().equals("OK")) {
                         acceptedSubmissions++;
                     }
-                    problemSet.add(new AbstractMap.SimpleEntry<>(submission.getProblem().getContestId(),
-                            submission.getProblem().getIndex()));
+                    problemSet.add(new AbstractMap.SimpleEntry<>(
+                        submission.getProblem().getContestId(), 
+                        submission.getProblem().getIndex())
+                    );
                 }
                 if (submissionsResponse.getResult().size() < count) {
                     break;
@@ -291,7 +305,8 @@ public class UserService implements IUserService {
                         contestResult.getContestName(),
                         contestResult.getRank(),
                         contestResult.getOldRating(),
-                        contestResult.getNewRating()));
+                        contestResult.getNewRating())
+                );
             }
 
             return new Codeforces(
@@ -305,7 +320,8 @@ public class UserService implements IUserService {
                     acceptedSubmissions,
                     contestHistory.size(),
                     contestHistory,
-                    problemSet);
+                    problemSet
+            );
         } catch (Exception e) {
             System.out.println("");
             System.out.println("Error fetching Codeforces profile: " + e.getMessage());
@@ -339,7 +355,8 @@ public class UserService implements IUserService {
                         contestName,
                         contest.getPlace(),
                         contest.getOldRating(),
-                        contest.getNewRating()));
+                        contest.getNewRating())
+                );
             }
             String currRank = getRankByRating(currRating);
             String maxRank = getRankByRating(maxRating);
@@ -354,7 +371,8 @@ public class UserService implements IUserService {
                     contestParticipations,
                     0, // AtCoder does not provide total submissions
                     0, // AtCoder does not provide accepted submissions
-                    history);
+                    history
+            );
         } catch (Exception e) {
             throw new RuntimeException("Failed to fetch AtCoder profile for user: " + username);
         }
