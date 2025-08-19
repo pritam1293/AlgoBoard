@@ -41,18 +41,20 @@ const PlatformConnection = ({
   return (
     <div className="relative">
       {/* Platform Header */}
-      <div className="flex items-center justify-between p-4 bg-neutral-700 rounded-lg w-full">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-neutral-700 rounded-lg w-full gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <img
             src={platform.logo}
             alt={platform.name}
-            className={`w-8 h-8 mr-3 ${
+            className={`w-8 h-8 flex-shrink-0 ${
               platform.id === "codechef" ? "rounded" : ""
             }`}
           />
-          <span className="text-white">{platform.name}</span>
+          <span className="text-white font-medium truncate">
+            {platform.name}
+          </span>
           {isConnected && (
-            <span className="px-3 py-1 bg-green-600 text-green-200 font-semibold text-sm rounded cursor-not-allowed ml-2">
+            <span className="px-2 py-1 bg-green-600 text-green-200 font-semibold text-xs rounded whitespace-nowrap">
               Connected
             </span>
           )}
@@ -60,7 +62,7 @@ const PlatformConnection = ({
 
         <button
           onClick={handleConnectClick}
-          className={`px-3 py-1 text-white text-sm rounded transition duration-200 ${colorClasses.bg} ${colorClasses.hoverBg}`}
+          className={`px-4 py-2 text-white text-sm rounded transition duration-200 whitespace-nowrap flex-shrink-0 ${colorClasses.bg} ${colorClasses.hoverBg}`}
           disabled={loading}
         >
           {isConnected ? "Change Username?" : "Connect"}
@@ -98,10 +100,10 @@ const PlatformConnection = ({
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-3 justify-end">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-end">
             <button
               onClick={() => onCancel(platform.id)}
-              className="px-4 py-2 text-neutral-400 hover:text-white transition duration-200"
+              className="px-4 py-2 text-neutral-400 hover:text-white transition duration-200 rounded border border-neutral-600 hover:border-neutral-500"
               disabled={loading}
             >
               Cancel
@@ -109,7 +111,7 @@ const PlatformConnection = ({
             <button
               onClick={handleSubmit}
               disabled={!input.trim() || loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-200 disabled:bg-neutral-600 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-200 disabled:bg-neutral-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>

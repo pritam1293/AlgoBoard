@@ -7,6 +7,7 @@ public class CFSubmissionsDTO {
     private List<Result> result;
 
     public static class Result {
+        // private long id; //submission id
         private long contestId;
         private Problem problem;
         private Author author;
@@ -55,11 +56,16 @@ public class CFSubmissionsDTO {
         }
 
         public Result(long contestId, Problem problem, Author author, String verdict) {
+            // this.id = id;
             this.contestId = contestId;
             this.problem = problem;
             this.author = author;
             this.verdict = verdict;
         }
+
+        // public long getId() {
+        //     return id;
+        // }
 
         public long getContestId() {
             return contestId;

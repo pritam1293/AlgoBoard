@@ -42,6 +42,7 @@ public class UserService implements IUserService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private RestTemplate restTemplate = new RestTemplate();
+
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -72,13 +73,12 @@ public class UserService implements IUserService {
                 user.getCodeforcesUsername(),
                 user.getAtcoderUsername(),
                 user.getCodechefUsername(),
-                user.getLeetcodeUsername()
-        );
+                user.getLeetcodeUsername());
     }
 
     @Override
     public Profile authenticateUser(String username, String email, String password) {
-        if(username != null && !username.isEmpty()) {
+        if (username != null && !username.isEmpty()) {
             User user = userRepository.findByUsername(username);
             if (user != null && passwordEncoder.matches(password, user.getPassword())) {
                 return new Profile(
@@ -90,11 +90,10 @@ public class UserService implements IUserService {
                         user.getCodeforcesUsername(),
                         user.getAtcoderUsername(),
                         user.getCodechefUsername(),
-                        user.getLeetcodeUsername()
-                );
+                        user.getLeetcodeUsername());
             }
         }
-        if(email != null && !email.isEmpty()) {
+        if (email != null && !email.isEmpty()) {
             User user = userRepository.findByEmail(email);
             if (user != null && passwordEncoder.matches(password, user.getPassword())) {
                 return new Profile(
@@ -106,8 +105,7 @@ public class UserService implements IUserService {
                         user.getCodeforcesUsername(),
                         user.getAtcoderUsername(),
                         user.getCodechefUsername(),
-                        user.getLeetcodeUsername()
-                );
+                        user.getLeetcodeUsername());
             }
         }
         throw new IllegalArgumentException("Invalid username or password.");
@@ -126,8 +124,7 @@ public class UserService implements IUserService {
                     user.getCodeforcesUsername(),
                     user.getAtcoderUsername(),
                     user.getCodechefUsername(),
-                    user.getLeetcodeUsername()
-            );
+                    user.getLeetcodeUsername());
         }
         throw new IllegalArgumentException("User not found with username: " + username);
     }
@@ -158,8 +155,7 @@ public class UserService implements IUserService {
                     existingUser.getCodeforcesUsername(),
                     existingUser.getAtcoderUsername(),
                     existingUser.getCodechefUsername(),
-                    existingUser.getLeetcodeUsername()
-            );
+                    existingUser.getLeetcodeUsername());
         }
         throw new IllegalArgumentException("User does not exist with username: " + profile.getUsername());
     }
@@ -172,16 +168,15 @@ public class UserService implements IUserService {
             userRepository.save(user);
             return Map.of(
                     "email", user.getEmail(),
-                    "firstName", user.getFirstName()
-            );
+                    "firstName", user.getFirstName());
         }
         throw new IllegalArgumentException("Invalid username or password.");
     }
 
     @Override
     public boolean generateAndSendOtp(String email) {
-        if(userRepository.existsByEmail(email)) {
-            String otp = String.valueOf((int)(Math.random() * 900000) + 100000); // Generate a 6-digit OTP
+        if (userRepository.existsByEmail(email)) {
+            String otp = String.valueOf((int) (Math.random() * 900000) + 100000); // Generate a 6-digit OTP
             User user = userRepository.findByEmail(email);
             user.setResetOtp(otp);
             user.setResetOtpExpiry(LocalDateTime.now().plusMinutes(15)); // Set OTP
@@ -231,13 +226,18 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public boolean addCPProfiles(String username, String codeforcesId, String atcoderId, String codechefId, String leetcodeId) {
+    public boolean addCPProfiles(String username, String codeforcesId, String atcoderId, String codechefId,
+            String leetcodeId) {
         User user = userRepository.findByUsername(username);
         if (user != null) {
-            if (codeforcesId != null) user.setCodeforcesUsername(codeforcesId);
-            if (atcoderId != null) user.setAtcoderUsername(atcoderId);
-            if (codechefId != null) user.setCodechefUsername(codechefId);
-            if (leetcodeId != null) user.setLeetcodeUsername(leetcodeId);
+            if (codeforcesId != null)
+                user.setCodeforcesUsername(codeforcesId);
+            if (atcoderId != null)
+                user.setAtcoderUsername(atcoderId);
+            if (codechefId != null)
+                user.setCodechefUsername(codechefId);
+            if (leetcodeId != null)
+                user.setLeetcodeUsername(leetcodeId);
             userRepository.save(user);
             return true;
         }
@@ -246,16 +246,23 @@ public class UserService implements IUserService {
 
     @Override
     public Codeforces getCodeforcesProfile(String username) {
-        String profileUrl = "https://codeforces.com/api/user.info?handles=" + username;
-        String contestUrl = "https://codeforces.com/api/user.rating?handle=" + username;
+        if (userRepository.findByUsername(username) == null) {
+            throw new IllegalArgumentException("User not found with username: " + username);
+        }
+        String cfid = userRepository.findByUsername(username).getCodeforcesUsername();
+        if (cfid == null) {
+            throw new IllegalArgumentException("Codeforces ID not found for user: " + username);
+        }
+        String profileUrl = "https://codeforces.com/api/user.info?handles=" + cfid;
+        String contestUrl = "https://codeforces.com/api/user.rating?handle=" + cfid;
         try {
             CFUserDTO profileResponse = restTemplate.getForObject(profileUrl, CFUserDTO.class);
             if (profileResponse == null || profileResponse.getStatus().equals("FAILED")) {
-                throw new RuntimeException("Failed to fetch Codeforces profile for user: " + username);
+                throw new RuntimeException("Failed to fetch Codeforces profile for user: " + cfid);
             }
             CFContestDTO contestResponse = restTemplate.getForObject(contestUrl, CFContestDTO.class);
             if (contestResponse == null || contestResponse.getStatus().equals("FAILED")) {
-                throw new RuntimeException("Failed to fetch Codeforces contests for user: " + username);
+                throw new RuntimeException("Failed to fetch Codeforces contests for user: " + cfid);
             }
             long from = 1;
             long count = 1000;
@@ -264,8 +271,10 @@ public class UserService implements IUserService {
             Set<AbstractMap.SimpleEntry<Long, String>> problemSet = new HashSet<>();
 
             while (true) {
-                String submissionsUrl = "https://codeforces.com/api/user.status?handle=" + username + "&from=" + from + "&count=" + count;
-                CFSubmissionsDTO submissionsResponse = restTemplate.getForObject(submissionsUrl, CFSubmissionsDTO.class);
+                String submissionsUrl = "https://codeforces.com/api/user.status?handle=" + cfid + "&from=" + from
+                        + "&count=" + count;
+                CFSubmissionsDTO submissionsResponse = restTemplate.getForObject(submissionsUrl,
+                        CFSubmissionsDTO.class);
                 if (submissionsResponse == null || !Objects.equals(submissionsResponse.getStatus(), "OK")) {
                     break;
                 }
@@ -275,9 +284,8 @@ public class UserService implements IUserService {
                         acceptedSubmissions++;
                     }
                     problemSet.add(new AbstractMap.SimpleEntry<>(
-                        submission.getProblem().getContestId(), 
-                        submission.getProblem().getIndex())
-                    );
+                            submission.getProblem().getContestId(),
+                            submission.getProblem().getIndex()));
                 }
                 if (submissionsResponse.getResult().size() < count) {
                     break;
@@ -293,9 +301,11 @@ public class UserService implements IUserService {
                         contestResult.getContestName(),
                         contestResult.getRank(),
                         contestResult.getOldRating(),
-                        contestResult.getNewRating())
-                );
+                        contestResult.getNewRating()));
             }
+
+            // Reverse the contest history array
+            java.util.Collections.reverse(contestHistory);
 
             return new Codeforces(
                     result.getHandle(),
@@ -308,8 +318,7 @@ public class UserService implements IUserService {
                     acceptedSubmissions,
                     contestHistory.size(),
                     contestHistory,
-                    problemSet
-            );
+                    problemSet);
         } catch (Exception e) {
             System.out.println("");
             System.out.println("Error fetching Codeforces profile: " + e.getMessage());
@@ -320,7 +329,14 @@ public class UserService implements IUserService {
 
     @Override
     public Atcoder getAtcoderProfile(String username) {
-        String url = "https://atcoder.jp/users/" + username + "/history/json";
+        if (userRepository.findByUsername(username) == null) {
+            throw new IllegalArgumentException("User not found with username: " + username);
+        }
+        String acid = userRepository.findByUsername(username).getAtcoderUsername();
+        if (acid == null) {
+            throw new IllegalArgumentException("AtCoder ID not found for user: " + username);
+        }
+        String url = "https://atcoder.jp/users/" + acid + "/history/json";
         System.out.println("");
         System.out.println("url: " + url);
         System.out.println("");
@@ -343,14 +359,13 @@ public class UserService implements IUserService {
                         contestName,
                         contest.getPlace(),
                         contest.getOldRating(),
-                        contest.getNewRating())
-                );
+                        contest.getNewRating()));
             }
             String currRank = getRankByRating(currRating);
             String maxRank = getRankByRating(maxRating);
 
             return new Atcoder(
-                    username,
+                    acid,
                     currRank,
                     currRating,
                     maxRating,
@@ -359,8 +374,7 @@ public class UserService implements IUserService {
                     contestParticipations,
                     0, // AtCoder does not provide total submissions
                     0, // AtCoder does not provide accepted submissions
-                    history
-            );
+                    history);
         } catch (Exception e) {
             throw new RuntimeException("Failed to fetch AtCoder profile for user: " + username);
         }
@@ -418,15 +432,17 @@ public class UserService implements IUserService {
     }
 
     // public Codechef getCodechefProfile(String username) {
-    //     String url = "https://www.codechef.com/users/" + username;
-    //     try {
-    //         Document doc = Jsoup.connect(url).timeout(1000)
-    //                 .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36").get();
-    //         // String displayName
-    //     } catch (Exception e) {
-    //         throw new RuntimeException("Failed to fetch Codechef profile for user: " + username);
-    //     }
-    //     return null;
+    // String url = "https://www.codechef.com/users/" + username;
+    // try {
+    // Document doc = Jsoup.connect(url).timeout(1000)
+    // .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)
+    // AppleWebKit/537.36").get();
+    // // String displayName
+    // } catch (Exception e) {
+    // throw new RuntimeException("Failed to fetch Codechef profile for user: " +
+    // username);
+    // }
+    // return null;
     // }
 
     // private String extractDisplayName(Document doc) {
@@ -442,59 +458,59 @@ public class UserService implements IUserService {
     // }
 
     // private long extractCurrentRating(Document doc) {
-    //     try {
-    //         Element ratingElement = doc.select(".rating-number").first();
-    //         if (ratingElement != null) {
-    //             String ratingText = ratingElement.text().replaceAll("[^0-9]", "");
-    //             if (!ratingText.isEmpty()) {
-    //                 return Long.parseLong(ratingText);
-    //             }
-    //         }
-    //         return 0;
-    //     } catch (Exception e) {
-    //         return 0;
-    //     }
+    // try {
+    // Element ratingElement = doc.select(".rating-number").first();
+    // if (ratingElement != null) {
+    // String ratingText = ratingElement.text().replaceAll("[^0-9]", "");
+    // if (!ratingText.isEmpty()) {
+    // return Long.parseLong(ratingText);
+    // }
+    // }
+    // return 0;
+    // } catch (Exception e) {
+    // return 0;
+    // }
     // }
 
     // private long extractMaxRating(Document doc) {
-    //     try {
-    //         Element maxRatingElement = doc.select(".rating-header .small").first();
-    //         if (maxRatingElement != null) {
-    //             String text = maxRatingElement.text();
-    //             Pattern pattern = Pattern.compile("\\(max\\s*(\\d+)\\)");
-    //             Matcher matcher = pattern.matcher(text);
-    //             if (matcher.find()) {
-    //                 return Long.parseLong(matcher.group(1));
-    //             }
-    //         }
-    //         return extractCurrentRating(doc);
-    //     } catch (Exception e) {
-    //         return 0;
-    //     }
+    // try {
+    // Element maxRatingElement = doc.select(".rating-header .small").first();
+    // if (maxRatingElement != null) {
+    // String text = maxRatingElement.text();
+    // Pattern pattern = Pattern.compile("\\(max\\s*(\\d+)\\)");
+    // Matcher matcher = pattern.matcher(text);
+    // if (matcher.find()) {
+    // return Long.parseLong(matcher.group(1));
+    // }
+    // }
+    // return extractCurrentRating(doc);
+    // } catch (Exception e) {
+    // return 0;
+    // }
     // }
 
     // private String extractStars(Document doc) {
-    //     try {
-    //         Elements starElements = doc.select(".rating .star");
-    //         return starElements.size() + " Star";
-    //     } catch (Exception e) {
-    //         return "Unrated";
-    //     }
+    // try {
+    // Elements starElements = doc.select(".rating .star");
+    // return starElements.size() + " Star";
+    // } catch (Exception e) {
+    // return "Unrated";
+    // }
     // }
 
     // private long extractTotalProblemsSolved(Document doc) {
-    //     try {
-    //         Elements problemStats = doc.select(".problems-solved .number");
-    //         if (!problemStats.isEmpty()) {
-    //             String text = problemStats.first().text().replaceAll("[^0-9]", "");
-    //             if (!text.isEmpty()) {
-    //                 return Long.parseLong(text);
-    //             }
-    //         }
-    //         return 0;
-    //     } catch (Exception e) {
-    //         return 0;
-    //     }
+    // try {
+    // Elements problemStats = doc.select(".problems-solved .number");
+    // if (!problemStats.isEmpty()) {
+    // String text = problemStats.first().text().replaceAll("[^0-9]", "");
+    // if (!text.isEmpty()) {
+    // return Long.parseLong(text);
+    // }
+    // }
+    // return 0;
+    // } catch (Exception e) {
+    // return 0;
+    // }
     // }
 
 }

@@ -13,9 +13,9 @@ const PlatformConnections = ({
   isPlatformConnected,
 }) => {
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
-        <h3 className="text-xl font-semibold text-white mb-4">
+    <div className="w-full">
+      <div className="bg-neutral-800 rounded-lg p-4 sm:p-6 border border-neutral-700">
+        <h3 className="text-lg sm:text-xl font-semibold text-white mb-4">
           Platform Connections
         </h3>
 
@@ -25,18 +25,18 @@ const PlatformConnections = ({
             message && (
               <div
                 key={platformId}
-                className="mb-4 text-green-400 text-sm font-semibold"
+                className="mb-4 text-green-400 text-sm font-semibold bg-green-900/20 border border-green-800 rounded p-3"
               >
                 {message}
               </div>
             )
         )}
 
-        <p className="text-neutral-400 mb-4">
+        <p className="text-neutral-400 mb-6 text-sm">
           Connect your competitive programming accounts to track your progress
         </p>
 
-        <div className="flex flex-col gap-4 w-full">
+        <div className="space-y-4">
           {PLATFORMS.map((platform) => (
             <PlatformConnection
               key={platform.id}

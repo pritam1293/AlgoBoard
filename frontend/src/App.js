@@ -7,7 +7,7 @@ import Profile from "./component/profile/Profile";
 import TermsOfService from "./component/pages/TermsOfService";
 import PrivacyPolicy from "./component/pages/PrivacyPolicy";
 import AccountSettings from "./component/profile/AccountSettings";
-import CpStatistics from "./component/profile/CPStatistics";
+import CPStatistics from "./component/profile/CPStatistics";
 import ForgotPassword from "./component/pages/ForgotPassword";
 import {
   BrowserRouter as Router,
@@ -68,7 +68,7 @@ function App() {
             path="/cp-statistics"
             element={
               <ProtectedRoute>
-                <CpStatistics />
+                <CPStatistics />
               </ProtectedRoute>
             }
           />

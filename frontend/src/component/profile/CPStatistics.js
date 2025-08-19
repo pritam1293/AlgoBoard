@@ -1,67 +1,169 @@
-import React from "react";
+import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import Navbar from "../common/Navbar";
 import BackButton from "../common/BackButton";
 import { useNavigate } from "react-router-dom";
-import { PLATFORMS, COLOR_CLASSES } from "../../config/platformsConfig";
+import { PLATFORMS } from "../../config/platformsConfig";
+import platformService from "../../services/platformService";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Line } from "react-chartjs-2";
 
-const CpStatistics = () => {
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+const CPStatistics = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [selectedPlatform, setSelectedPlatform] = useState(null);
+  const [platformData, setPlatformData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Platform Statistics Component
-  const PlatformStatCard = ({ platform }) => {
-    const isConnected = Boolean(user?.[platform.usernameField]);
-    const colorClasses = COLOR_CLASSES[platform.color];
+  // Pagination states
+  const [contestPage, setContestPage] = useState(0);
+  const [solutionsPage, setSolutionsPage] = useState(0);
+
+  const CONTESTS_PER_PAGE = 7;
+  const SOLUTIONS_PER_PAGE = 12;
+
+  // Available platforms (only show connected ones)
+  const getConnectedPlatforms = () => {
+    return PLATFORMS.filter((platform) => {
+      return Boolean(user?.[platform.usernameField]);
+    });
+  };
+
+  // Fetch platform data when platform is selected
+  const fetchPlatformData = async (platform) => {
+    if (!platform || !user?.username) return;
+
+    setLoading(true);
+    setError(null);
+    setPlatformData(null);
+
+    try {
+      console.log(
+        `🚀 Fetching ${platform.name} stats for user:`,
+        user.username
+      );
+
+      let stats = null;
+      if (platform.id === "codeforces") {
+        stats = await platformService.getCodeforcesProfile(user.username);
+      }
+      // Add other platforms here when needed
+
+      if (stats?.data) {
+        console.log(`📊 ${platform.name} stats received:`, stats.data);
+        setPlatformData(stats.data);
+        setContestPage(0); // Reset pagination
+        setSolutionsPage(0);
+      }
+    } catch (err) {
+      console.error(`❌ Error fetching ${platform.name} stats:`, err);
+      setError(`Failed to fetch ${platform.name} statistics`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle platform selection
+  const handlePlatformSelect = (platform) => {
+    setSelectedPlatform(platform);
+    fetchPlatformData(platform);
+  };
+
+  // Render contest history with pagination
+  const renderContestHistory = () => {
+    if (
+      !platformData?.contestHistory ||
+      platformData.contestHistory.length === 0
+    ) {
+      return <p className="text-gray-400">No contest history available</p>;
+    }
+
+    const startIndex = contestPage * CONTESTS_PER_PAGE;
+    const endIndex = startIndex + CONTESTS_PER_PAGE;
+    const currentContests = platformData.contestHistory.slice(
+      startIndex,
+      endIndex
+    );
+    const totalPages = Math.ceil(
+      platformData.contestHistory.length / CONTESTS_PER_PAGE
+    );
 
     return (
-      <div className="bg-neutral-700 rounded-lg p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <img
-              src={platform.logo}
-              alt={platform.name}
-              className={`w-8 h-8 mr-3 ${
-                platform.id === "codechef" ? "rounded" : ""
-              }`}
-            />
-            <div>
-              <h3 className={`text-lg font-semibold ${colorClasses.text}`}>
-                {platform.name}
-              </h3>
-              <p className="text-sm text-gray-400">
-                {isConnected
-                  ? `@${user[platform.usernameField]}`
-                  : "Not linked"}
-              </p>
+      <div className="space-y-4">
+        <h4 className="text-lg font-semibold text-white">Contest History</h4>
+        <div className="space-y-2">
+          {currentContests.map((contest, index) => (
+            <div key={index} className="bg-neutral-700 rounded-lg p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h5 className="text-white font-medium">
+                    {contest.contestName}
+                  </h5>
+                  <p className="text-gray-400 text-sm">
+                    Standing: {contest.standing}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-white">
+                    {contest.oldRating} → {contest.newRating}
+                  </p>
+                  <p
+                    className={`text-sm ${
+                      contest.newRating > contest.oldRating
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }`}
+                  >
+                    {contest.newRating > contest.oldRating ? "+" : ""}
+                    {contest.newRating - contest.oldRating}
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
-          {isConnected && (
-            <button
-              onClick={() => navigate("/profile")}
-              className={`text-sm ${colorClasses.text} ${colorClasses.hoverText}`}
-            >
-              Change
-            </button>
-          )}
+          ))}
         </div>
-        {isConnected ? (
-          <div className="text-center py-4">
-            <p className="text-gray-400 mb-2">
-              {platform.name} statistics will be displayed here
-            </p>
-            {/* Platform stats component can be added here when available */}
-          </div>
-        ) : (
-          <div className="text-center py-4">
-            <p className="text-gray-400 mb-2">
-              Connect your {platform.name} account to see your statistics
-            </p>
+
+        {/* Contest Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-4">
             <button
-              onClick={() => navigate("/profile")}
-              className={`text-sm ${colorClasses.text} ${colorClasses.hoverText}`}
+              onClick={() => setContestPage(Math.max(0, contestPage - 1))}
+              disabled={contestPage === 0}
+              className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-600 disabled:cursor-not-allowed"
             >
-              Connect Now
+              Previous
+            </button>
+            <span className="text-white">
+              {contestPage + 1} of {totalPages}
+            </span>
+            <button
+              onClick={() =>
+                setContestPage(Math.min(totalPages - 1, contestPage + 1))
+              }
+              disabled={contestPage === totalPages - 1}
+              className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-600 disabled:cursor-not-allowed"
+            >
+              Next
             </button>
           </div>
         )}
@@ -69,22 +171,339 @@ const CpStatistics = () => {
     );
   };
 
+  // Render accepted solutions with pagination
+  const renderAcceptedSolutions = () => {
+    if (!platformData?.problemSet || platformData.problemSet.length === 0) {
+      return <p className="text-gray-400">No accepted solutions available</p>;
+    }
+
+    // Convert problemSet to proper format for display
+    const problemsArray = platformData.problemSet.map((problem) => {
+      // Each problem is an object like {"2130": "B"}
+      const contestId = Object.keys(problem)[0];
+      const problemLetter = problem[contestId];
+      return {
+        contestId,
+        problemLetter,
+        url: `https://codeforces.com/problemset/problem/${contestId}/${problemLetter}`,
+      };
+    });
+
+    const startIndex = solutionsPage * SOLUTIONS_PER_PAGE;
+    const endIndex = startIndex + SOLUTIONS_PER_PAGE;
+    const currentSolutions = problemsArray.slice(startIndex, endIndex);
+    const totalPages = Math.ceil(problemsArray.length / SOLUTIONS_PER_PAGE);
+
+    return (
+      <div className="space-y-4">
+        <h4 className="text-lg font-semibold text-white">Accepted Solutions</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {currentSolutions.map((problem, index) => (
+            <div
+              key={index}
+              className="bg-neutral-700 rounded-lg p-3 hover:bg-neutral-600 transition-colors"
+            >
+              <a
+                href={problem.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 text-sm font-mono block"
+              >
+                Problem {problem.contestId}
+                {problem.problemLetter}
+              </a>
+              <p className="text-gray-400 text-xs mt-1">
+                Contest {problem.contestId}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Solutions Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-4">
+            <button
+              onClick={() => setSolutionsPage(Math.max(0, solutionsPage - 1))}
+              disabled={solutionsPage === 0}
+              className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-600 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="text-white">
+              {solutionsPage + 1} of {totalPages}
+            </span>
+            <button
+              onClick={() =>
+                setSolutionsPage(Math.min(totalPages - 1, solutionsPage + 1))
+              }
+              disabled={solutionsPage === totalPages - 1}
+              className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-600 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Render rating progression chart
+  const renderRatingChart = () => {
+    if (
+      !platformData?.contestHistory ||
+      platformData.contestHistory.length === 0
+    ) {
+      return (
+        <p className="text-gray-400">No contest history available for chart</p>
+      );
+    }
+
+    // Reverse the contest history to show oldest first (left) to newest last (right)
+    const reversedContestHistory = [...platformData.contestHistory].reverse();
+
+    const chartData = {
+      labels: reversedContestHistory.map((_, index) => `Contest ${index + 1}`),
+      datasets: [
+        {
+          label: "Rating",
+          data: reversedContestHistory.map((contest) => contest.newRating),
+          borderColor: "rgb(59, 130, 246)", // Blue
+          backgroundColor: "rgba(59, 130, 246, 0.1)",
+          tension: 0.1,
+          pointBackgroundColor: reversedContestHistory.map((contest) =>
+            contest.newRating > contest.oldRating
+              ? "rgb(34, 197, 94)"
+              : "rgb(239, 68, 68)"
+          ), // Green for increase, red for decrease
+          pointBorderColor: "#ffffff",
+          pointBorderWidth: 2,
+          pointRadius: 6,
+        },
+      ],
+    };
+
+    const options = {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: "top",
+          labels: {
+            color: "#ffffff",
+          },
+        },
+        title: {
+          display: true,
+          text: "Rating Progression Over Contests",
+          color: "#ffffff",
+          font: {
+            size: 16,
+          },
+        },
+        tooltip: {
+          callbacks: {
+            title: function (context) {
+              const index = context[0].dataIndex;
+              return reversedContestHistory[index].contestName;
+            },
+            label: function (context) {
+              const index = context.dataIndex;
+              const contest = reversedContestHistory[index];
+              const change = contest.newRating - contest.oldRating;
+              return [
+                `Rating: ${contest.newRating}`,
+                `Change: ${change > 0 ? "+" : ""}${change}`,
+                `Standing: ${contest.standing}`,
+              ];
+            },
+          },
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: false,
+          ticks: {
+            color: "#ffffff",
+          },
+          grid: {
+            color: "rgba(255, 255, 255, 0.1)",
+          },
+        },
+        x: {
+          ticks: {
+            color: "#ffffff",
+          },
+          grid: {
+            color: "rgba(255, 255, 255, 0.1)",
+          },
+        },
+      },
+    };
+
+    return (
+      <div className="space-y-4">
+        <h4 className="text-lg font-semibold text-white">Rating Progression</h4>
+        <div className="bg-neutral-700 rounded-lg p-4">
+          <Line data={chartData} options={options} />
+        </div>
+      </div>
+    );
+  };
+
+  const connectedPlatforms = getConnectedPlatforms();
+
   return (
     <div className="min-h-screen bg-neutral-900">
       <Navbar user={user} onLogout={logout} />
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <BackButton onBack={() => navigate("/home")} />
-        <div className="max-w-2xl mx-auto bg-neutral-800 rounded-lg p-6 border border-neutral-700 mt-8">
-          <h2 className="text-2xl font-bold text-white mb-4">CP Statistics</h2>
-          <div className="space-y-6">
-            {PLATFORMS.map((platform) => (
-              <PlatformStatCard key={platform.id} platform={platform} />
-            ))}
-          </div>
+
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-white mb-2">
+            Competitive Programming Statistics
+          </h1>
+          <p className="text-gray-400">
+            View your progress across different platforms
+          </p>
         </div>
+
+        {/* Platform Dropdown */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Select Platform
+          </label>
+          <select
+            value={selectedPlatform?.id || ""}
+            onChange={(e) => {
+              const platform = connectedPlatforms.find(
+                (p) => p.id === e.target.value
+              );
+              if (platform) handlePlatformSelect(platform);
+            }}
+            className="w-full max-w-xs px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Choose a platform...</option>
+            {connectedPlatforms.map((platform) => (
+              <option key={platform.id} value={platform.id}>
+                {platform.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="text-gray-400 mt-2">Loading statistics...</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-900/20 border border-red-800 text-red-400 rounded-lg p-4 mb-6">
+            {error}
+          </div>
+        )}
+
+        {/* Platform Data Display */}
+        {platformData && selectedPlatform && !loading && (
+          <div className="space-y-8">
+            {/* Basic Stats */}
+            <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+              <h3 className="text-xl font-semibold text-white mb-4">
+                {selectedPlatform.name} Statistics
+              </h3>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <p className="text-sm text-gray-400">Username</p>
+                  <p className="text-lg font-semibold text-white">
+                    {platformData.username}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-400">Rating</p>
+                  <p className="text-lg font-semibold text-blue-400">
+                    {platformData.rating || "Unrated"}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-400">Max Rating</p>
+                  <p className="text-lg font-semibold text-green-400">
+                    {platformData.maxRating || "Unrated"}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-400">Problems Solved</p>
+                  <p className="text-lg font-semibold text-purple-400">
+                    {platformData.problemsSolved || 0}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-400">Contest Participated</p>
+                  <p className="text-lg font-semibold text-orange-400">
+                    {platformData.contestParticipations || 0}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-400">Total Submissions</p>
+                  <p className="text-lg font-semibold text-yellow-400">
+                    {platformData.totalSubmissions || 0}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-400">Accepted Submissions</p>
+                  <p className="text-lg font-semibold text-emerald-400">
+                    {platformData.acceptedSubmissions || 0}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Rating Progression Chart */}
+            <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+              {renderRatingChart()}
+            </div>
+
+            {/* Contest History */}
+            <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+              {renderContestHistory()}
+            </div>
+
+            {/* Accepted Solutions */}
+            <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+              {renderAcceptedSolutions()}
+            </div>
+          </div>
+        )}
+
+        {/* No Platform Selected */}
+        {!selectedPlatform && !loading && (
+          <div className="text-center py-12">
+            <p className="text-gray-400 text-lg">
+              Select a platform from the dropdown to view your statistics
+            </p>
+          </div>
+        )}
+
+        {/* No Connected Platforms */}
+        {connectedPlatforms.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-400 text-lg mb-4">
+              No platforms connected yet
+            </p>
+            <button
+              onClick={() => navigate("/profile")}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Connect Platforms
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default CpStatistics;
+export default CPStatistics;
