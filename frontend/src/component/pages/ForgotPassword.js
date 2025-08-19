@@ -2,6 +2,13 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import authService from "../../services/authService";
 import { validationRules } from "../../utils/validation";
+import {
+  CONTAINER_CLASSES,
+  MESSAGE_CLASSES,
+  BUTTON_CLASSES,
+} from "../../constants/styles";
+import FormInput from "../common/FormInput";
+import LoadingSpinner from "../common/LoadingSpinner";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -105,10 +112,35 @@ const ForgotPassword = () => {
     }
   };
 
+  const LoadingButton = ({ onClick, children, loadingText }) => (
+    <button
+      type="submit"
+      className={`w-full py-2 ${
+        isLoading ? BUTTON_CLASSES.primaryDisabled : BUTTON_CLASSES.primary
+      }`}
+      disabled={isLoading}
+      onClick={onClick}
+    >
+      {isLoading ? (
+        <span className="inline-flex items-center">
+          <LoadingSpinner size="sm" className="mr-3" />
+          {loadingText}
+        </span>
+      ) : (
+        children
+      )}
+    </button>
+  );
+
   return (
-    <div className="min-h-screen bg-neutral-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div
+      className={
+        CONTAINER_CLASSES.page +
+        " flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
+      }
+    >
       <div className="max-w-md w-full space-y-8">
-        <div className="bg-neutral-800 rounded-xl shadow-2xl border border-neutral-700 p-8">
+        <div className={CONTAINER_CLASSES.card}>
           <div className="text-center mb-6">
             <div className="flex justify-center items-center mb-4">
               <img
@@ -126,9 +158,7 @@ const ForgotPassword = () => {
           </div>
 
           {success && (
-            <div className="mb-4 p-3 bg-green-600 text-white rounded text-sm">
-              {success}
-            </div>
+            <div className={MESSAGE_CLASSES.success + " mb-4"}>{success}</div>
           )}
 
           {step === 1 && (
@@ -139,58 +169,25 @@ const ForgotPassword = () => {
               }}
               className="space-y-4"
             >
-              <div>
-                <label className="block text-neutral-300 mb-1">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  className="w-full px-3 py-2 rounded bg-neutral-700 text-white border border-neutral-600 focus:border-blue-500 focus:outline-none"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email address"
-                  required
-                />
-              </div>
-              {error && <div className="text-red-500 text-sm">{error}</div>}
-              <button
-                type="submit"
-                className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition duration-200 flex items-center justify-center"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <span className="inline-flex items-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Sending OTP...
-                  </span>
-                ) : (
-                  "Send OTP"
-                )}
-              </button>
+              <FormInput
+                type="email"
+                label="Email Address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
+                required
+              />
+              {error && (
+                <div className={MESSAGE_CLASSES.errorSmall}>{error}</div>
+              )}
+              <LoadingButton loadingText="Sending OTP...">
+                Send OTP
+              </LoadingButton>
               <div className="mt-4 text-center">
                 <button
                   type="button"
                   onClick={() => navigate("/login")}
-                  className="text-blue-400 hover:text-blue-500 text-sm font-medium"
+                  className={BUTTON_CLASSES.secondary + " text-sm font-medium"}
                 >
                   Back to Login
                 </button>
@@ -206,56 +203,25 @@ const ForgotPassword = () => {
               }}
               className="space-y-4"
             >
-              <div>
-                <label className="block text-neutral-300 mb-1">Enter OTP</label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 rounded bg-neutral-700 text-white border border-neutral-600 focus:border-blue-500 focus:outline-none"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="Enter OTP"
-                  required
-                />
-              </div>
-              {error && <div className="text-red-500 text-sm">{error}</div>}
-              <button
-                type="submit"
-                className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition duration-200 flex items-center justify-center"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <span className="inline-flex items-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Verifying OTP...
-                  </span>
-                ) : (
-                  "Verify OTP"
-                )}
-              </button>
+              <FormInput
+                type="text"
+                label="Enter OTP"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                placeholder="Enter OTP"
+                required
+              />
+              {error && (
+                <div className={MESSAGE_CLASSES.errorSmall}>{error}</div>
+              )}
+              <LoadingButton loadingText="Verifying OTP...">
+                Verify OTP
+              </LoadingButton>
               <div className="mt-4 text-center">
                 <button
                   type="button"
                   onClick={() => navigate("/login")}
-                  className="text-blue-400 hover:text-blue-500 text-sm font-medium"
+                  className={BUTTON_CLASSES.secondary + " text-sm font-medium"}
                 >
                   Back to Login
                 </button>
@@ -271,71 +237,33 @@ const ForgotPassword = () => {
               }}
               className="space-y-4"
             >
-              <div>
-                <label className="block text-neutral-300 mb-1">
-                  New Password
-                </label>
-                <input
-                  type="password"
-                  className="w-full px-3 py-2 rounded bg-neutral-700 text-white border border-neutral-600 focus:border-blue-500 focus:outline-none"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-neutral-300 mb-1">
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  className="w-full px-3 py-2 rounded bg-neutral-700 text-white border border-neutral-600 focus:border-blue-500 focus:outline-none"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm new password"
-                  required
-                />
-              </div>
-              {error && <div className="text-red-500 text-sm">{error}</div>}
-              <button
-                type="submit"
-                className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition duration-200 flex items-center justify-center"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <span className="inline-flex items-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Resetting Password...
-                  </span>
-                ) : (
-                  "Reset Password"
-                )}
-              </button>
+              <FormInput
+                type="password"
+                label="New Password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password"
+                required
+              />
+              <FormInput
+                type="password"
+                label="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                required
+              />
+              {error && (
+                <div className={MESSAGE_CLASSES.errorSmall}>{error}</div>
+              )}
+              <LoadingButton loadingText="Resetting Password...">
+                Reset Password
+              </LoadingButton>
               <div className="mt-4 text-center">
                 <button
                   type="button"
                   onClick={() => navigate("/login")}
-                  className="text-blue-400 hover:text-blue-500 text-sm font-medium"
+                  className={BUTTON_CLASSES.secondary + " text-sm font-medium"}
                 >
                   Back to Login
                 </button>

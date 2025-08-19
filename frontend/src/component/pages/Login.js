@@ -1,10 +1,18 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import {
+  CONTAINER_CLASSES,
+  MESSAGE_CLASSES,
+  BUTTON_CLASSES,
+} from "../../constants/styles";
+import FormInput from "../common/FormInput";
+import LoadingSpinner from "../common/LoadingSpinner";
+import PlatformGrid from "../common/PlatformGrid";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, validateLoginForm } = useAuth();
   const [formData, setFormData] = useState({
     identifier: "", // can be username or email
     password: "",
@@ -31,26 +39,6 @@ const Login = () => {
     setIsLoading(true);
     setErrors({});
 
-    // Custom validation for identifier (username or email)
-    let validationErrors = {};
-    if (
-      !formData.identifier ||
-      (typeof formData.identifier === "string" && !formData.identifier.trim())
-    ) {
-      validationErrors.identifier = "Username or Email is required";
-    }
-    if (
-      !formData.password ||
-      (typeof formData.password === "string" && !formData.password.trim())
-    ) {
-      validationErrors.password = "Password is required";
-    }
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      setIsLoading(false);
-      return;
-    }
-
     // Determine if identifier is email or username
     const isEmail = /\S+@\S+\.\S+/.test(formData.identifier);
     const loginPayload = {
@@ -59,15 +47,21 @@ const Login = () => {
       password: formData.password,
     };
 
+    // Use AuthContext validation
+    const validationErrors = validateLoginForm(loginPayload);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       await login(loginPayload);
       // Navigation will be handled by ProtectedRoute/PublicRoute
     } catch (error) {
       setErrors({
         general:
-          error && error.message && typeof error.message === "string"
-            ? error.message
-            : "Login failed. Please check your credentials.",
+          error?.message || "Login failed. Please check your credentials.",
       });
     } finally {
       setIsLoading(false);
@@ -75,10 +69,14 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div
+      className={
+        CONTAINER_CLASSES.page +
+        " flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
+      }
+    >
       <div className="max-w-md w-full space-y-8">
-        {/* Main Container Box */}
-        <div className="bg-neutral-800 rounded-xl shadow-2xl border border-neutral-700 p-8">
+        <div className={CONTAINER_CLASSES.card}>
           {/* Header */}
           <div className="text-center">
             <div className="flex justify-center items-center mb-4">
@@ -100,61 +98,33 @@ const Login = () => {
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             {/* General Error Message */}
             {errors.general && (
-              <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg">
-                {errors.general}
-              </div>
+              <div className={MESSAGE_CLASSES.error}>{errors.general}</div>
             )}
 
             <div className="space-y-4">
               {/* Username or Email Field */}
-              <div>
-                <label
-                  htmlFor="identifier"
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                >
-                  Username or Email
-                </label>
-                <input
-                  id="identifier"
-                  name="identifier"
-                  type="text"
-                  value={formData.identifier}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-3 bg-gray-800 border ${
-                    errors.identifier ? "border-red-500" : "border-gray-600"
-                  } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
-                  placeholder="Enter your username or email"
-                />
-                {errors.identifier && (
-                  <p className="mt-1 text-sm text-red-400">
-                    {errors.identifier}
-                  </p>
-                )}
-              </div>
+              <FormInput
+                id="identifier"
+                name="identifier"
+                type="text"
+                value={formData.identifier}
+                onChange={handleChange}
+                placeholder="Enter your username or email"
+                label="Username or Email"
+                error={errors.identifier}
+              />
 
               {/* Password Field */}
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                >
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-3 bg-gray-800 border ${
-                    errors.password ? "border-red-500" : "border-gray-600"
-                  } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
-                  placeholder="Enter your password"
-                />
-                {errors.password && (
-                  <p className="mt-1 text-sm text-red-400">{errors.password}</p>
-                )}
-              </div>
+              <FormInput
+                id="password"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                label="Password"
+                error={errors.password}
+              />
             </div>
 
             {/* Remember Me & Forgot Password */}
@@ -188,15 +158,15 @@ const Login = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white ${
+              className={
                 isLoading
-                  ? "bg-gray-600 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              } transition duration-200`}
+                  ? BUTTON_CLASSES.primaryDisabled
+                  : BUTTON_CLASSES.primary
+              }
             >
               {isLoading ? (
                 <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <LoadingSpinner size="sm" className="mr-2" />
                   Signing in...
                 </div>
               ) : (
@@ -211,7 +181,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => navigate("/signup")}
-                  className="text-blue-400 hover:text-blue-300 font-medium transition duration-200"
+                  className={BUTTON_CLASSES.link}
                 >
                   Sign up here
                 </button>
@@ -224,87 +194,9 @@ const Login = () => {
             <p className="text-center text-sm text-gray-400 mb-4">
               Supported Platforms
             </p>
-            <div className="flex justify-center space-x-8">
-              <div className="text-center group">
-                <a
-                  href="https://codeforces.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block"
-                >
-                  <div className="w-12 h-12 mx-auto mb-2 bg-white rounded-lg flex items-center justify-center hover:bg-gray-100 transition duration-200 cursor-pointer">
-                    <img
-                      src="/images/platforms/codeforces_logo.png"
-                      alt="Codeforces"
-                      className="w-8 h-8 object-contain"
-                    />
-                  </div>
-                  <div className="text-xs text-gray-400 group-hover:text-white transition duration-200">
-                    Codeforces
-                  </div>
-                </a>
-              </div>
-              <div className="text-center group">
-                <a
-                  href="https://atcoder.jp"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block"
-                >
-                  <div className="w-12 h-12 mx-auto mb-2 bg-white rounded-lg flex items-center justify-center hover:bg-gray-100 transition duration-200 cursor-pointer">
-                    <img
-                      src="/images/platforms/atcoder_logo.png"
-                      alt="AtCoder"
-                      className="w-8 h-8 object-contain"
-                    />
-                  </div>
-                  <div className="text-xs text-gray-400 group-hover:text-white transition duration-200">
-                    AtCoder
-                  </div>
-                </a>
-              </div>
-              <div className="text-center group">
-                <a
-                  href="https://www.codechef.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block"
-                >
-                  <div className="w-12 h-12 mx-auto mb-2 bg-white rounded-lg flex items-center justify-center hover:bg-gray-100 transition duration-200 cursor-pointer">
-                    <img
-                      src="/images/platforms/codechef_logo.jpg"
-                      alt="CodeChef"
-                      className="w-8 h-8 object-contain"
-                    />
-                  </div>
-                  <div className="text-xs text-gray-400 group-hover:text-white transition duration-200">
-                    CodeChef
-                  </div>
-                </a>
-              </div>
-              <div className="text-center group">
-                <a
-                  href="https://leetcode.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block"
-                >
-                  <div className="w-12 h-12 mx-auto mb-2 bg-white rounded-lg flex items-center justify-center hover:bg-gray-100 transition duration-200 cursor-pointer">
-                    <img
-                      src="/images/platforms/LeetCode_logo.png"
-                      alt="LeetCode"
-                      className="w-8 h-8 object-contain"
-                    />
-                  </div>
-                  <div className="text-xs text-gray-400 group-hover:text-white transition duration-200">
-                    LeetCode
-                  </div>
-                </a>
-              </div>
-            </div>
+            <PlatformGrid />
           </div>
-        </div>{" "}
-        {/* End of Main Container Box */}
+        </div>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import React from "react";
 import Navbar from "../common/Navbar";
 import { useAuth } from "../../context/AuthContext";
 
-const Dashboard = () => {
+const Home = () => {
   const { user, logout } = useAuth();
 
   return (
@@ -39,7 +39,6 @@ const Dashboard = () => {
                     Connect your competitive programming accounts to start
                     tracking your progress across multiple platforms.
                   </p>
-                  {/* <p className="text-blue-300 text-xs mt-2">January 15, 2025</p> */}
                 </div>
               </div>
             </div>
@@ -242,4 +241,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default Home;

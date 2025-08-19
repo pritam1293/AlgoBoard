@@ -1,114 +1,85 @@
 import React from "react";
 import { useAuth } from "../../context/AuthContext";
 import Navbar from "../common/Navbar";
+import BackButton from "../common/BackButton";
 import { useNavigate } from "react-router-dom";
+import { PLATFORMS, COLOR_CLASSES } from "../../config/platformsConfig";
 
 const CpStatistics = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  // Platform Statistics Component
+  const PlatformStatCard = ({ platform }) => {
+    const isConnected = Boolean(user?.[platform.usernameField]);
+    const colorClasses = COLOR_CLASSES[platform.color];
+
+    return (
+      <div className="bg-neutral-700 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center">
+            <img
+              src={platform.logo}
+              alt={platform.name}
+              className={`w-8 h-8 mr-3 ${
+                platform.id === "codechef" ? "rounded" : ""
+              }`}
+            />
+            <div>
+              <h3 className={`text-lg font-semibold ${colorClasses.text}`}>
+                {platform.name}
+              </h3>
+              <p className="text-sm text-gray-400">
+                {isConnected
+                  ? `@${user[platform.usernameField]}`
+                  : "Not linked"}
+              </p>
+            </div>
+          </div>
+          {isConnected && (
+            <button
+              onClick={() => navigate("/profile")}
+              className={`text-sm ${colorClasses.text} ${colorClasses.hoverText}`}
+            >
+              Change
+            </button>
+          )}
+        </div>
+        {isConnected ? (
+          <div className="text-center py-4">
+            <p className="text-gray-400 mb-2">
+              {platform.name} statistics will be displayed here
+            </p>
+            {/* Platform stats component can be added here when available */}
+          </div>
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-gray-400 mb-2">
+              Connect your {platform.name} account to see your statistics
+            </p>
+            <button
+              onClick={() => navigate("/profile")}
+              className={`text-sm ${colorClasses.text} ${colorClasses.hoverText}`}
+            >
+              Connect Now
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-neutral-900">
       <Navbar user={user} onLogout={logout} />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back to Home Button */}
-        <div className="mb-6">
-          <button
-            onClick={() => navigate("/home")}
-            className="flex items-center text-neutral-400 hover:text-white transition duration-200"
-          >
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            Back to Home
-          </button>
-        </div>
+        <BackButton onBack={() => navigate("/home")} />
         <div className="max-w-2xl mx-auto bg-neutral-800 rounded-lg p-6 border border-neutral-700 mt-8">
           <h2 className="text-2xl font-bold text-white mb-4">CP Statistics</h2>
           <div className="space-y-6">
-            <div className="bg-neutral-700 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                  <img
-                    src="/images/platforms/codeforces_logo.png"
-                    alt="Codeforces"
-                    className="w-8 h-8 mr-3"
-                  />
-                  <div>
-                    <h3 className="text-lg font-semibold text-blue-400">
-                      Codeforces
-                    </h3>
-                    <p className="text-sm text-gray-400">
-                      {user?.codeforcesUsername
-                        ? `@${user.codeforcesUsername}`
-                        : "Not linked"}
-                    </p>
-                  </div>
-                </div>
-                {user?.codeforcesUsername && (
-                  <button
-                    onClick={() => navigate("/profile")}
-                    className="text-sm text-blue-400 hover:text-blue-300"
-                  >
-                    Change
-                  </button>
-                )}
-              </div>
-              {user?.codeforcesUsername ? (
-                {
-                  /* CodeforcesStats component removed because the file does not exist */
-                }
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-gray-400 mb-2">
-                    Connect your Codeforces account to see your statistics
-                  </p>
-                  <button
-                    onClick={() => navigate("/profile")}
-                    className="text-sm text-blue-400 hover:text-blue-300"
-                  >
-                    Connect Now
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className="bg-neutral-700 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-green-400 mb-2">
-                AtCoder
-              </h3>
-              <p className="text-white">
-                Username: {user?.atcoderUsername || "Not linked"}
-              </p>
-              {/* Add more AtCoder stats here */}
-            </div>
-            <div className="bg-neutral-700 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-orange-400 mb-2">
-                CodeChef
-              </h3>
-              <p className="text-white">
-                Username: {user?.codechefUsername || "Not linked"}
-              </p>
-              {/* Add more CodeChef stats here */}
-            </div>
-            <div className="bg-neutral-700 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-yellow-400 mb-2">
-                LeetCode
-              </h3>
-              <p className="text-white">
-                Username: {user?.leetcodeUsername || "Not linked"}
-              </p>
-              {/* Add more LeetCode stats here */}
-            </div>
+            {PLATFORMS.map((platform) => (
+              <PlatformStatCard key={platform.id} platform={platform} />
+            ))}
           </div>
         </div>
       </div>
