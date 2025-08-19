@@ -127,21 +127,7 @@ public class UserController {
             Profile updatedProfile = userService.updateUserDetails(profile);
             //send an email notification
             try {
-                if(!profile.getEmail().equals(updatedProfile.getEmail())) {
-                    emailService.sendProfileUpdateNotification(updatedProfile.getEmail(), updatedProfile.getFirstName() , "email");
-                }
-                if(!profile.getFirstName().equals(updatedProfile.getFirstName()) || !profile.getLastName().equals(updatedProfile.getLastName())) {
-                    emailService.sendProfileUpdateNotification(updatedProfile.getEmail(), updatedProfile.getFirstName() + " " + updatedProfile.getLastName(), "name");
-                }
-                if(profile.getAtcoderUsername() != null && !profile.getAtcoderUsername().equals(updatedProfile.getAtcoderUsername())
-                    || profile.getCodechefUsername() != null && !profile.getCodechefUsername().equals(updatedProfile.getCodechefUsername())
-                    || profile.getLeetcodeUsername() != null && !profile.getLeetcodeUsername().equals(updatedProfile.getLeetcodeUsername())
-                    || profile.getCodeforcesUsername() != null && !profile.getCodeforcesUsername().equals(updatedProfile.getCodeforcesUsername())) {
-                    emailService.sendProfileUpdateNotification(updatedProfile.getEmail(), updatedProfile.getFirstName(), "competitive programming username");
-                }
-                else {
-                    emailService.sendProfileUpdateNotification(updatedProfile.getEmail(), updatedProfile.getFirstName(), "profile");
-                }
+                emailService.sendProfileUpdateNotification(updatedProfile.getEmail(), updatedProfile.getFirstName(), "profile");
             } catch (Exception emailException) {
                 // Log email error but don't fail the update process
                 System.err.println("Failed to send profile update notification: " + emailException.getMessage());

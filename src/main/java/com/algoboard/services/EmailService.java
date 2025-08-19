@@ -65,15 +65,6 @@ public class EmailService {
             if(changedField.equals("password")) {
                 message = "the password has been changed";
             }
-            else if(changedField.equals("email")) {
-                message = "the email has been changed to " + toEmail;
-            }
-            else if(changedField.equals("name")) {
-                message = "the name has been changed to " + firstName;
-            }
-            else if(changedField.equals("competitive programming username")) {
-                message = "the competitive programming username(s) has been changed";
-            }
             else {
                 message = "details have been changed";
             }

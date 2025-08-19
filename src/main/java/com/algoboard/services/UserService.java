@@ -148,18 +148,6 @@ public class UserService implements IUserService {
             if (profile.isStudent() != existingUser.isStudent()) {
                 existingUser.setStudent(profile.isStudent());
             }
-            if (profile.getCodeforcesUsername() != null) {
-                existingUser.setCodeforcesUsername(profile.getCodeforcesUsername());
-            }
-            if (profile.getAtcoderUsername() != null) {
-                existingUser.setAtcoderUsername(profile.getAtcoderUsername());
-            }
-            if (profile.getCodechefUsername() != null) {
-                existingUser.setCodechefUsername(profile.getCodechefUsername());
-            }
-            if (profile.getLeetcodeUsername() != null) {
-                existingUser.setLeetcodeUsername(profile.getLeetcodeUsername());
-            }
             userRepository.save(existingUser);
             return new Profile(
                     existingUser.getUsername(),
