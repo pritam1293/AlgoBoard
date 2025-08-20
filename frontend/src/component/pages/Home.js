@@ -1,9 +1,11 @@
 import React from "react";
 import Navbar from "../common/Navbar";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-neutral-900">
@@ -220,19 +222,61 @@ const Home = () => {
               <h3 className="text-white font-medium mb-2">
                 📊 Connect Your Accounts
               </h3>
-              <p className="text-gray-400 text-sm">
+              <p className="text-gray-400 text-sm mb-4">
                 Link your competitive programming platform accounts to track
                 your progress automatically.
               </p>
+              <div className="flex justify-center">
+                <button
+                  onClick={() => navigate("/profile")}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
+                >
+                  <span className="mr-2">Go to Profile</span>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
             <div className="p-4 bg-gray-700 rounded-lg">
               <h3 className="text-white font-medium mb-2">
                 📈 Track Your Progress
               </h3>
-              <p className="text-gray-400 text-sm">
+              <p className="text-gray-400 text-sm mb-4">
                 Monitor your rating changes, contest participation, and
                 problem-solving statistics.
               </p>
+              <div className="flex justify-center">
+                <button
+                  onClick={() => navigate("/cp-statistics")}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
+                >
+                  <span className="mr-2">View Statistics</span>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>

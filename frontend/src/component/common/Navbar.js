@@ -50,7 +50,15 @@ const Navbar = ({ user, onLogout }) => {
           </div>
 
           {/* User Section */}
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
+            {isLoggedIn && (
+              <button
+                onClick={() => navigate("/cp-statistics")}
+                className="hidden md:block text-neutral-300 hover:text-white transition duration-200 font-medium"
+              >
+                CP Statistics
+              </button>
+            )}
             {isLoggedIn ? (
               <div className="relative" ref={dropdownRef}>
                 <button
@@ -108,7 +116,7 @@ const Navbar = ({ user, onLogout }) => {
                           navigate("/cp-statistics");
                           setUserDropdownOpen(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-neutral-300 hover:bg-neutral-700 transition duration-200 flex items-center"
+                        className="md:hidden w-full text-left px-4 py-2 text-neutral-300 hover:bg-neutral-700 transition duration-200 flex items-center"
                       >
                         <svg
                           className="w-4 h-4 mr-2"
@@ -120,15 +128,7 @@ const Navbar = ({ user, onLogout }) => {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d="M9 17v-2a4 4 0 014-4h2a4 4 0 014 4v2"
-                          />
-                          <circle
-                            cx="12"
-                            cy="7"
-                            r="4"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                            fill="none"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                           />
                         </svg>
                         CP Statistics

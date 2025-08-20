@@ -39,8 +39,8 @@ const CPStatistics = () => {
   const [contestPage, setContestPage] = useState(0);
   const [solutionsPage, setSolutionsPage] = useState(0);
 
-  const CONTESTS_PER_PAGE = 7;
-  const SOLUTIONS_PER_PAGE = 12;
+  const CONTESTS_PER_PAGE = 5;
+  const SOLUTIONS_PER_PAGE = 9;
 
   // Available platforms (only show connected ones)
   const getConnectedPlatforms = () => {
@@ -261,29 +261,58 @@ const CPStatistics = () => {
     // Reverse the contest history to show oldest first (left) to newest last (right)
     const reversedContestHistory = [...platformData.contestHistory].reverse();
 
+    // Find the contest where user achieved their max rating (latest occurrence if multiple)
+    const maxRating = platformData.maxRating;
+    let highestRatingIndex = -1;
+    for (let i = reversedContestHistory.length - 1; i >= 0; i--) {
+      if (reversedContestHistory[i].newRating === maxRating) {
+        highestRatingIndex = i;
+        break;
+      }
+    }
+
     const chartData = {
-      labels: reversedContestHistory.map((_, index) => `Contest ${index + 1}`),
+      labels: reversedContestHistory.map((_, index) => index + 1),
       datasets: [
         {
           label: "Rating",
           data: reversedContestHistory.map((contest) => contest.newRating),
           borderColor: "rgb(59, 130, 246)", // Blue
-          backgroundColor: "rgba(59, 130, 246, 0.1)",
-          tension: 0.1,
-          pointBackgroundColor: reversedContestHistory.map((contest) =>
-            contest.newRating > contest.oldRating
-              ? "rgb(34, 197, 94)"
-              : "rgb(239, 68, 68)"
-          ), // Green for increase, red for decrease
-          pointBorderColor: "#ffffff",
-          pointBorderWidth: 2,
-          pointRadius: 6,
+          backgroundColor: "rgba(59, 130, 246, 0.05)",
+          tension: 0.3,
+          pointBackgroundColor: reversedContestHistory.map(
+            (_, index) =>
+              index === highestRatingIndex
+                ? "rgb(255, 215, 0)"
+                : "transparent" // Hide normal points, only show golden point
+          ),
+          pointBorderColor: reversedContestHistory.map((_, index) =>
+            index === highestRatingIndex
+              ? "rgba(255, 255, 255, 1)"
+              : "transparent" // Hide normal point borders
+          ),
+          pointBorderWidth: reversedContestHistory.map((_, index) =>
+            index === highestRatingIndex ? 2 : 0
+          ),
+          pointRadius: reversedContestHistory.map(
+            (_, index) => (index === highestRatingIndex ? 6 : 0) // Hide normal points, show golden point
+          ),
+          pointHoverRadius: 5, // Show all points on hover
+          pointHoverBackgroundColor: reversedContestHistory.map((_, index) =>
+            index === highestRatingIndex
+              ? "rgb(255, 215, 0)"
+              : "rgb(59, 130, 246)"
+          ),
+          pointHoverBorderColor: "#ffffff",
+          pointHoverBorderWidth: 2,
+          borderWidth: 2,
         },
       ],
     };
 
     const options = {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: {
           position: "top",
@@ -303,17 +332,29 @@ const CPStatistics = () => {
           callbacks: {
             title: function (context) {
               const index = context[0].dataIndex;
-              return reversedContestHistory[index].contestName;
+              const isHighest = index === highestRatingIndex;
+              const contestName = reversedContestHistory[index].contestName;
+              return isHighest
+                ? `🏆 ${contestName} (Peak Rating!)`
+                : contestName;
             },
             label: function (context) {
               const index = context.dataIndex;
               const contest = reversedContestHistory[index];
               const change = contest.newRating - contest.oldRating;
-              return [
+              const isHighest = index === highestRatingIndex;
+
+              const baseLabels = [
                 `Rating: ${contest.newRating}`,
                 `Change: ${change > 0 ? "+" : ""}${change}`,
                 `Standing: ${contest.standing}`,
               ];
+
+              if (isHighest) {
+                baseLabels.push(`⭐ Highest Rating Achieved!`);
+              }
+
+              return baseLabels;
             },
           },
         },
@@ -322,20 +363,46 @@ const CPStatistics = () => {
         y: {
           beginAtZero: false,
           ticks: {
-            color: "#ffffff",
+            color: "rgba(255, 255, 255, 0.7)",
+            maxTicksLimit: 6,
+            font: {
+              size: 11,
+            },
           },
           grid: {
-            color: "rgba(255, 255, 255, 0.1)",
+            color: "rgba(255, 255, 255, 0.05)",
+            drawBorder: false,
+          },
+          border: {
+            display: false,
           },
         },
         x: {
           ticks: {
-            color: "#ffffff",
+            color: "rgba(255, 255, 255, 0.7)",
+            maxTicksLimit: 8,
+            font: {
+              size: 11,
+            },
+            callback: function (value, index) {
+              // Show every nth tick to avoid crowding
+              const totalTicks = this.chart.data.labels.length;
+              const step = Math.ceil(totalTicks / 6);
+              return index % step === 0 ? value : "";
+            },
           },
           grid: {
-            color: "rgba(255, 255, 255, 0.1)",
+            color: "rgba(255, 255, 255, 0.05)",
+            drawBorder: false,
+          },
+          border: {
+            display: false,
           },
         },
+      },
+      interaction: {
+        intersect: false,
+        mode: "index",
       },
     };
 
@@ -343,7 +410,9 @@ const CPStatistics = () => {
       <div className="space-y-4">
         <h4 className="text-lg font-semibold text-white">Rating Progression</h4>
         <div className="bg-neutral-700 rounded-lg p-4">
-          <Line data={chartData} options={options} />
+          <div className="relative h-64 sm:h-80 md:h-96">
+            <Line data={chartData} options={options} />
+          </div>
         </div>
       </div>
     );
