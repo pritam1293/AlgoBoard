@@ -11,6 +11,8 @@ import com.algoboard.DTO.RequestDTO.AuthenticationResponse;
 import com.algoboard.utils.ResponseUtil;
 import java.util.Map;
 import com.algoboard.DTO.RequestDTO.Profile;
+import com.algoboard.DTO.Contest;
+import java.util.List;
 
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.ResponseEntity;
@@ -244,6 +246,16 @@ public class UserController {
             }
         } catch (Exception e) {
             return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/contest/list")
+    public ResponseEntity<?> getContestList() {
+        try {
+            Map<String, List<Contest>> contestList = userService.getContestList();
+            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Contest list retrieved successfully", contestList));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Error fetching contest list: " + e.getMessage()));
         }
     }
 

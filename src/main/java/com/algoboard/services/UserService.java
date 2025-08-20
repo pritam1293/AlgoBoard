@@ -1,10 +1,12 @@
 package com.algoboard.services;
 
-import com.algoboard.DTO.Codeforces.CFContestDTO;
-import com.algoboard.DTO.Codeforces.CFSubmissionsDTO;
-import com.algoboard.DTO.Codeforces.CFUserDTO;
+import com.algoboard.DTO.Codeforces.CF_ContestDTO;
+import com.algoboard.DTO.Codeforces.CF_SubmissionsDTO;
+import com.algoboard.DTO.Codeforces.CF_UserDTO;
+import com.algoboard.DTO.Codeforces.CF_ContestListDTO;
+import com.algoboard.DTO.Codechef.CC_ContestListDTO;
+import com.algoboard.DTO.Contest;
 import com.algoboard.entities.Atcoder;
-// import com.algoboard.entities.Codechef;
 import com.algoboard.entities.Codeforces;
 import com.algoboard.entities.ContestHistory;
 import com.algoboard.entities.User;
@@ -14,6 +16,7 @@ import com.algoboard.DTO.RequestDTO.Profile;
 
 import java.util.Set;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.ArrayList;
@@ -23,18 +26,10 @@ import org.springframework.web.client.RestTemplate;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-// //json import
-// import org.jsoup.Jsoup;
-// import org.jsoup.nodes.Document;
-// import org.jsoup.nodes.Element;
-// import org.jsoup.select.Elements;
-// import com.fasterxml.jackson.databind.ObjectMapper;
-// import com.fasterxml.jackson.databind.node.ObjectNode;
-// import com.fasterxml.jackson.databind.node.ArrayNode;
 
 @Service
 public class UserService implements IUserService {
@@ -47,6 +42,7 @@ public class UserService implements IUserService {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
+        getContestList();
         System.out.println("");
         System.out.println("MongoDB connected.");
         System.out.println("");
@@ -245,6 +241,92 @@ public class UserService implements IUserService {
     }
 
     @Override
+    public Map<String, List<Contest>> getContestList() {
+        Map<String, List<Contest>> contestMap = new HashMap<>();
+        contestMap.put("codeforces", getCodeforcesContestList());
+        contestMap.put("codechef", getCodechefContestList());
+        contestMap.put("atcoder", getAtcoderContestList());
+        contestMap.put("leetcode", getLeetcodeContestList());
+        return contestMap;
+    }
+
+    private List<Contest> getCodeforcesContestList() {
+        String cfurl = "https://codeforces.com/api/contest.list";
+        CF_ContestListDTO response = restTemplate.getForObject(cfurl, CF_ContestListDTO.class);
+        List<Contest> contests = new ArrayList<>();
+        int cnt = 0;
+        if (response != null && response.getStatus().equals("OK")) {
+            for (CF_ContestListDTO.CodeforcesContest contest : response.getResult()) {
+                contests.add(new Contest(
+                        String.valueOf(contest.getId()),
+                        contest.getName(),
+                        LocalDateTime.ofEpochSecond(contest.getStartTimeSeconds(), 0,
+                                java.time.ZoneOffset.of("+05:30")),
+                        contest.getDurationSeconds(),
+                        contest.getPhase())
+                );
+                if(++cnt > 10) {
+                    break;// Limit to 10 contests
+                }
+            }
+        }
+        return contests;
+    }
+
+    private List<Contest> getCodechefContestList() {
+        String ccurl = "https://www.codechef.com/api/list/contests/all?sort_by=START&sorting_order=asc&offset=0&mode=all";
+        CC_ContestListDTO response = restTemplate.getForObject(ccurl, CC_ContestListDTO.class);
+        List<Contest> contests = new ArrayList<>();
+
+        // Create a DateTimeFormatter for the CodeChef date format: "20 Aug 2025
+        // 20:00:00"
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy  HH:mm:ss");
+
+        if (response != null && response.getStatus().equals("success")) {
+            for (CC_ContestListDTO.CodechefContest contest : response.getPresentContests()) {
+                contests.add(new Contest(
+                        contest.getContestCode(),
+                        contest.getContestName(),
+                        LocalDateTime.parse(contest.getContestStartDate(), formatter),
+                        Long.parseLong(contest.getContestDuration()),
+                        "present")
+                );
+            }
+            for (CC_ContestListDTO.CodechefContest contest : response.getFutureContests()) {
+                contests.add(new Contest(
+                        contest.getContestCode(),
+                        contest.getContestName(),
+                        LocalDateTime.parse(contest.getContestStartDate(), formatter),
+                        Long.parseLong(contest.getContestDuration()),
+                        "future")
+                );
+            }
+            int cnt = 0;
+            for (CC_ContestListDTO.CodechefContest contest : response.getPastContests()) {
+                contests.add(new Contest(
+                        contest.getContestCode(),
+                        contest.getContestName(),
+                        LocalDateTime.parse(contest.getContestStartDate(), formatter),
+                        Long.parseLong(contest.getContestDuration()),
+                        "past")
+                );
+                if(++cnt > 10) {
+                    break; // Limit to 10 past contests
+                }
+            }
+        }
+        return contests;
+    }
+
+    private List<Contest> getAtcoderContestList() {
+        return new ArrayList<>(); // Return empty list for now
+    }
+
+    private List<Contest> getLeetcodeContestList() {
+        return new ArrayList<>(); // Return empty list for now
+    }
+
+    @Override
     public Codeforces getCodeforcesProfile(String username) {
         if (userRepository.findByUsername(username) == null) {
             throw new IllegalArgumentException("User not found with username: " + username);
@@ -256,11 +338,11 @@ public class UserService implements IUserService {
         String profileUrl = "https://codeforces.com/api/user.info?handles=" + cfid;
         String contestUrl = "https://codeforces.com/api/user.rating?handle=" + cfid;
         try {
-            CFUserDTO profileResponse = restTemplate.getForObject(profileUrl, CFUserDTO.class);
+            CF_UserDTO profileResponse = restTemplate.getForObject(profileUrl, CF_UserDTO.class);
             if (profileResponse == null || profileResponse.getStatus().equals("FAILED")) {
                 throw new RuntimeException("Failed to fetch Codeforces profile for user: " + cfid);
             }
-            CFContestDTO contestResponse = restTemplate.getForObject(contestUrl, CFContestDTO.class);
+            CF_ContestDTO contestResponse = restTemplate.getForObject(contestUrl, CF_ContestDTO.class);
             if (contestResponse == null || contestResponse.getStatus().equals("FAILED")) {
                 throw new RuntimeException("Failed to fetch Codeforces contests for user: " + cfid);
             }
@@ -273,13 +355,13 @@ public class UserService implements IUserService {
             while (true) {
                 String submissionsUrl = "https://codeforces.com/api/user.status?handle=" + cfid + "&from=" + from
                         + "&count=" + count;
-                CFSubmissionsDTO submissionsResponse = restTemplate.getForObject(submissionsUrl,
-                        CFSubmissionsDTO.class);
+                CF_SubmissionsDTO submissionsResponse = restTemplate.getForObject(submissionsUrl,
+                        CF_SubmissionsDTO.class);
                 if (submissionsResponse == null || !Objects.equals(submissionsResponse.getStatus(), "OK")) {
                     break;
                 }
                 totalSubmissions += submissionsResponse.getResult().size();
-                for (CFSubmissionsDTO.Result submission : submissionsResponse.getResult()) {
+                for (CF_SubmissionsDTO.Result submission : submissionsResponse.getResult()) {
                     if (submission.getVerdict().equals("OK")) {
                         acceptedSubmissions++;
                     }
@@ -292,10 +374,10 @@ public class UserService implements IUserService {
                 }
                 from += count;
             }
-            CFUserDTO.Result result = profileResponse.getResult().get(0);
-            java.util.List<CFContestDTO.Result> contestResults = contestResponse.getResult();
+            CF_UserDTO.Result result = profileResponse.getResult().get(0);
+            java.util.List<CF_ContestDTO.Result> contestResults = contestResponse.getResult();
             List<ContestHistory> contestHistory = new ArrayList<>();
-            for (CFContestDTO.Result contestResult : contestResults) {
+            for (CF_ContestDTO.Result contestResult : contestResults) {
                 contestHistory.add(new ContestHistory(
                         Long.toString(contestResult.getContestId()),
                         contestResult.getContestName(),

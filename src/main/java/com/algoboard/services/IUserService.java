@@ -1,11 +1,12 @@
 package com.algoboard.services;
 
 import com.algoboard.entities.Atcoder;
-// import com.algoboard.entities.Codechef;
 import com.algoboard.entities.Codeforces;
 import com.algoboard.entities.User;
+import com.algoboard.DTO.Contest;
 
 import java.util.Map;
+import java.util.List;
 
 import com.algoboard.DTO.RequestDTO.Profile;
 
@@ -31,6 +32,8 @@ public interface IUserService {
 
     public boolean addCPProfiles(String username, String codeforcesId, String atcoderId, String codechefId, String leetcodeId);
 
+    public Map<String, List<Contest>> getContestList();
+    
     public Codeforces getCodeforcesProfile(String username);
 
     public Atcoder getAtcoderProfile(String username);

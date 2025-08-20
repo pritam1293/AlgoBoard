@@ -2,7 +2,7 @@ package com.algoboard.DTO.Codeforces;
 
 import java.util.List;
 
-public class CFSubmissionsDTO {
+public class CF_SubmissionsDTO {
     private String status;
     private List<Result> result;
 
