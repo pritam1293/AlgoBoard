@@ -278,6 +278,36 @@ const Home = () => {
                 </button>
               </div>
             </div>
+            <div className="p-4 bg-gray-700 rounded-lg">
+              <h3 className="text-white font-medium mb-2">
+                🏆 Live Contests
+              </h3>
+              <p className="text-gray-400 text-sm mb-4">
+                Stay updated with upcoming and live contests from all major
+                competitive programming platforms.
+              </p>
+              <div className="flex justify-center">
+                <button
+                  onClick={() => navigate("/contests")}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
+                >
+                  <span className="mr-2">View Contests</span>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

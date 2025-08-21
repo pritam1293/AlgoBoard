@@ -52,12 +52,20 @@ const Navbar = ({ user, onLogout }) => {
           {/* User Section */}
           <div className="flex items-center space-x-4">
             {isLoggedIn && (
-              <button
-                onClick={() => navigate("/cp-statistics")}
-                className="hidden md:block text-neutral-300 hover:text-white transition duration-200 font-medium"
-              >
-                CP Statistics
-              </button>
+              <>
+                <button
+                  onClick={() => navigate("/cp-statistics")}
+                  className="hidden md:block text-neutral-300 hover:text-white transition duration-200 font-medium"
+                >
+                  CP Statistics
+                </button>
+                <button
+                  onClick={() => navigate("/contests")}
+                  className="hidden md:block text-neutral-300 hover:text-white transition duration-200 font-medium"
+                >
+                  Contests
+                </button>
+              </>
             )}
             {isLoggedIn ? (
               <div className="relative" ref={dropdownRef}>
@@ -132,6 +140,28 @@ const Navbar = ({ user, onLogout }) => {
                           />
                         </svg>
                         CP Statistics
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate("/contests");
+                          setUserDropdownOpen(false);
+                        }}
+                        className="md:hidden w-full text-left px-4 py-2 text-neutral-300 hover:bg-neutral-700 transition duration-200 flex items-center"
+                      >
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        Contests
                       </button>
                       <button
                         onClick={() => {

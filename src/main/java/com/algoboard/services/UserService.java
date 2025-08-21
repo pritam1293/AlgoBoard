@@ -5,6 +5,7 @@ import com.algoboard.DTO.Codeforces.CF_SubmissionsDTO;
 import com.algoboard.DTO.Codeforces.CF_UserDTO;
 import com.algoboard.DTO.Codeforces.CF_ContestListDTO;
 import com.algoboard.DTO.Codechef.CC_ContestListDTO;
+import com.algoboard.DTO.Leetcode.LC_ContestListDTO;
 import com.algoboard.DTO.Contest;
 import com.algoboard.entities.Atcoder;
 import com.algoboard.entities.Codeforces;
@@ -27,6 +28,8 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.Instant;
+import java.time.ZoneId;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -262,10 +265,8 @@ public class UserService implements IUserService {
                         contest.getName(),
                         LocalDateTime.ofEpochSecond(contest.getStartTimeSeconds(), 0,
                                 java.time.ZoneOffset.of("+05:30")),
-                        contest.getDurationSeconds(),
-                        contest.getPhase())
-                );
-                if(++cnt > 10) {
+                        (long) contest.getDurationSeconds() / 60));
+                if (++cnt > 10) {
                     break;// Limit to 10 contests
                 }
             }
@@ -288,18 +289,14 @@ public class UserService implements IUserService {
                         contest.getContestCode(),
                         contest.getContestName(),
                         LocalDateTime.parse(contest.getContestStartDate(), formatter),
-                        Long.parseLong(contest.getContestDuration()),
-                        "present")
-                );
+                        Long.parseLong(contest.getContestDuration())));
             }
             for (CC_ContestListDTO.CodechefContest contest : response.getFutureContests()) {
                 contests.add(new Contest(
                         contest.getContestCode(),
                         contest.getContestName(),
                         LocalDateTime.parse(contest.getContestStartDate(), formatter),
-                        Long.parseLong(contest.getContestDuration()),
-                        "future")
-                );
+                        Long.parseLong(contest.getContestDuration())));
             }
             int cnt = 0;
             for (CC_ContestListDTO.CodechefContest contest : response.getPastContests()) {
@@ -307,10 +304,8 @@ public class UserService implements IUserService {
                         contest.getContestCode(),
                         contest.getContestName(),
                         LocalDateTime.parse(contest.getContestStartDate(), formatter),
-                        Long.parseLong(contest.getContestDuration()),
-                        "past")
-                );
-                if(++cnt > 10) {
+                        Long.parseLong(contest.getContestDuration().replace("s", ""))));
+                if (++cnt > 10) {
                     break; // Limit to 10 past contests
                 }
             }
@@ -323,7 +318,29 @@ public class UserService implements IUserService {
     }
 
     private List<Contest> getLeetcodeContestList() {
-        return new ArrayList<>(); // Return empty list for now
+        String lcurl = "https://contest-hive.vercel.app/api/leetcode";
+        LC_ContestListDTO response = restTemplate.getForObject(lcurl, LC_ContestListDTO.class);
+        List<Contest> contests = new ArrayList<>();
+        if (response != null && response.isOk()) {
+            for (LC_ContestListDTO.LeetcodeContest contest : response.getData()) {
+                contests.add(new Contest(
+                        LeetcodeContestIdExtractor(contest.getUrl()),
+                        contest.getTitle(),
+                        LocalDateTime.ofInstant(Instant.parse(contest.getStartTime()), ZoneId.of("Asia/Kolkata")),
+                        contest.getDuration() / 60));
+            }
+        }
+        return contests;
+    }
+
+    private String LeetcodeContestIdExtractor(String url) {
+        String regex = "(?<=/contest/)[^/]+";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(url);
+        if (matcher.find()) {
+            return matcher.group();
+        }
+        return "";// could not extract contest id
     }
 
     @Override

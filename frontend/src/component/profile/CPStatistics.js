@@ -58,10 +58,7 @@ const CPStatistics = () => {
     setPlatformData(null);
 
     try {
-      console.log(
-        `🚀 Fetching ${platform.name} stats for user:`,
-        user.username
-      );
+      console.log(`Fetching ${platform.name} stats...`);
 
       let stats = null;
       if (platform.id === "codeforces") {
@@ -70,13 +67,13 @@ const CPStatistics = () => {
       // Add other platforms here when needed
 
       if (stats?.data) {
-        console.log(`📊 ${platform.name} stats received:`, stats.data);
+        console.log(`${platform.name} data received successfully`);
         setPlatformData(stats.data);
         setContestPage(0); // Reset pagination
         setSolutionsPage(0);
       }
     } catch (err) {
-      console.error(`❌ Error fetching ${platform.name} stats:`, err);
+      console.error(`Error fetching ${platform.name} stats:`, err);
       setError(`Failed to fetch ${platform.name} statistics`);
     } finally {
       setLoading(false);
@@ -128,11 +125,10 @@ const CPStatistics = () => {
                     {contest.oldRating} → {contest.newRating}
                   </p>
                   <p
-                    className={`text-sm ${
-                      contest.newRating > contest.oldRating
+                    className={`text-sm ${contest.newRating > contest.oldRating
                         ? "text-green-400"
                         : "text-red-400"
-                    }`}
+                      }`}
                   >
                     {contest.newRating > contest.oldRating ? "+" : ""}
                     {contest.newRating - contest.oldRating}
