@@ -1,13 +1,13 @@
 package com.algoboard.entities;
 
-public class ContestHistory {
+public class UserContestHistory {
     private String contestId;
     private String contestName;
     private long standing;
     private long oldRating;
     private long newRating;
 
-    public ContestHistory(String contestId, String contestName, long standing, long oldRating, long newRating) {
+    public UserContestHistory(String contestId, String contestName, long standing, long oldRating, long newRating) {
         this.contestId = contestId;
         this.contestName = contestName;
         this.standing = standing;

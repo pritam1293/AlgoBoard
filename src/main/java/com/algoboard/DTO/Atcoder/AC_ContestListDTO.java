@@ -1,25 +1,25 @@
-package com.algoboard.DTO.Leetcode;
+package com.algoboard.DTO.Atcoder;
 
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class LC_ContestListDTO {
+public class AC_ContestListDTO {
     private boolean ok;
-    private List<LeetcodeContest> data;
+    private List<AtcoderContest> data;
 
     // Default constructor for Jackson
-    public LC_ContestListDTO() {
+    public AC_ContestListDTO() {
     }
 
-    public LC_ContestListDTO(boolean ok, List<LeetcodeContest> data) {
+    public AC_ContestListDTO(boolean ok, List<AtcoderContest> data) {
         this.ok = ok;
         this.data = data;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class LeetcodeContest {
+    public static class AtcoderContest {
         private String title;
         private String url;
         private String startTime;
@@ -27,10 +27,10 @@ public class LC_ContestListDTO {
         private int duration;
 
         // Default constructor for Jackson
-        public LeetcodeContest() {
+        public AtcoderContest() {
         }
 
-        public LeetcodeContest(String title, String url, String startTime, String endTime, int duration) {
+        public AtcoderContest(String title, String url, String startTime, String endTime, int duration) {
             this.title = title;
             this.url = url;
             this.startTime = startTime;
@@ -98,11 +98,11 @@ public class LC_ContestListDTO {
         this.ok = ok;
     }
 
-    public List<LeetcodeContest> getData() {
+    public List<AtcoderContest> getData() {
         return data;
     }
 
-    public void setData(List<LeetcodeContest> data) {
+    public void setData(List<AtcoderContest> data) {
         this.data = data;
     }
 

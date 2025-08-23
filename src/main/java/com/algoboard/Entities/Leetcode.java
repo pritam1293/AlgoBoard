@@ -13,7 +13,7 @@ public class Leetcode {
     private long totalSubmissions;
     private long acceptedSubmissions;
     private long contestParticipations;
-    private List<ContestHistory> contestHistory;
+    private List<UserContestHistory> contestHistory;
     private List<Problem> problemList;
 
     public static class Problem {
@@ -52,7 +52,7 @@ public class Leetcode {
         }
     }
 
-    public Leetcode(String username, String rank, long rating, long maxRating, String maxRank, long problemsSolved, long totalSubmissions, long acceptedSubmissions, long contestParticipations, List<ContestHistory> contestHistory, List<Problem> problemList) {
+    public Leetcode(String username, String rank, long rating, long maxRating, String maxRank, long problemsSolved, long totalSubmissions, long acceptedSubmissions, long contestParticipations, List<UserContestHistory> contestHistory, List<Problem> problemList) {
         this.username = username;
         this.rank = rank;
         this.rating = rating;
@@ -138,11 +138,11 @@ public class Leetcode {
         this.contestParticipations = contestParticipations;
     }
 
-    public List<ContestHistory> getContestHistory() {
+    public List<UserContestHistory> getContestHistory() {
         return contestHistory;
     }
 
-    public void setContestHistory(List<ContestHistory> contestHistory) {
+    public void setContestHistory(List<UserContestHistory> contestHistory) {
         this.contestHistory = contestHistory;
     }
 

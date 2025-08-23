@@ -14,13 +14,13 @@ public class Codeforces {
     private long totalSubmissions;
     private long acceptedSubmissions;
     private long contestParticipations;
-    private List<ContestHistory> contestHistory;
+    private List<UserContestHistory> contestHistory;
     private Set<AbstractMap.SimpleEntry<Long, String>> problemSet;
 
 
     public Codeforces(String username, String rank, long rating, long maxRating, String maxRank, long problemsSolved,
             long totalSubmissions, long acceptedSubmissions, long contestParticipations,
-            List<ContestHistory> contestHistory, Set<AbstractMap.SimpleEntry<Long, String>> problemSet) {
+            List<UserContestHistory> contestHistory, Set<AbstractMap.SimpleEntry<Long, String>> problemSet) {
 
         this.username = username;
         this.rank = rank;
@@ -107,7 +107,7 @@ public class Codeforces {
         this.contestParticipations = contestParticipations;
     }
 
-    public List<ContestHistory> getContestHistory() {
+    public List<UserContestHistory> getContestHistory() {
         return contestHistory;
     }
 

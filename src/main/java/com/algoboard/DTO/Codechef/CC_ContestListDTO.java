@@ -12,12 +12,14 @@ public class CC_ContestListDTO {
         private String contest_code;
         private String contest_name;
         private String contest_start_date;
+        private String contest_end_date;
         private String contest_duration;
 
-        public CodechefContest(String contest_code, String contest_name, String contest_start_date, String contest_duration) {
+        public CodechefContest(String contest_code, String contest_name, String contest_start_date, String contest_duration, String contest_end_date) {
             this.contest_code = contest_code;
             this.contest_name = contest_name;
             this.contest_start_date = contest_start_date;
+            this.contest_end_date = contest_end_date;
             this.contest_duration = contest_duration;
         }
 
@@ -44,6 +46,14 @@ public class CC_ContestListDTO {
 
         public void setContestStartDate(String contest_start_date) {
             this.contest_start_date = contest_start_date;
+        }
+
+        public String getContestEndDate() {
+            return contest_end_date;
+        }
+
+        public void setContestEndDate(String contest_end_date) {
+            this.contest_end_date = contest_end_date;
         }
 
         public String getContestDuration() {

@@ -11,7 +11,7 @@ import com.algoboard.DTO.RequestDTO.AuthenticationResponse;
 import com.algoboard.utils.ResponseUtil;
 import java.util.Map;
 import com.algoboard.DTO.RequestDTO.Profile;
-import com.algoboard.DTO.Contest;
+import com.algoboard.DTO.ContestDTO;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.RestController;
@@ -34,11 +34,8 @@ public class UserController {
     private final JwtService jwtService;
     private final CustomUserDetailsService customUserDetailsService;
 
-    public UserController(
-            IUserService userService,
-            EmailService emailService,
-            JwtService jwtService,
-            CustomUserDetailsService customUserDetailsService) {
+    public UserController(IUserService userService, EmailService emailService,
+            JwtService jwtService, CustomUserDetailsService customUserDetailsService) {
         this.userService = userService;
         this.emailService = emailService;
         this.jwtService = jwtService;
@@ -64,11 +61,14 @@ public class UserController {
             }
 
             // Remove password from response for security
-            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Signup successful. Welcome email sent!", newProfile));
+            return ResponseEntity
+                    .ok(ResponseUtil.createSuccessResponse("Signup successful. Welcome email sent!", newProfile));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Signup failed: " + e.getMessage()));
+            return ResponseEntity.status(400)
+                    .body(ResponseUtil.createErrorResponse("Signup failed: " + e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }
     }
 
@@ -105,7 +105,8 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Login failed: " + e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }
     }
 
@@ -114,12 +115,14 @@ public class UserController {
         try {
             Profile profile = userService.getUserProfile(username);
             if (profile != null) {
-                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User profile retrieved successfully", profile));
+                return ResponseEntity
+                        .ok(ResponseUtil.createSuccessResponse("User profile retrieved successfully", profile));
             } else {
                 return ResponseEntity.status(404).body(ResponseUtil.createErrorResponse("User profile not found"));
             }
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Error fetching user profile: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Error fetching user profile: " + e.getMessage()));
         }
     }
 
@@ -127,18 +130,21 @@ public class UserController {
     public ResponseEntity<?> updateUser(@RequestBody Profile profile) {
         try {
             Profile updatedProfile = userService.updateUserDetails(profile);
-            //send an email notification
+            // send an email notification
             try {
-                emailService.sendProfileUpdateNotification(updatedProfile.getEmail(), updatedProfile.getFirstName(), "profile");
+                emailService.sendProfileUpdateNotification(updatedProfile.getEmail(), updatedProfile.getFirstName(),
+                        "profile");
             } catch (Exception emailException) {
                 // Log email error but don't fail the update process
                 System.err.println("Failed to send profile update notification: " + emailException.getMessage());
             }
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User updated successfully", updatedProfile));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
+            return ResponseEntity.status(400)
+                    .body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }
     }
 
@@ -152,13 +158,15 @@ public class UserController {
             emailService.sendProfileUpdateNotification(user.get("email"), user.get("firstName"), "password");
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Password updated successfully", null));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
+            return ResponseEntity.status(400)
+                    .body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }
     }
 
-    @PostMapping("auth/request-reset")//forgot password - enter email
+    @PostMapping("auth/request-reset") // forgot password - enter email
     public ResponseEntity<?> requestPasswordReset(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         System.out.println("");
@@ -167,13 +175,15 @@ public class UserController {
             userService.generateAndSendOtp(email);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("OTP sent to your email", null));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Invalid email or the email is not registered: " + e.getMessage()));
-        } catch(Exception e) {
-            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            return ResponseEntity.status(400).body(ResponseUtil
+                    .createErrorResponse("Invalid email or the email is not registered: " + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }
     }
 
-    @PostMapping("auth/verify-otp")//forgot password - enter otp
+    @PostMapping("auth/verify-otp") // forgot password - enter otp
     public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         String otp = payload.get("otp");
@@ -186,13 +196,15 @@ public class UserController {
             }
             return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Invalid OTP or OTP expired"));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Verification failed: " + e.getMessage()));
+            return ResponseEntity.status(400)
+                    .body(ResponseUtil.createErrorResponse("Verification failed: " + e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }
     }
 
-    @PostMapping("auth/reset-password")//forgot password enter new password
+    @PostMapping("auth/reset-password") // forgot password enter new password
     public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         String newPassword = payload.get("newPassword");
@@ -203,12 +215,14 @@ public class UserController {
             if (success) {
                 return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Password reset successfully", null));
             } else {
-                return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Invalid reset token or token expired"));
+                return ResponseEntity.status(400)
+                        .body(ResponseUtil.createErrorResponse("Invalid reset token or token expired"));
             }
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Reset failed: " + e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }
     }
 
@@ -218,9 +232,11 @@ public class UserController {
             String response = userService.deleteUser(username);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse(response, null));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Delete failed: " + e.getMessage()));
+            return ResponseEntity.status(400)
+                    .body(ResponseUtil.createErrorResponse("Delete failed: " + e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }
     }
 
@@ -234,28 +250,40 @@ public class UserController {
         try {
             boolean success = userService.addCPProfiles(username, codeforcesId, atcoderId, codechefId, leetcodeId);
             if (success) {
-                if(codeforcesId != null) return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Codeforces profile added successfully", null));
-                if(atcoderId != null) return ResponseEntity.ok(ResponseUtil.createSuccessResponse("AtCoder profile added successfully", null));
-                if(codechefId != null) return ResponseEntity.ok(ResponseUtil.createSuccessResponse("CodeChef profile added successfully", null));
-                if(leetcodeId != null) return ResponseEntity.ok(ResponseUtil.createSuccessResponse("LeetCode profile added successfully", null));
+                if (codeforcesId != null)
+                    return ResponseEntity
+                            .ok(ResponseUtil.createSuccessResponse("Codeforces profile added successfully", null));
+                if (atcoderId != null)
+                    return ResponseEntity
+                            .ok(ResponseUtil.createSuccessResponse("AtCoder profile added successfully", null));
+                if (codechefId != null)
+                    return ResponseEntity
+                            .ok(ResponseUtil.createSuccessResponse("CodeChef profile added successfully", null));
+                if (leetcodeId != null)
+                    return ResponseEntity
+                            .ok(ResponseUtil.createSuccessResponse("LeetCode profile added successfully", null));
                 else {
                     return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Error in updating the profile", null));
                 }
             } else {
-                return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Failed to add Codeforces profile"));
+                return ResponseEntity.status(400)
+                        .body(ResponseUtil.createErrorResponse("Failed to add Codeforces profile"));
             }
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
         }
     }
 
     @GetMapping("/contest/list")
     public ResponseEntity<?> getContestList() {
         try {
-            Map<String, List<Contest>> contestList = userService.getContestList();
-            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Contest list retrieved successfully", contestList));
+            List<ContestDTO> contestList = userService.getContestList();
+            return ResponseEntity
+                    .ok(ResponseUtil.createSuccessResponse("Contest list retrieved successfully", contestList));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Error fetching contest list: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Error fetching contest list: " + e.getMessage()));
         }
     }
 
@@ -264,12 +292,15 @@ public class UserController {
         try {
             Codeforces codeforcesProfile = userService.getCodeforcesProfile(username);
             if (codeforcesProfile != null) {
-                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Codeforces profile retrieved successfully", codeforcesProfile));
+                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Codeforces profile retrieved successfully",
+                        codeforcesProfile));
             } else {
-                return ResponseEntity.status(404).body(ResponseUtil.createErrorResponse("Codeforces profile not found"));
+                return ResponseEntity.status(404)
+                        .body(ResponseUtil.createErrorResponse("Codeforces profile not found"));
             }
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Error fetching Codeforces profile: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Error fetching Codeforces profile: " + e.getMessage()));
         }
     }
 
@@ -278,24 +309,30 @@ public class UserController {
         try {
             Atcoder atcoderProfile = userService.getAtcoderProfile(username);
             if (atcoderProfile != null) {
-                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("AtCoder profile retrieved successfully", atcoderProfile));
+                return ResponseEntity.ok(
+                        ResponseUtil.createSuccessResponse("AtCoder profile retrieved successfully", atcoderProfile));
             } else {
                 return ResponseEntity.status(404).body(ResponseUtil.createErrorResponse("AtCoder profile not found"));
             }
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Error fetching AtCoder profile: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Error fetching AtCoder profile: " + e.getMessage()));
         }
     }
 
     // // Email Testing Endpoints - Remove in production
     // @PostMapping("/test/email/welcome")
-    // public ResponseEntity<?> testWelcomeEmail(@RequestParam String email, @RequestParam String firstName) {
-    //     try {
-    //         emailService.sendWelcomeEmail(email, firstName);
-    //         return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Welcome email sent to: " + email, null));
-    //     } catch (Exception e) {
-    //         return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Failed to send welcome email: " + e.getMessage()));
-    //     }
+    // public ResponseEntity<?> testWelcomeEmail(@RequestParam String email,
+    // @RequestParam String firstName) {
+    // try {
+    // emailService.sendWelcomeEmail(email, firstName);
+    // return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Welcome email
+    // sent to: " + email, null));
+    // } catch (Exception e) {
+    // return
+    // ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Failed to
+    // send welcome email: " + e.getMessage()));
+    // }
     // }
 
     @PostMapping("/test/email/login")
@@ -304,7 +341,8 @@ public class UserController {
             emailService.sendLoginNotification(email, firstName);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Login notification sent to: " + email, null));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Failed to send login notification: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Failed to send login notification: " + e.getMessage()));
         }
     }
 }

@@ -5,19 +5,21 @@ import com.algoboard.DTO.Codeforces.CF_SubmissionsDTO;
 import com.algoboard.DTO.Codeforces.CF_UserDTO;
 import com.algoboard.DTO.Codeforces.CF_ContestListDTO;
 import com.algoboard.DTO.Codechef.CC_ContestListDTO;
+import com.algoboard.DTO.Leetcode.LC_ContestDTO;
 import com.algoboard.DTO.Leetcode.LC_ContestListDTO;
-import com.algoboard.DTO.Contest;
+import com.algoboard.DTO.ContestDTO;
 import com.algoboard.entities.Atcoder;
 import com.algoboard.entities.Codeforces;
-import com.algoboard.entities.ContestHistory;
+import com.algoboard.entities.UserContestHistory;
 import com.algoboard.entities.User;
-import com.algoboard.DTO.Atcoder.ACcontestDTO;
+import com.algoboard.DTO.Atcoder.AC_ContestDTO;
+import com.algoboard.DTO.Atcoder.AC_ContestListDTO;
 import com.algoboard.repository.UserRepository;
 import com.algoboard.DTO.RequestDTO.Profile;
+import com.algoboard.DTO.Leetcode.LC_ContestDTO.ContestHistory;
 
 import java.util.Set;
 import java.util.HashSet;
-import java.util.HashMap;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.ArrayList;
@@ -30,9 +32,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.scheduling.annotation.Scheduled;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class UserService implements IUserService {
@@ -40,12 +49,12 @@ public class UserService implements IUserService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private RestTemplate restTemplate = new RestTemplate();
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
-        getContestList();
         System.out.println("");
         System.out.println("MongoDB connected.");
         System.out.println("");
@@ -63,16 +72,7 @@ public class UserService implements IUserService {
         // Hash the password before saving
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
-        return new Profile(
-                user.getUsername(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getEmail(),
-                user.isStudent(),
-                user.getCodeforcesUsername(),
-                user.getAtcoderUsername(),
-                user.getCodechefUsername(),
-                user.getLeetcodeUsername());
+        return createProfile(user);
     }
 
     @Override
@@ -80,31 +80,13 @@ public class UserService implements IUserService {
         if (username != null && !username.isEmpty()) {
             User user = userRepository.findByUsername(username);
             if (user != null && passwordEncoder.matches(password, user.getPassword())) {
-                return new Profile(
-                        user.getUsername(),
-                        user.getFirstName(),
-                        user.getLastName(),
-                        user.getEmail(),
-                        user.isStudent(),
-                        user.getCodeforcesUsername(),
-                        user.getAtcoderUsername(),
-                        user.getCodechefUsername(),
-                        user.getLeetcodeUsername());
+                return createProfile(user);
             }
         }
         if (email != null && !email.isEmpty()) {
             User user = userRepository.findByEmail(email);
             if (user != null && passwordEncoder.matches(password, user.getPassword())) {
-                return new Profile(
-                        user.getUsername(),
-                        user.getFirstName(),
-                        user.getLastName(),
-                        user.getEmail(),
-                        user.isStudent(),
-                        user.getCodeforcesUsername(),
-                        user.getAtcoderUsername(),
-                        user.getCodechefUsername(),
-                        user.getLeetcodeUsername());
+                return createProfile(user);
             }
         }
         throw new IllegalArgumentException("Invalid username or password.");
@@ -114,16 +96,7 @@ public class UserService implements IUserService {
     public Profile getUserProfile(String username) {
         User user = userRepository.findByUsername(username);
         if (user != null) {
-            return new Profile(
-                    user.getUsername(),
-                    user.getFirstName(),
-                    user.getLastName(),
-                    user.getEmail(),
-                    user.isStudent(),
-                    user.getCodeforcesUsername(),
-                    user.getAtcoderUsername(),
-                    user.getCodechefUsername(),
-                    user.getLeetcodeUsername());
+            return createProfile(user);
         }
         throw new IllegalArgumentException("User not found with username: " + username);
     }
@@ -145,18 +118,22 @@ public class UserService implements IUserService {
                 existingUser.setStudent(profile.isStudent());
             }
             userRepository.save(existingUser);
-            return new Profile(
-                    existingUser.getUsername(),
-                    existingUser.getFirstName(),
-                    existingUser.getLastName(),
-                    existingUser.getEmail(),
-                    existingUser.isStudent(),
-                    existingUser.getCodeforcesUsername(),
-                    existingUser.getAtcoderUsername(),
-                    existingUser.getCodechefUsername(),
-                    existingUser.getLeetcodeUsername());
+            return createProfile(existingUser);
         }
         throw new IllegalArgumentException("User does not exist with username: " + profile.getUsername());
+    }
+
+    private Profile createProfile(User user) {
+        return new Profile(
+                user.getUsername(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                user.isStudent(),
+                user.getCodeforcesUsername(),
+                user.getAtcoderUsername(),
+                user.getCodechefUsername(),
+                user.getLeetcodeUsername());
     }
 
     @Override
@@ -244,103 +221,303 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public Map<String, List<Contest>> getContestList() {
-        Map<String, List<Contest>> contestMap = new HashMap<>();
-        contestMap.put("codeforces", getCodeforcesContestList());
-        contestMap.put("codechef", getCodechefContestList());
-        contestMap.put("atcoder", getAtcoderContestList());
-        contestMap.put("leetcode", getLeetcodeContestList());
-        return contestMap;
+    @Cacheable(value = "contestList", key = "'all_contests'")
+    public List<ContestDTO> getContestList() {
+        System.out.println("Cache miss - fetching contest data from APIs...");
+        List<ContestDTO> allContests = new ArrayList<>();
+
+        // Start all API calls simultaneously - directly populate allContests
+        CompletableFuture<Void> cfFuture = CompletableFuture.runAsync(() -> getCodeforcesContestList(allContests));
+        CompletableFuture<Void> ccFuture = CompletableFuture.runAsync(() -> getCodechefContestList(allContests));
+        CompletableFuture<Void> acFuture = CompletableFuture.runAsync(() -> getAtcoderContestList(allContests));
+        CompletableFuture<Void> lcFuture = CompletableFuture.runAsync(() -> getLeetcodeContestList(allContests));
+
+        // Wait for all API calls to complete with timeout protection
+        try {
+            cfFuture.get(5, TimeUnit.SECONDS);
+            System.out.println("Codeforces contests added successfully");
+        } catch (Exception e) {
+            System.out.println("Codeforces API timeout or error: " + e.getMessage());
+        }
+
+        try {
+            ccFuture.get(5, TimeUnit.SECONDS);
+            System.out.println("CodeChef contests added successfully");
+        } catch (Exception e) {
+            System.out.println("CodeChef API timeout or error: " + e.getMessage());
+        }
+
+        try {
+            acFuture.get(5, TimeUnit.SECONDS);
+            System.out.println("AtCoder contests added successfully");
+        } catch (Exception e) {
+            System.out.println("AtCoder API timeout or error: " + e.getMessage());
+        }
+
+        try {
+            lcFuture.get(5, TimeUnit.SECONDS);
+            System.out.println("LeetCode contests added successfully");
+        } catch (Exception e) {
+            System.out.println("LeetCode API timeout or error: " + e.getMessage());
+        }
+
+        System.out.println("Total merged contests: " + allContests.size());
+
+        // Sort contests by priority: Live → Upcoming → Finished
+        allContests.sort(this::compareContestsByPriority);
+
+        System.out.println("Contest data cached and sorted successfully!");
+        return allContests;
     }
 
-    private List<Contest> getCodeforcesContestList() {
+    // Automatically refresh cache every 30 minutes
+    @CacheEvict(value = "contestList", allEntries = true)
+    @Scheduled(fixedRate = 1800000) // 30 minutes in milliseconds
+    public void refreshContestCache() {
+        System.out.println("Contest cache cleared - will refresh on next request");
+    }
+
+    /**
+     * Custom comparator for sorting contests by priority and time
+     * Priority: Live contests → Upcoming contests → Finished contests
+     * Within each category: Sort by start time (earliest first)
+     */
+    private int compareContestsByPriority(ContestDTO contest1, ContestDTO contest2) {
+        LocalDateTime now = LocalDateTime.now();
+
+        int priority1 = getContestPriority(contest1, now);
+        int priority2 = getContestPriority(contest2, now);
+
+        // Primary sort: by priority (lower number = higher priority)
+        if (priority1 != priority2) {
+            return Integer.compare(priority1, priority2);
+        }
+
+        // Secondary sort: by start time within same priority
+        if (priority1 == 1) { // Live contests - sort by earliest start time
+            return contest1.getStartTime().compareTo(contest2.getStartTime());
+        } else if (priority1 == 2) { // Upcoming contests - sort by earliest start time
+            return contest1.getStartTime().compareTo(contest2.getStartTime());
+        } else { // Finished contests - sort by latest start time (most recent first)
+            return contest2.getStartTime().compareTo(contest1.getStartTime());
+        }
+    }
+
+    private int getContestPriority(ContestDTO contest, LocalDateTime now) {
+        if (now.isAfter(contest.getStartTime()) && now.isBefore(contest.getEndTime())) {
+            return 1; // Live contest
+        } else if (now.isBefore(contest.getStartTime())) {
+            return 2; // Upcoming contest
+        } else {
+            return 3; // Finished contest
+        }
+    }
+
+    private void getCodeforcesContestList(List<ContestDTO> allContests) {
         String cfurl = "https://codeforces.com/api/contest.list";
-        CF_ContestListDTO response = restTemplate.getForObject(cfurl, CF_ContestListDTO.class);
-        List<Contest> contests = new ArrayList<>();
-        int cnt = 0;
-        if (response != null && response.getStatus().equals("OK")) {
-            for (CF_ContestListDTO.CodeforcesContest contest : response.getResult()) {
-                contests.add(new Contest(
-                        String.valueOf(contest.getId()),
-                        contest.getName(),
-                        LocalDateTime.ofEpochSecond(contest.getStartTimeSeconds(), 0,
-                                java.time.ZoneOffset.of("+05:30")),
-                        (long) contest.getDurationSeconds() / 60));
-                if (++cnt > 10) {
-                    break;// Limit to 10 contests
-                }
-            }
-        }
-        return contests;
-    }
-
-    private List<Contest> getCodechefContestList() {
-        String ccurl = "https://www.codechef.com/api/list/contests/all?sort_by=START&sorting_order=asc&offset=0&mode=all";
-        CC_ContestListDTO response = restTemplate.getForObject(ccurl, CC_ContestListDTO.class);
-        List<Contest> contests = new ArrayList<>();
-
-        // Create a DateTimeFormatter for the CodeChef date format: "20 Aug 2025
-        // 20:00:00"
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy  HH:mm:ss");
-
-        if (response != null && response.getStatus().equals("success")) {
-            for (CC_ContestListDTO.CodechefContest contest : response.getPresentContests()) {
-                contests.add(new Contest(
-                        contest.getContestCode(),
-                        contest.getContestName(),
-                        LocalDateTime.parse(contest.getContestStartDate(), formatter),
-                        Long.parseLong(contest.getContestDuration())));
-            }
-            for (CC_ContestListDTO.CodechefContest contest : response.getFutureContests()) {
-                contests.add(new Contest(
-                        contest.getContestCode(),
-                        contest.getContestName(),
-                        LocalDateTime.parse(contest.getContestStartDate(), formatter),
-                        Long.parseLong(contest.getContestDuration())));
-            }
+        int addedCount = 0;
+        try {
+            CF_ContestListDTO response = restTemplate.getForObject(cfurl, CF_ContestListDTO.class);
             int cnt = 0;
-            for (CC_ContestListDTO.CodechefContest contest : response.getPastContests()) {
-                contests.add(new Contest(
+            if (response != null && response.getStatus().equals("OK")) {
+                for (CF_ContestListDTO.CodeforcesContest contest : response.getResult()) {
+                    synchronized (allContests) {
+                        allContests.add(new ContestDTO(
+                                String.valueOf(contest.getId()),
+                                contest.getName(),
+                                "https://codeforces.com/contest/" + contest.getId(),
+                                "codeforces",
+                                LocalDateTime.ofEpochSecond(contest.getStartTimeSeconds(), 0,
+                                        java.time.ZoneOffset.of("+05:30")),
+                                LocalDateTime.ofEpochSecond(
+                                        contest.getStartTimeSeconds() + contest.getDurationSeconds(), 0,
+                                        java.time.ZoneOffset.of("+05:30")),
+                                (long) contest.getDurationSeconds() / 60)
+
+                        );
+                        addedCount++;
+                    }
+                    if (++cnt == 6) {
+                        break;// Limit to 6 contests
+                    }
+                }
+                System.out.println("Added " + addedCount + " Codeforces contests");
+            } else {
+                System.out.println("Codeforces API response was null or status not OK");
+            }
+        } catch (Exception e) {
+            System.out.println("");
+            System.out.println("Error fetching Codeforces contests: " + e.getMessage());
+            System.out.println("Returning empty Codeforces contest list.");
+            System.out.println("");
+        }
+    }
+
+    private void getCodechefContestList(List<ContestDTO> allContests) {
+        String ccurl = "https://www.codechef.com/api/list/contests/all?sort_by=START&sorting_order=asc&offset=0&mode=all";
+        try {
+            CC_ContestListDTO response = restTemplate.getForObject(ccurl, CC_ContestListDTO.class);
+
+            // Create a DateTimeFormatter for the CodeChef date format: "20 Aug 2025
+            // 20:00:00"
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy  HH:mm:ss");
+
+            if (response != null && response.getStatus().equals("success")) {
+                addCodechefContests(allContests, response.getPresentContests(), formatter, -1);
+                addCodechefContests(allContests, response.getFutureContests(), formatter, -1);
+                addCodechefContests(allContests, response.getPastContests(), formatter, 4);
+                System.out.println("Added CodeChef contests successfully");
+            } else {
+                System.out.println("CodeChef API response was null or status not success");
+            }
+        } catch (Exception e) {
+            System.out.println("");
+            System.out.println("Error fetching CodeChef contests: " + e.getMessage());
+            System.out.println("Returning empty CodeChef contest list.");
+            System.out.println("");
+        }
+    }
+
+    private void addCodechefContests(List<ContestDTO> allContests, List<CC_ContestListDTO.CodechefContest> contestList,
+            DateTimeFormatter formatter, int limit) {
+        int count = 0;
+        for (CC_ContestListDTO.CodechefContest contest : contestList) {
+            synchronized (allContests) {
+                allContests.add(new ContestDTO(
                         contest.getContestCode(),
                         contest.getContestName(),
+                        "https://www.codechef.com/" + contest.getContestCode(),
+                        "codechef",
                         LocalDateTime.parse(contest.getContestStartDate(), formatter),
-                        Long.parseLong(contest.getContestDuration().replace("s", ""))));
-                if (++cnt > 10) {
-                    break; // Limit to 10 past contests
+                        LocalDateTime.parse(contest.getContestEndDate(), formatter),
+                        Long.parseLong(contest.getContestDuration())));
+            }
+
+            if (limit > 0 && ++count >= limit) {
+                break; // Limit reached
+            }
+        }
+    }
+
+    private void getAtcoderContestList(List<ContestDTO> allContests) {
+        String acurl = "https://contest-hive.vercel.app/api/atcoder";
+        int addedCount = 0;
+
+        try {
+            String rawResponse = restTemplate.getForObject(acurl, String.class);
+            AC_ContestListDTO response = objectMapper.readValue(rawResponse, AC_ContestListDTO.class);
+            if (response != null && response.isOk()) {
+                for (AC_ContestListDTO.AtcoderContest contest : response.getData()) {
+                    final String contestId = contestIdExtractorFromUrl(contest.getUrl());
+                    synchronized (allContests) {
+                        allContests.add(new ContestDTO(
+                                contestId,
+                                contest.getTitle(),
+                                "https://atcoder.jp/contests/" + contestId,
+                                "atcoder",
+                                LocalDateTime.ofInstant(Instant.parse(contest.getStartTime()),
+                                        ZoneId.of("Asia/Kolkata")),
+                                LocalDateTime.ofInstant(Instant.parse(contest.getEndTime()), ZoneId.of("Asia/Kolkata")),
+                                contest.getDuration() / 60));
+                        addedCount++;
+                    }
+                }
+                System.out.println("Added " + addedCount + " AtCoder contests");
+            } else {
+                System.out.println("Atcoder API response was null or status not OK");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("");
+            System.out.println("Error fetching Atcoder contests: " + e.getMessage());
+            System.out.println("");
+            System.out.println("Returning empty Atcoder contest list.");
+            System.out.println("");
+        }
+    }
+
+    private void getLeetcodeContestList(List<ContestDTO> allContests) {
+        // future contests
+        String lcurl = "https://contest-hive.vercel.app/api/leetcode";
+        int addedCount = 0;
+
+        try {
+            // Get raw response as String to bypass content-type issue
+            String rawResponse = restTemplate.getForObject(lcurl, String.class);
+            // Parse using ObjectMapper to handle content-type issue
+            LC_ContestListDTO response = objectMapper.readValue(rawResponse, LC_ContestListDTO.class);
+
+            if (response != null && response.isOk()) {
+                for (LC_ContestListDTO.LeetcodeContest contest : response.getData()) {
+                    synchronized (allContests) {
+                        allContests.add(new ContestDTO(
+                                contestIdExtractorFromUrl(contest.getUrl()),
+                                contest.getTitle(),
+                                contest.getUrl(),
+                                "leetcode",
+                                LocalDateTime.ofInstant(Instant.parse(contest.getStartTime()),
+                                        ZoneId.of("Asia/Kolkata")),
+                                LocalDateTime.ofInstant(Instant.parse(contest.getEndTime()), ZoneId.of("Asia/Kolkata")),
+                                contest.getDuration() / 60));
+                        addedCount++;
+                    }
+                }
+            } else {
+                System.out.println("Leetcode API response was null or status not OK");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("");
+            System.out.println("Error fetching Leetcode contests: " + e.getMessage());
+            System.out.println("");
+            System.out.println("Returning empty Leetcode contest list.");
+            System.out.println("");
+        }
+
+        // past contests
+        lcurl = "https://leetcode-stats.tashif.codes/Pritam1293/contests";
+        try {
+            LC_ContestDTO response = restTemplate.getForObject(lcurl, LC_ContestDTO.class);
+            if (response.getStatus().equals("success")) {
+                // last 4 contests
+                List<ContestHistory> history = response.getContestHistory();
+                if (history != null && !history.isEmpty()) {
+                    Collections.reverse(history);
+                    for (int index = 0; index < Math.min(4, history.size()); index++) {
+                        LocalDateTime startTime = LocalDateTime.ofEpochSecond(
+                                history.get(index).getContest().getStartTime(), 0, java.time.ZoneOffset.of("+05:30"));
+                        LocalDateTime endTime = startTime.plusMinutes(90);
+                        final String contestId = history.get(index).getContest().getTitle().toLowerCase().replace(" ",
+                                "-");
+                        synchronized (allContests) {
+                            allContests.add(new ContestDTO(
+                                    contestId,
+                                    history.get(index).getContest().getTitle(),
+                                    "https://leetcode.com/contest/" + contestId,
+                                    "leetcode",
+                                    startTime,
+                                    endTime,
+                                    90));
+                            addedCount++;
+                        }
+                    }
                 }
             }
+            System.out.println("Added " + addedCount + " LeetCode contests");
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("");
+            System.out.println("Error fetching Leetcode past contests: " + e.getMessage());
+            System.out.println("");
+            System.out.println("Added " + addedCount + " LeetCode contests (future only).");
+            System.out.println("");
         }
-        return contests;
     }
 
-    private List<Contest> getAtcoderContestList() {
-        return new ArrayList<>(); // Return empty list for now
-    }
-
-    private List<Contest> getLeetcodeContestList() {
-        String lcurl = "https://contest-hive.vercel.app/api/leetcode";
-        LC_ContestListDTO response = restTemplate.getForObject(lcurl, LC_ContestListDTO.class);
-        List<Contest> contests = new ArrayList<>();
-        if (response != null && response.isOk()) {
-            for (LC_ContestListDTO.LeetcodeContest contest : response.getData()) {
-                contests.add(new Contest(
-                        LeetcodeContestIdExtractor(contest.getUrl()),
-                        contest.getTitle(),
-                        LocalDateTime.ofInstant(Instant.parse(contest.getStartTime()), ZoneId.of("Asia/Kolkata")),
-                        contest.getDuration() / 60));
-            }
-        }
-        return contests;
-    }
-
-    private String LeetcodeContestIdExtractor(String url) {
-        String regex = "(?<=/contest/)[^/]+";
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(url);
-        if (matcher.find()) {
-            return matcher.group();
-        }
-        return "";// could not extract contest id
+    private String contestIdExtractorFromUrl(String url) {
+        String regex = "(?<=/contests?/)[^/]+";
+        Matcher matcher = Pattern.compile(regex).matcher(url);
+        return matcher.find() ? matcher.group() : "";
     }
 
     @Override
@@ -393,9 +570,9 @@ public class UserService implements IUserService {
             }
             CF_UserDTO.Result result = profileResponse.getResult().get(0);
             java.util.List<CF_ContestDTO.Result> contestResults = contestResponse.getResult();
-            List<ContestHistory> contestHistory = new ArrayList<>();
+            List<UserContestHistory> contestHistory = new ArrayList<>();
             for (CF_ContestDTO.Result contestResult : contestResults) {
-                contestHistory.add(new ContestHistory(
+                contestHistory.add(new UserContestHistory(
                         Long.toString(contestResult.getContestId()),
                         contestResult.getContestName(),
                         contestResult.getRank(),
@@ -436,16 +613,14 @@ public class UserService implements IUserService {
             throw new IllegalArgumentException("AtCoder ID not found for user: " + username);
         }
         String url = "https://atcoder.jp/users/" + acid + "/history/json";
-        System.out.println("");
-        System.out.println("url: " + url);
-        System.out.println("");
+
         try {
-            ACcontestDTO[] contestHistory = restTemplate.getForObject(url, ACcontestDTO[].class);
+            AC_ContestDTO[] contestHistory = restTemplate.getForObject(url, AC_ContestDTO[].class);
             long contestParticipations = 0;
             long currRating = -1;
             long maxRating = -1;
-            List<ContestHistory> history = new ArrayList<>();
-            for (ACcontestDTO contest : contestHistory) {
+            List<UserContestHistory> history = new ArrayList<>();
+            for (AC_ContestDTO contest : contestHistory) {
                 if (contest.isRated()) {
                     contestParticipations++;
                 }
@@ -453,7 +628,7 @@ public class UserService implements IUserService {
                 currRating = contest.getNewRating();
                 String contestName = contestNameExtractor(contest.getContestName());
                 String contestId = contestIdExtractor(contestName);
-                history.add(new ContestHistory(
+                history.add(new UserContestHistory(
                         contestId,
                         contestName,
                         contest.getPlace(),
@@ -529,87 +704,4 @@ public class UserService implements IUserService {
         }
         return rankTitle;
     }
-
-    // public Codechef getCodechefProfile(String username) {
-    // String url = "https://www.codechef.com/users/" + username;
-    // try {
-    // Document doc = Jsoup.connect(url).timeout(1000)
-    // .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)
-    // AppleWebKit/537.36").get();
-    // // String displayName
-    // } catch (Exception e) {
-    // throw new RuntimeException("Failed to fetch Codechef profile for user: " +
-    // username);
-    // }
-    // return null;
-    // }
-
-    // private String extractDisplayName(Document doc) {
-    // try {
-    // Element nameElement = doc.select(".user-details-container h1").first();
-    // return nameElement != null ? nameElement.text().trim() : "";
-    // } catch(Exception e) {
-    // System.out.println("");
-    // System.out.println("Error extracting display name: " + e.getMessage());
-    // System.out.println("");
-    // return "";
-    // }
-    // }
-
-    // private long extractCurrentRating(Document doc) {
-    // try {
-    // Element ratingElement = doc.select(".rating-number").first();
-    // if (ratingElement != null) {
-    // String ratingText = ratingElement.text().replaceAll("[^0-9]", "");
-    // if (!ratingText.isEmpty()) {
-    // return Long.parseLong(ratingText);
-    // }
-    // }
-    // return 0;
-    // } catch (Exception e) {
-    // return 0;
-    // }
-    // }
-
-    // private long extractMaxRating(Document doc) {
-    // try {
-    // Element maxRatingElement = doc.select(".rating-header .small").first();
-    // if (maxRatingElement != null) {
-    // String text = maxRatingElement.text();
-    // Pattern pattern = Pattern.compile("\\(max\\s*(\\d+)\\)");
-    // Matcher matcher = pattern.matcher(text);
-    // if (matcher.find()) {
-    // return Long.parseLong(matcher.group(1));
-    // }
-    // }
-    // return extractCurrentRating(doc);
-    // } catch (Exception e) {
-    // return 0;
-    // }
-    // }
-
-    // private String extractStars(Document doc) {
-    // try {
-    // Elements starElements = doc.select(".rating .star");
-    // return starElements.size() + " Star";
-    // } catch (Exception e) {
-    // return "Unrated";
-    // }
-    // }
-
-    // private long extractTotalProblemsSolved(Document doc) {
-    // try {
-    // Elements problemStats = doc.select(".problems-solved .number");
-    // if (!problemStats.isEmpty()) {
-    // String text = problemStats.first().text().replaceAll("[^0-9]", "");
-    // if (!text.isEmpty()) {
-    // return Long.parseLong(text);
-    // }
-    // }
-    // return 0;
-    // } catch (Exception e) {
-    // return 0;
-    // }
-    // }
-
 }

@@ -2,7 +2,7 @@ package com.algoboard.DTO.Atcoder;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ACcontestDTO {
+public class AC_ContestDTO {
     @JsonProperty("IsRated")
     private boolean IsRated;
 
@@ -18,7 +18,7 @@ public class ACcontestDTO {
     @JsonProperty("ContestName")
     private String ContestName;
 
-    public ACcontestDTO(boolean isRated, long place, long oldRating, long newRating, String contestName) {
+    public AC_ContestDTO(boolean isRated, long place, long oldRating, long newRating, String contestName) {
         IsRated = isRated;
         Place = place;
         OldRating = oldRating;
