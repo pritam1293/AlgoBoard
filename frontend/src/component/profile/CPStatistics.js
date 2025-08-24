@@ -643,37 +643,44 @@ const CPStatistics = () => {
                     }
                   </p>
                 </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-400">Problems Solved</p>
-                  <p className="text-lg font-semibold text-purple-400">
-                    {selectedPlatform?.id === 'leetcode'
-                      ? (platformData.problemsSolved?.all || 0)
-                      : (platformData.problemsSolved || 0)
-                    }
-                  </p>
-                </div>
+
+                {/* Hide Problems Solved, Total Submissions, and Accepted Submissions for AtCoder */}
+                {selectedPlatform?.id !== 'atcoder' && (
+                  <>
+                    <div className="text-center">
+                      <p className="text-sm text-gray-400">Problems Solved</p>
+                      <p className="text-lg font-semibold text-purple-400">
+                        {selectedPlatform?.id === 'leetcode'
+                          ? (platformData.problemsSolved?.all || 0)
+                          : (platformData.problemsSolved || 0)
+                        }
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-gray-400">Total Submissions</p>
+                      <p className="text-lg font-semibold text-yellow-400">
+                        {selectedPlatform?.id === 'leetcode'
+                          ? (platformData.totalSubmissions?.all || 0)
+                          : (platformData.totalSubmissions || 0)
+                        }
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-gray-400">Accepted Submissions</p>
+                      <p className="text-lg font-semibold text-emerald-400">
+                        {selectedPlatform?.id === 'leetcode'
+                          ? (platformData.acceptedSubmissions?.all || 0)
+                          : (platformData.acceptedSubmissions || 0)
+                        }
+                      </p>
+                    </div>
+                  </>
+                )}
+
                 <div className="text-center">
                   <p className="text-sm text-gray-400">Contest Participated</p>
                   <p className="text-lg font-semibold text-orange-400">
                     {platformData.contestParticipations || 0}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-400">Total Submissions</p>
-                  <p className="text-lg font-semibold text-yellow-400">
-                    {selectedPlatform?.id === 'leetcode'
-                      ? (platformData.totalSubmissions?.all || 0)
-                      : (platformData.totalSubmissions || 0)
-                    }
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-400">Accepted Submissions</p>
-                  <p className="text-lg font-semibold text-emerald-400">
-                    {selectedPlatform?.id === 'leetcode'
-                      ? (platformData.acceptedSubmissions?.all || 0)
-                      : (platformData.acceptedSubmissions || 0)
-                    }
                   </p>
                 </div>
               </div>
@@ -710,10 +717,12 @@ const CPStatistics = () => {
                   {renderContestHistory()}
                 </div>
 
-                {/* Accepted Solutions */}
-                <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
-                  {renderAcceptedSolutions()}
-                </div>
+                {/* Accepted Solutions - Only show for platforms that provide this data (exclude AtCoder) */}
+                {selectedPlatform?.id !== 'atcoder' && (
+                  <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+                    {renderAcceptedSolutions()}
+                  </div>
+                )}
               </>
             )}
           </div>
