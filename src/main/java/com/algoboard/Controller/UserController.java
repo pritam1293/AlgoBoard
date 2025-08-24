@@ -2,6 +2,7 @@ package com.algoboard.controller;
 
 import com.algoboard.entities.Atcoder;
 import com.algoboard.entities.Codeforces;
+import com.algoboard.entities.Leetcode;
 import com.algoboard.entities.User;
 import com.algoboard.services.IUserService;
 import com.algoboard.services.EmailService;
@@ -241,7 +242,7 @@ public class UserController {
     }
 
     @PostMapping("/add/cp/profiles")
-    public ResponseEntity<?> addCodeforcesProfile(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> addCPProfile(@RequestBody Map<String, String> payload) {
         String username = payload.get("username");
         String codeforcesId = payload.get("codeforcesId");
         String codechefId = payload.get("codechefId");
@@ -320,20 +321,22 @@ public class UserController {
         }
     }
 
-    // // Email Testing Endpoints - Remove in production
-    // @PostMapping("/test/email/welcome")
-    // public ResponseEntity<?> testWelcomeEmail(@RequestParam String email,
-    // @RequestParam String firstName) {
-    // try {
-    // emailService.sendWelcomeEmail(email, firstName);
-    // return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Welcome email
-    // sent to: " + email, null));
-    // } catch (Exception e) {
-    // return
-    // ResponseEntity.status(500).body(ResponseUtil.createErrorResponse("Failed to
-    // send welcome email: " + e.getMessage()));
-    // }
-    // }
+    @GetMapping("platforms/leetcode")
+    public ResponseEntity<?> getLeetcodeProfile(@RequestParam String username) {
+        try {
+            Leetcode leetcodeProfile = userService.getLeetcodeProfile(username);
+            if (leetcodeProfile != null) {
+                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("LeetCode profile retrieved successfully",
+                        leetcodeProfile));
+            } else {
+                return ResponseEntity.status(404)
+                        .body(ResponseUtil.createErrorResponse("LeetCode profile not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Error fetching LeetCode profile: " + e.getMessage()));
+        }
+    }
 
     @PostMapping("/test/email/login")
     public ResponseEntity<?> testLoginEmail(@RequestParam String email, @RequestParam String firstName) {

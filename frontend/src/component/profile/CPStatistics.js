@@ -42,6 +42,158 @@ const CPStatistics = () => {
   const CONTESTS_PER_PAGE = 5;
   const SOLUTIONS_PER_PAGE = 9;
 
+
+
+
+
+  const renderLeetcodeProblemStats = () => {
+    if (!platformData?.problemsSolved || selectedPlatform?.id !== 'leetcode') {
+      return null;
+    }
+
+    const { problemsSolved, totalSubmissions, acceptedSubmissions } = platformData;
+
+    return (
+      <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+        <h4 className="text-lg font-semibold text-white mb-4">Problem Statistics</h4>
+
+        {/* Problems Solved Breakdown */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="text-center p-4 bg-neutral-700 rounded-lg">
+            <p className="text-2xl font-bold text-green-400">{problemsSolved.all}</p>
+            <p className="text-sm text-gray-400">Total Solved</p>
+          </div>
+          <div className="text-center p-4 bg-neutral-700 rounded-lg">
+            <p className="text-2xl font-bold text-green-500">{problemsSolved.easy}</p>
+            <p className="text-sm text-gray-400">Easy</p>
+          </div>
+          <div className="text-center p-4 bg-neutral-700 rounded-lg">
+            <p className="text-2xl font-bold text-yellow-500">{problemsSolved.medium}</p>
+            <p className="text-sm text-gray-400">Medium</p>
+          </div>
+          <div className="text-center p-4 bg-neutral-700 rounded-lg">
+            <p className="text-2xl font-bold text-red-500">{problemsSolved.hard}</p>
+            <p className="text-sm text-gray-400">Hard</p>
+          </div>
+        </div>
+
+        {/* Submission Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 bg-neutral-700 rounded-lg">
+            <h5 className="text-white font-semibold mb-2">Total Submissions</h5>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-400">All:</span>
+                <span className="text-white">{totalSubmissions.all}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-green-400">Easy:</span>
+                <span className="text-white">{totalSubmissions.easy}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-yellow-400">Medium:</span>
+                <span className="text-white">{totalSubmissions.medium}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-red-400">Hard:</span>
+                <span className="text-white">{totalSubmissions.hard}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 bg-neutral-700 rounded-lg">
+            <h5 className="text-white font-semibold mb-2">Accepted Submissions</h5>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-400">All:</span>
+                <span className="text-white">{acceptedSubmissions.all}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-green-400">Easy:</span>
+                <span className="text-white">{acceptedSubmissions.easy}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-yellow-400">Medium:</span>
+                <span className="text-white">{acceptedSubmissions.medium}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-red-400">Hard:</span>
+                <span className="text-white">{acceptedSubmissions.hard}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 bg-neutral-700 rounded-lg">
+            <h5 className="text-white font-semibold mb-2">Acceptance Rate</h5>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Overall:</span>
+                <span className="text-white">
+                  {((acceptedSubmissions.all / totalSubmissions.all) * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-green-400">Easy:</span>
+                <span className="text-white">
+                  {((acceptedSubmissions.easy / totalSubmissions.easy) * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-yellow-400">Medium:</span>
+                <span className="text-white">
+                  {((acceptedSubmissions.medium / totalSubmissions.medium) * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-red-400">Hard:</span>
+                <span className="text-white">
+                  {((acceptedSubmissions.hard / totalSubmissions.hard) * 100).toFixed(1)}%
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Recent submissions component for LeetCode
+  const renderRecentSubmissions = () => {
+    if (!platformData?.recentSubmissions || selectedPlatform?.id !== 'leetcode') {
+      return null;
+    }
+
+    const submissions = platformData.recentSubmissions.slice(0, 10); // Show latest 10
+
+    return (
+      <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+        <h4 className="text-lg font-semibold text-white mb-4">Recent Submissions</h4>
+        <div className="space-y-3">
+          {submissions.map((submission, index) => (
+            <div key={index} className="flex items-center justify-between p-3 bg-neutral-700 rounded-lg hover:bg-neutral-600 transition-colors">
+              <div className="flex-1">
+                <a
+                  href={submission.problemUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 font-medium"
+                >
+                  {submission.problemTitle}
+                </a>
+              </div>
+              <div className={`px-3 py-1 rounded-full text-xs font-medium ${submission.status === 'Accepted'
+                ? 'bg-green-900 text-green-300'
+                : 'bg-red-900 text-red-300'
+                }`}>
+                {submission.status}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   // Available platforms (only show connected ones)
   const getConnectedPlatforms = () => {
     return PLATFORMS.filter((platform) => {
@@ -63,6 +215,10 @@ const CPStatistics = () => {
       let stats = null;
       if (platform.id === "codeforces") {
         stats = await platformService.getCodeforcesProfile(user.username);
+      } else if (platform.id === "leetcode") {
+        stats = await platformService.getLeetcodeProfile(user.username);
+      } else if (platform.id === "atcoder") {
+        stats = await platformService.getAtcoderProfile(user.username);
       }
       // Add other platforms here when needed
 
@@ -126,8 +282,8 @@ const CPStatistics = () => {
                   </p>
                   <p
                     className={`text-sm ${contest.newRating > contest.oldRating
-                        ? "text-green-400"
-                        : "text-red-400"
+                      ? "text-green-400"
+                      : "text-red-400"
                       }`}
                   >
                     {contest.newRating > contest.oldRating ? "+" : ""}
@@ -373,28 +529,6 @@ const CPStatistics = () => {
             display: false,
           },
         },
-        x: {
-          ticks: {
-            color: "rgba(255, 255, 255, 0.7)",
-            maxTicksLimit: 8,
-            font: {
-              size: 11,
-            },
-            callback: function (value, index) {
-              // Show every nth tick to avoid crowding
-              const totalTicks = this.chart.data.labels.length;
-              const step = Math.ceil(totalTicks / 6);
-              return index % step === 0 ? value : "";
-            },
-          },
-          grid: {
-            color: "rgba(255, 255, 255, 0.05)",
-            drawBorder: false,
-          },
-          border: {
-            display: false,
-          },
-        },
       },
       interaction: {
         intersect: false,
@@ -488,21 +622,34 @@ const CPStatistics = () => {
                   </p>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm text-gray-400">Rating</p>
+                  <p className="text-sm text-gray-400">
+                    {selectedPlatform?.id === 'leetcode' ? 'Rank' : 'Rating'}
+                  </p>
                   <p className="text-lg font-semibold text-blue-400">
-                    {platformData.rating || "Unrated"}
+                    {selectedPlatform?.id === 'leetcode'
+                      ? (platformData.rank || "Unranked")
+                      : (platformData.rating || "Unrated")
+                    }
                   </p>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm text-gray-400">Max Rating</p>
+                  <p className="text-sm text-gray-400">
+                    {selectedPlatform?.id === 'leetcode' ? 'Rating' : 'Max Rating'}
+                  </p>
                   <p className="text-lg font-semibold text-green-400">
-                    {platformData.maxRating || "Unrated"}
+                    {selectedPlatform?.id === 'leetcode'
+                      ? (platformData.rating || "Unrated")
+                      : (platformData.maxRating || "Unrated")
+                    }
                   </p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-gray-400">Problems Solved</p>
                   <p className="text-lg font-semibold text-purple-400">
-                    {platformData.problemsSolved || 0}
+                    {selectedPlatform?.id === 'leetcode'
+                      ? (platformData.problemsSolved?.all || 0)
+                      : (platformData.problemsSolved || 0)
+                    }
                   </p>
                 </div>
                 <div className="text-center">
@@ -514,32 +661,61 @@ const CPStatistics = () => {
                 <div className="text-center">
                   <p className="text-sm text-gray-400">Total Submissions</p>
                   <p className="text-lg font-semibold text-yellow-400">
-                    {platformData.totalSubmissions || 0}
+                    {selectedPlatform?.id === 'leetcode'
+                      ? (platformData.totalSubmissions?.all || 0)
+                      : (platformData.totalSubmissions || 0)
+                    }
                   </p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-gray-400">Accepted Submissions</p>
                   <p className="text-lg font-semibold text-emerald-400">
-                    {platformData.acceptedSubmissions || 0}
+                    {selectedPlatform?.id === 'leetcode'
+                      ? (platformData.acceptedSubmissions?.all || 0)
+                      : (platformData.acceptedSubmissions || 0)
+                    }
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Rating Progression Chart */}
-            <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
-              {renderRatingChart()}
-            </div>
+            {/* Platform-specific components */}
+            {selectedPlatform?.id === 'leetcode' ? (
+              <>
+                {/* LeetCode Problem Statistics */}
+                {renderLeetcodeProblemStats()}
 
-            {/* Contest History */}
-            <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
-              {renderContestHistory()}
-            </div>
+                {/* Rating Progression Chart */}
+                <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+                  {renderRatingChart()}
+                </div>
 
-            {/* Accepted Solutions */}
-            <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
-              {renderAcceptedSolutions()}
-            </div>
+                {/* Contest History */}
+                <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+                  {renderContestHistory()}
+                </div>
+
+                {/* Recent Submissions */}
+                {renderRecentSubmissions()}
+              </>
+            ) : (
+              <>
+                {/* Rating Progression Chart */}
+                <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+                  {renderRatingChart()}
+                </div>
+
+                {/* Contest History */}
+                <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+                  {renderContestHistory()}
+                </div>
+
+                {/* Accepted Solutions */}
+                <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+                  {renderAcceptedSolutions()}
+                </div>
+              </>
+            )}
           </div>
         )}
 

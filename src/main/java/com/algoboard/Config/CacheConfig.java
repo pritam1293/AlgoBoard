@@ -14,8 +14,12 @@ public class CacheConfig {
 
     @Bean
     public CacheManager cacheManager() {
-        // Simple in-memory cache manager
-        ConcurrentMapCacheManager cacheManager = new ConcurrentMapCacheManager("contestList");
+        // Simple in-memory cache manager with all required caches
+        ConcurrentMapCacheManager cacheManager = new ConcurrentMapCacheManager(
+                "contestList",
+                "leetcodeProfile",
+                "codeforcesProfile",
+                "atcoderProfile");
         return cacheManager;
     }
 }

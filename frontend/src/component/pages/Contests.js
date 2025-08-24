@@ -5,10 +5,9 @@ import contestService from "../../services/contestService";
 
 const Contests = () => {
     const { user, logout } = useAuth();
-    const [contests, setContests] = useState({});
+    const [contests, setContests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState("all");
     const [currentTime, setCurrentTime] = useState(new Date());
 
     useEffect(() => {
@@ -31,10 +30,11 @@ const Contests = () => {
 
             if (response && response.data) {
                 console.log("Contest data received successfully");
-                setContests(response.data || {});
+                // Backend now returns array directly, not grouped by platform
+                setContests(Array.isArray(response.data) ? response.data : []);
             } else {
                 console.warn("No contest data in response");
-                setContests({});
+                setContests([]);
             }
         } catch (err) {
             setError(err.message);
@@ -82,95 +82,70 @@ const Contests = () => {
     };
 
     // Helper function to get countdown or status
-    const getCountdownOrStatus = (dateString, phase) => {
-        const contestDate = new Date(dateString);
+    const getContestStatus = (startTime, endTime) => {
+        const start = new Date(startTime);
+        const end = new Date(endTime);
         const now = currentTime;
-        const diff = contestDate - now;
 
-        if (phase === "FINISHED" || phase === "past") {
-            return { text: "Ended", color: "text-gray-400", isCountdown: false };
-        } else if (phase === "CODING" || phase === "present") {
-            return { text: "LIVE", color: "text-red-500 font-bold animate-pulse", isCountdown: false };
-        } else if (diff > 0) {
+        if (now > end) {
+            return { text: "Ended", color: "text-gray-400", isCountdown: false, isLive: false };
+        } else if (now >= start && now <= end) {
+            // Contest is live - show countdown to end
+            const diff = end - now;
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            const endCountdown = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            return {
+                text: "LIVE",
+                countdown: endCountdown,
+                color: "text-red-500 font-bold animate-pulse",
+                isCountdown: false,
+                isLive: true
+            };
+        } else {
             // Contest hasn't started yet
+            const diff = start - now;
             const days = Math.floor(diff / (1000 * 60 * 60 * 24));
             const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
             if (days > 1) {
-                return { text: `${days} days`, color: "text-green-400", isCountdown: false };
+                return { text: `${days} days`, color: "text-green-400", isCountdown: false, isLive: false };
             } else if (days === 1) {
-                return { text: `${days} day ${hours}h`, color: "text-green-400", isCountdown: false };
+                return { text: `${days} day ${hours}h`, color: "text-green-400", isCountdown: false, isLive: false };
             } else {
                 // Less than 24 hours - show countdown
                 const countdownText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                return { text: countdownText, color: "text-yellow-400 font-mono", isCountdown: true };
+                return { text: countdownText, color: "text-yellow-400 font-mono", isCountdown: true, isLive: false };
             }
         }
-        return { text: "Started", color: "text-blue-400", isCountdown: false };
     };
 
-    // Helper function to get contest link
-    const getContestLink = (platform, contestId) => {
+    // Helper function to get platform URLs
+    const getPlatformUrl = (platform) => {
         switch (platform.toLowerCase()) {
-            case "codeforces":
-                return `https://codeforces.com/contests/${contestId}`;
             case "codechef":
-                return `https://www.codechef.com/${contestId}`;
-            case "atcoder":
-                // You'll provide this URL pattern
-                return `https://atcoder.jp/contests/${contestId}`;
+                return "https://www.codechef.com/dashboard";
+            case "codeforces":
+                return "https://codeforces.com/";
             case "leetcode":
-                // You'll provide this URL pattern
-                return `https://leetcode.com/contest/${contestId}`;
+                return "https://leetcode.com/";
+            case "atcoder":
+                return "https://atcoder.jp/";
             default:
                 return "#";
         }
-    };    // Platform logos mapping
+    };
+
+    // Platform logos mapping
     const platformLogos = {
         codeforces: "/images/platforms/codeforces_logo.png",
         codechef: "/images/platforms/codechef_logo.jpg",
         atcoder: "/images/platforms/atcoder_logo.png",
         leetcode: "/images/platforms/LeetCode_logo.png",
-    };
-
-    // Sort contests by start date
-    const sortContestsByDate = (contestList) => {
-        return contestList.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
-    };
-
-    // Filter contests based on active tab
-    const getFilteredContests = () => {
-        const allContests = [];
-
-        Object.entries(contests).forEach(([platform, contestList]) => {
-            if (contestList && Array.isArray(contestList)) {
-                contestList.forEach(contest => {
-                    allContests.push({ ...contest, platform });
-                });
-            }
-        });
-
-        const sortedContests = sortContestsByDate(allContests);
-
-        if (activeTab === "all") return sortedContests;
-
-        const now = new Date();
-        return sortedContests.filter(contest => {
-            const contestDate = new Date(contest.startTime);
-
-            switch (activeTab) {
-                case "upcoming":
-                    return contestDate > now && (contest.phase === "BEFORE" || contest.phase === "future" || !contest.phase);
-                case "live":
-                    return contest.phase === "CODING" || contest.phase === "present";
-                case "past":
-                    return contestDate < now || contest.phase === "FINISHED" || contest.phase === "past";
-                default:
-                    return true;
-            }
-        });
     }; if (loading) {
         return (
             <div className="min-h-screen bg-neutral-900">
@@ -204,8 +179,6 @@ const Contests = () => {
         );
     }
 
-    const filteredContests = getFilteredContests();
-
     return (
         <div className="min-h-screen bg-neutral-900">
             <Navbar user={user} onLogout={logout} />
@@ -224,39 +197,46 @@ const Contests = () => {
                     </p>
                 </div>
 
-                {/* Filter Tabs */}
-                <div className="mb-6">
-                    <div className="flex space-x-1 bg-neutral-800 p-1 rounded-lg w-fit">
-                        {[
-                            { key: "all", label: "All" },
-                            { key: "upcoming", label: "Upcoming" },
-                            { key: "live", label: "Live" },
-                            { key: "past", label: "Past" },
-                        ].map((tab) => (
-                            <button
-                                key={tab.key}
-                                onClick={() => setActiveTab(tab.key)}
-                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === tab.key
-                                    ? "bg-blue-600 text-white"
-                                    : "text-neutral-400 hover:text-white"
-                                    }`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
+                {/* Important Notice */}
+                <div className="mb-6 bg-amber-900/20 border border-amber-700/50 rounded-lg p-4">
+                    <div className="flex items-start">
+                        <div className="flex-shrink-0">
+                            <svg className="h-5 w-5 text-amber-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="ml-3">
+                            <h3 className="text-sm font-medium text-amber-200">
+                                Notice about Codeforces Contest Links
+                            </h3>
+                            <div className="mt-1 text-m text-amber-300">
+                                <p>
+                                    Please note that Codeforces contest links may not redirect you to the exact contest if it hasn't started yet.
+                                    Instead, you may be redirected to the most recently concluded contest. For upcoming contests,
+                                    we recommend visiting the{' '}
+                                    <a
+                                        href="https://codeforces.com/contests"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="underline hover:text-amber-200 transition-colors"
+                                    >
+                                        Codeforces contest page
+                                    </a>
+                                    {' '}directly to view the upcoming contests details.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 {/* Contests Display */}
-                {filteredContests.length === 0 ? (
+                {contests.length === 0 ? (
                     <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-8 text-center">
                         <h3 className="text-neutral-300 text-lg font-medium mb-2">
                             No Contests Found
                         </h3>
                         <p className="text-neutral-400">
-                            {activeTab === "all"
-                                ? "No contests available at the moment."
-                                : `No ${activeTab} contests found.`}
+                            No contests available at the moment.
                         </p>
                     </div>
                 ) : (
@@ -274,7 +254,10 @@ const Contests = () => {
                                                 Start Date & Time
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-neutral-300 uppercase tracking-wider">
-                                                Starts In
+                                                End Date & Time
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-300 uppercase tracking-wider">
+                                                Status
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-neutral-300 uppercase tracking-wider">
                                                 Duration
@@ -285,9 +268,8 @@ const Contests = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-neutral-700">
-                                        {filteredContests.map((contest, index) => {
-                                            const countdown = getCountdownOrStatus(contest.startTime, contest.phase);
-                                            const contestLink = getContestLink(contest.platform, contest.contestId);
+                                        {contests.map((contest, index) => {
+                                            const status = getContestStatus(contest.startTime, contest.endTime);
 
                                             return (
                                                 <tr
@@ -297,14 +279,21 @@ const Contests = () => {
                                                     {/* Contest Name & Platform */}
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center">
-                                                            <img
-                                                                src={platformLogos[contest.platform]}
-                                                                alt={contest.platform}
-                                                                className="w-6 h-6 mr-3 rounded"
-                                                                onError={(e) => {
-                                                                    e.target.src = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><rect width="24" height="24" fill="%23374151"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="10">${contest.platform[0].toUpperCase()}</text></svg>`;
-                                                                }}
-                                                            />
+                                                            <a
+                                                                href={getPlatformUrl(contest.platform)}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="mr-3 hover:opacity-80 transition-opacity"
+                                                            >
+                                                                <img
+                                                                    src={platformLogos[contest.platform]}
+                                                                    alt={contest.platform}
+                                                                    className="w-6 h-6 rounded cursor-pointer"
+                                                                    onError={(e) => {
+                                                                        e.target.src = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><rect width="24" height="24" fill="%23374151"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="10">${contest.platform[0].toUpperCase()}</text></svg>`;
+                                                                    }}
+                                                                />
+                                                            </a>
                                                             <div>
                                                                 <div className="text-neutral-200 font-medium">
                                                                     {contest.contestName}
@@ -323,11 +312,25 @@ const Contests = () => {
                                                         </div>
                                                     </td>
 
-                                                    {/* Starts In / Countdown */}
+                                                    {/* End Date & Time */}
                                                     <td className="px-6 py-4">
-                                                        <span className={`text-sm font-medium ${countdown.color}`}>
-                                                            {countdown.text}
-                                                        </span>
+                                                        <div className="text-neutral-200 text-sm">
+                                                            {formatDateTime(contest.endTime)}
+                                                        </div>
+                                                    </td>
+
+                                                    {/* Status / Countdown */}
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col">
+                                                            <span className={`text-sm font-medium ${status.color}`}>
+                                                                {status.text}
+                                                            </span>
+                                                            {status.isLive && status.countdown && (
+                                                                <span className="text-xs text-neutral-400 mt-1 font-mono">
+                                                                    Ends in: {status.countdown}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </td>
 
                                                     {/* Duration */}
@@ -340,7 +343,7 @@ const Contests = () => {
                                                     {/* Contest Link */}
                                                     <td className="px-6 py-4">
                                                         <a
-                                                            href={contestLink}
+                                                            href={contest.contestUrl}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
@@ -371,40 +374,56 @@ const Contests = () => {
 
                         {/* Mobile Card View */}
                         <div className="md:hidden space-y-4">
-                            {filteredContests.map((contest, index) => {
-                                const countdown = getCountdownOrStatus(contest.startTime, contest.phase);
-                                const contestLink = getContestLink(contest.platform, contest.contestId);
+                            {contests.map((contest, index) => {
+                                const status = getContestStatus(contest.startTime, contest.endTime);
 
                                 return (
                                     <div
                                         key={`${contest.platform}-${contest.contestId}-${index}`}
                                         className="bg-neutral-800 border border-neutral-700 rounded-lg p-4"
                                     >
-                                        {/* Mobile Format: 22.08 Fri 15:30 */}
+                                        {/* Start Time */}
                                         <div className="text-neutral-300 text-lg font-semibold mb-1">
-                                            {formatMobileDateTime(contest.startTime)}
+                                            Start: {formatMobileDateTime(contest.startTime)}
+                                        </div>
+
+                                        {/* End Time */}
+                                        <div className="text-neutral-300 text-sm mb-2">
+                                            End: {formatMobileDateTime(contest.endTime)}
                                         </div>
 
                                         {/* Duration */}
                                         <div className="text-neutral-400 text-sm mb-2">
-                                            {formatDuration(contest.duration)}
+                                            Duration: {formatDuration(contest.duration)}
                                         </div>
 
-                                        {/* Countdown */}
-                                        <div className={`text-sm font-medium mb-3 ${countdown.color}`}>
-                                            {countdown.text}
+                                        {/* Status */}
+                                        <div className={`text-sm font-medium mb-3 ${status.color}`}>
+                                            {status.text}
+                                            {status.isLive && status.countdown && (
+                                                <div className="text-xs text-neutral-400 mt-1 font-mono">
+                                                    Ends in: {status.countdown}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Contest Name with Platform Logo */}
                                         <div className="flex items-center mb-3">
-                                            <img
-                                                src={platformLogos[contest.platform]}
-                                                alt={contest.platform}
-                                                className="w-5 h-5 mr-2 rounded"
-                                                onError={(e) => {
-                                                    e.target.src = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><rect width="20" height="20" fill="%23374151"/><text x="10" y="14" text-anchor="middle" fill="white" font-size="8">${contest.platform[0].toUpperCase()}</text></svg>`;
-                                                }}
-                                            />
+                                            <a
+                                                href={getPlatformUrl(contest.platform)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="mr-2 hover:opacity-80 transition-opacity"
+                                            >
+                                                <img
+                                                    src={platformLogos[contest.platform]}
+                                                    alt={contest.platform}
+                                                    className="w-5 h-5 rounded cursor-pointer"
+                                                    onError={(e) => {
+                                                        e.target.src = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><rect width="20" height="20" fill="%23374151"/><text x="10" y="14" text-anchor="middle" fill="white" font-size="8">${contest.platform[0].toUpperCase()}</text></svg>`;
+                                                    }}
+                                                />
+                                            </a>
                                             <div className="text-neutral-200 font-medium text-sm">
                                                 {contest.contestName}
                                             </div>
@@ -412,7 +431,7 @@ const Contests = () => {
 
                                         {/* Contest Link */}
                                         <a
-                                            href={contestLink}
+                                            href={contest.contestUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors w-full justify-center"

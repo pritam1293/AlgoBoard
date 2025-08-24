@@ -8,23 +8,68 @@ public class Leetcode {
     private String rank;
     private long rating;
     private long maxRating;
-    private String maxRank;
-    private long problemsSolved;
-    private long totalSubmissions;
-    private long acceptedSubmissions;
+    private Level problemsSolved;
+    private Level totalSubmissions;
+    private Level acceptedSubmissions;
     private long contestParticipations;
     private List<UserContestHistory> contestHistory;
-    private List<Problem> problemList;
+    private List<Problem> recentSubmissions;
+
+    public static class Level {
+        private long all;
+        private long easy;
+        private long medium;
+        private long hard;
+
+        public Level(long all, long easy, long medium, long hard) {
+            this.all = all;
+            this.easy = easy;
+            this.medium = medium;
+            this.hard = hard;
+        }
+
+        public long getAll() {
+            return all;
+        }
+
+        public void setAll(long all) {
+            this.all = all;
+        }
+
+        public long getEasy() {
+            return easy;
+        }
+
+        public void setEasy(long easy) {
+            this.easy = easy;
+        }
+
+        public long getMedium() {
+            return medium;
+        }
+
+        public void setMedium(long medium) {
+            this.medium = medium;
+        }
+
+        public long getHard() {
+            return hard;
+        }
+
+        public void setHard(long hard) {
+            this.hard = hard;
+        }
+    }
 
     public static class Problem {
         private String status;
         private String problemTitle;
-        private String problemId;
+        private String problemUrl;
 
-        public Problem(String status, String problemTitle, String problemId) {
+        public Problem(String status, String problemTitle, String problemUrl) {
             this.status = status;
             this.problemTitle = problemTitle;
-            this.problemId = problemId;
+            this.problemUrl = problemUrl;
         }
 
         public String getStatus() {
@@ -43,27 +88,31 @@ public class Leetcode {
             this.problemTitle = problemTitle;
         }
 
-        public String getProblemId() {
-            return problemId;
+        public String getProblemUrl() {
+            return problemUrl;
         }
 
-        public void setProblemId(String problemId) {
-            this.problemId = problemId;
+        public void setProblemUrl(String problemUrl) {
+            this.problemUrl = problemUrl;
         }
     }
 
-    public Leetcode(String username, String rank, long rating, long maxRating, String maxRank, long problemsSolved, long totalSubmissions, long acceptedSubmissions, long contestParticipations, List<UserContestHistory> contestHistory, List<Problem> problemList) {
+    public Leetcode() {
+    }
+
+    public Leetcode(String username, String rank, long rating, long maxRating,
+            Level problemsSolved, Level totalSubmissions, Level acceptedSubmissions,
+            long contestParticipations, List<UserContestHistory> contestHistory, List<Problem> recentSubmissions) {
         this.username = username;
         this.rank = rank;
         this.rating = rating;
         this.maxRating = maxRating;
-        this.maxRank = maxRank;
         this.problemsSolved = problemsSolved;
         this.totalSubmissions = totalSubmissions;
         this.acceptedSubmissions = acceptedSubmissions;
         this.contestParticipations = contestParticipations;
         this.contestHistory = contestHistory;
-        this.problemList = problemList;
+        this.recentSubmissions = recentSubmissions;
     }
 
     public String getUsername() {
@@ -98,35 +147,27 @@ public class Leetcode {
         this.maxRating = maxRating;
     }
 
-    public String getMaxRank() {
-        return maxRank;
-    }
-
-    public void setMaxRank(String maxRank) {
-        this.maxRank = maxRank;
-    }
-
-    public long getProblemsSolved() {
+    public Level getProblemsSolved() {
         return problemsSolved;
     }
 
-    public void setProblemsSolved(long problemsSolved) {
+    public void setProblemsSolved(Level problemsSolved) {
         this.problemsSolved = problemsSolved;
     }
 
-    public long getTotalSubmissions() {
+    public Level getTotalSubmissions() {
         return totalSubmissions;
     }
 
-    public void setTotalSubmissions(long totalSubmissions) {
+    public void setTotalSubmissions(Level totalSubmissions) {
         this.totalSubmissions = totalSubmissions;
     }
 
-    public long getAcceptedSubmissions() {
+    public Level getAcceptedSubmissions() {
         return acceptedSubmissions;
     }
 
-    public void setAcceptedSubmissions(long acceptedSubmissions) {
+    public void setAcceptedSubmissions(Level acceptedSubmissions) {
         this.acceptedSubmissions = acceptedSubmissions;
     }
 
@@ -146,11 +187,11 @@ public class Leetcode {
         this.contestHistory = contestHistory;
     }
 
-    public List<Problem> getProblemList() {
-        return problemList;
+    public List<Problem> getRecentSubmissions() {
+        return recentSubmissions;
     }
 
-    public void setProblemList(List<Problem> problemList) {
-        this.problemList = problemList;
+    public void setRecentSubmissions(List<Problem> recentSubmissions) {
+        this.recentSubmissions = recentSubmissions;
     }
 }

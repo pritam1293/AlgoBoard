@@ -7,9 +7,11 @@ import com.algoboard.DTO.Codeforces.CF_ContestListDTO;
 import com.algoboard.DTO.Codechef.CC_ContestListDTO;
 import com.algoboard.DTO.Leetcode.LC_ContestDTO;
 import com.algoboard.DTO.Leetcode.LC_ContestListDTO;
+import com.algoboard.DTO.Leetcode.LC_UserDTO;
 import com.algoboard.DTO.ContestDTO;
 import com.algoboard.entities.Atcoder;
 import com.algoboard.entities.Codeforces;
+import com.algoboard.entities.Leetcode;
 import com.algoboard.entities.UserContestHistory;
 import com.algoboard.entities.User;
 import com.algoboard.DTO.Atcoder.AC_ContestDTO;
@@ -17,6 +19,10 @@ import com.algoboard.DTO.Atcoder.AC_ContestListDTO;
 import com.algoboard.repository.UserRepository;
 import com.algoboard.DTO.RequestDTO.Profile;
 import com.algoboard.DTO.Leetcode.LC_ContestDTO.ContestHistory;
+import com.algoboard.DTO.Leetcode.LC_UserDTO.SubmissionStat;
+import com.algoboard.entities.Leetcode.Level;
+import com.algoboard.DTO.Leetcode.LC_UserDTO.RecentSubmission;
+import com.algoboard.entities.Leetcode.Problem;
 
 import java.util.Set;
 import java.util.HashSet;
@@ -32,6 +38,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +47,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.CacheManager;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.select.Elements;
+import org.jsoup.nodes.Element;
+import java.io.IOException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
@@ -48,13 +61,17 @@ public class UserService implements IUserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final CacheManager cacheManager;
     private RestTemplate restTemplate = new RestTemplate();
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService,
+            CacheManager cacheManager) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
+        this.cacheManager = cacheManager;
+        // check();
         System.out.println("");
         System.out.println("MongoDB connected.");
         System.out.println("");
@@ -206,15 +223,57 @@ public class UserService implements IUserService {
             String leetcodeId) {
         User user = userRepository.findByUsername(username);
         if (user != null) {
-            if (codeforcesId != null)
+            boolean codeforcesChanged = false;
+            boolean atcoderChanged = false;
+            boolean leetcodeChanged = false;
+
+            // Check Codeforces username change
+            if (codeforcesId != null && !Objects.equals(codeforcesId, user.getCodeforcesUsername())) {
+                System.out.println("Codeforces username changing from '" + user.getCodeforcesUsername() + "' to '"
+                        + codeforcesId + "'");
                 user.setCodeforcesUsername(codeforcesId);
-            if (atcoderId != null)
+                codeforcesChanged = true;
+            }
+
+            // Check AtCoder username change
+            if (atcoderId != null && !Objects.equals(atcoderId, user.getAtcoderUsername())) {
+                System.out.println(
+                        "AtCoder username changing from '" + user.getAtcoderUsername() + "' to '" + atcoderId + "'");
                 user.setAtcoderUsername(atcoderId);
-            if (codechefId != null)
+                atcoderChanged = true;
+            }
+
+            // Check CodeChef username change (no cache to clear)
+            if (codechefId != null && !Objects.equals(codechefId, user.getCodechefUsername())) {
+                System.out.println(
+                        "CodeChef username changing from '" + user.getCodechefUsername() + "' to '" + codechefId + "'");
                 user.setCodechefUsername(codechefId);
-            if (leetcodeId != null)
+            }
+
+            // Check LeetCode username change
+            if (leetcodeId != null && !Objects.equals(leetcodeId, user.getLeetcodeUsername())) {
+                System.out.println(
+                        "LeetCode username changing from '" + user.getLeetcodeUsername() + "' to '" + leetcodeId + "'");
                 user.setLeetcodeUsername(leetcodeId);
+                leetcodeChanged = true;
+            }
+
             userRepository.save(user);
+
+            // Clear cache only for platforms that were actually changed
+            if (codeforcesChanged) {
+                evictCodeforcesCache(username);
+                System.out.println("✓ Codeforces cache cleared for user: " + username);
+            }
+            if (atcoderChanged) {
+                evictAtcoderCache(username);
+                System.out.println("✓ AtCoder cache cleared for user: " + username);
+            }
+            if (leetcodeChanged) {
+                evictLeetcodeCache(username);
+                System.out.println("✓ LeetCode cache cleared for user: " + username);
+            }
+
             return true;
         }
         return false;
@@ -234,39 +293,31 @@ public class UserService implements IUserService {
 
         // Wait for all API calls to complete with timeout protection
         try {
-            cfFuture.get(5, TimeUnit.SECONDS);
-            System.out.println("Codeforces contests added successfully");
+            cfFuture.get(8, TimeUnit.SECONDS);
         } catch (Exception e) {
             System.out.println("Codeforces API timeout or error: " + e.getMessage());
         }
 
         try {
-            ccFuture.get(5, TimeUnit.SECONDS);
-            System.out.println("CodeChef contests added successfully");
+            ccFuture.get(8, TimeUnit.SECONDS);
         } catch (Exception e) {
             System.out.println("CodeChef API timeout or error: " + e.getMessage());
         }
 
         try {
-            acFuture.get(5, TimeUnit.SECONDS);
-            System.out.println("AtCoder contests added successfully");
+            acFuture.get(8, TimeUnit.SECONDS);
         } catch (Exception e) {
             System.out.println("AtCoder API timeout or error: " + e.getMessage());
         }
 
         try {
-            lcFuture.get(5, TimeUnit.SECONDS);
-            System.out.println("LeetCode contests added successfully");
+            lcFuture.get(8, TimeUnit.SECONDS);
         } catch (Exception e) {
             System.out.println("LeetCode API timeout or error: " + e.getMessage());
         }
 
-        System.out.println("Total merged contests: " + allContests.size());
-
         // Sort contests by priority: Live → Upcoming → Finished
         allContests.sort(this::compareContestsByPriority);
-
-        System.out.println("Contest data cached and sorted successfully!");
         return allContests;
     }
 
@@ -275,6 +326,52 @@ public class UserService implements IUserService {
     @Scheduled(fixedRate = 1800000) // 30 minutes in milliseconds
     public void refreshContestCache() {
         System.out.println("Contest cache cleared - will refresh on next request");
+    }
+
+    // Automatically refresh LeetCode profile cache every 2 hours
+    @CacheEvict(value = "leetcodeProfile", allEntries = true)
+    @Scheduled(fixedRate = 7200000) // 2 hours in milliseconds
+    public void refreshLeetcodeProfileCache() {
+        System.out.println("LeetCode profile cache cleared - will refresh on next request");
+    }
+
+    // Automatically refresh Codeforces profile cache every 1 hours
+    @CacheEvict(value = "codeforcesProfile", allEntries = true)
+    @Scheduled(fixedRate = 3600000) // 1 hours in milliseconds
+    public void refreshCodeforcesProfileCache() {
+        System.out.println("Codeforces profile cache cleared - will refresh on next request");
+    }
+
+    // Automatically refresh AtCoder profile cache every 1 hours
+    @CacheEvict(value = "atcoderProfile", allEntries = true)
+    @Scheduled(fixedRate = 3600000) // 1 hours in milliseconds
+    public void refreshAtcoderProfileCache() {
+        System.out.println("AtCoder profile cache cleared - will refresh on next request");
+    }
+
+    // Selective cache eviction methods for individual users
+    public void evictCodeforcesCache(String username) {
+        System.out.println("🗑️ Evicting Codeforces cache for user: " + username);
+        if (cacheManager.getCache("codeforcesProfile") != null) {
+            cacheManager.getCache("codeforcesProfile").evict(username);
+            System.out.println("✅ Codeforces cache actually evicted for: " + username);
+        }
+    }
+
+    public void evictAtcoderCache(String username) {
+        System.out.println("🗑️ Evicting AtCoder cache for user: " + username);
+        if (cacheManager.getCache("atcoderProfile") != null) {
+            cacheManager.getCache("atcoderProfile").evict(username);
+            System.out.println("✅ AtCoder cache actually evicted for: " + username);
+        }
+    }
+
+    public void evictLeetcodeCache(String username) {
+        System.out.println("🗑️ Evicting LeetCode cache for user: " + username);
+        if (cacheManager.getCache("leetcodeProfile") != null) {
+            cacheManager.getCache("leetcodeProfile").evict(username);
+            System.out.println("✅ LeetCode cache actually evicted for: " + username);
+        }
     }
 
     /**
@@ -315,7 +412,6 @@ public class UserService implements IUserService {
 
     private void getCodeforcesContestList(List<ContestDTO> allContests) {
         String cfurl = "https://codeforces.com/api/contest.list";
-        int addedCount = 0;
         try {
             CF_ContestListDTO response = restTemplate.getForObject(cfurl, CF_ContestListDTO.class);
             int cnt = 0;
@@ -335,13 +431,11 @@ public class UserService implements IUserService {
                                 (long) contest.getDurationSeconds() / 60)
 
                         );
-                        addedCount++;
                     }
                     if (++cnt == 6) {
                         break;// Limit to 6 contests
                     }
                 }
-                System.out.println("Added " + addedCount + " Codeforces contests");
             } else {
                 System.out.println("Codeforces API response was null or status not OK");
             }
@@ -366,7 +460,6 @@ public class UserService implements IUserService {
                 addCodechefContests(allContests, response.getPresentContests(), formatter, -1);
                 addCodechefContests(allContests, response.getFutureContests(), formatter, -1);
                 addCodechefContests(allContests, response.getPastContests(), formatter, 4);
-                System.out.println("Added CodeChef contests successfully");
             } else {
                 System.out.println("CodeChef API response was null or status not success");
             }
@@ -401,7 +494,6 @@ public class UserService implements IUserService {
 
     private void getAtcoderContestList(List<ContestDTO> allContests) {
         String acurl = "https://contest-hive.vercel.app/api/atcoder";
-        int addedCount = 0;
 
         try {
             String rawResponse = restTemplate.getForObject(acurl, String.class);
@@ -419,10 +511,8 @@ public class UserService implements IUserService {
                                         ZoneId.of("Asia/Kolkata")),
                                 LocalDateTime.ofInstant(Instant.parse(contest.getEndTime()), ZoneId.of("Asia/Kolkata")),
                                 contest.getDuration() / 60));
-                        addedCount++;
                     }
                 }
-                System.out.println("Added " + addedCount + " AtCoder contests");
             } else {
                 System.out.println("Atcoder API response was null or status not OK");
             }
@@ -434,12 +524,57 @@ public class UserService implements IUserService {
             System.out.println("Returning empty Atcoder contest list.");
             System.out.println("");
         }
+        // past contests
+        acurl = "https://atcoder.jp/contests/archive";
+
+        try {
+            Document doc = Jsoup.connect(acurl).get();
+            Elements rows = doc.select("table tbody tr");
+
+            int count = 0;
+            for (Element row : rows) {
+                Elements cols = row.select("td");
+                if (cols.size() >= 3) {
+                    String dateStr = cols.get(0).text();
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssZ");
+                    ZonedDateTime zonedDateTime = ZonedDateTime.parse(dateStr, formatter);
+                    final LocalDateTime startTime = zonedDateTime.withZoneSameInstant(ZoneId.of("Asia/Kolkata"))
+                            .toLocalDateTime();
+
+                    Element linkElement = cols.get(1).selectFirst("a");
+                    final String contestName = linkElement.text();
+                    final String contestUrl = linkElement.absUrl("href");
+                    final String contestId = contestIdExtractorFromUrl(contestUrl);
+                    String durationStr = cols.get(2).text();
+                    String[] parts = durationStr.split(":");
+                    final int hours = Integer.parseInt(parts[0]);
+                    final int minutes = Integer.parseInt(parts[1]);
+                    final long totalTimeMinutes = hours * 60 + minutes;
+                    final LocalDateTime endTime = startTime.plusMinutes(totalTimeMinutes);
+
+                    synchronized (allContests) {
+                        allContests.add(new ContestDTO(
+                                contestId,
+                                contestName,
+                                contestUrl,
+                                "atcoder",
+                                startTime,
+                                endTime,
+                                totalTimeMinutes));
+                    }
+                    if (++count == 5)
+                        break; // stop after 5 contests
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void getLeetcodeContestList(List<ContestDTO> allContests) {
         // future contests
         String lcurl = "https://contest-hive.vercel.app/api/leetcode";
-        int addedCount = 0;
 
         try {
             // Get raw response as String to bypass content-type issue
@@ -455,11 +590,10 @@ public class UserService implements IUserService {
                                 contest.getTitle(),
                                 contest.getUrl(),
                                 "leetcode",
-                                LocalDateTime.ofInstant(Instant.parse(contest.getStartTime()),
-                                        ZoneId.of("Asia/Kolkata")),
+                                LocalDateTime.ofInstant(Instant.parse(contest.getStartTime()), ZoneId.of("Asia/Kolkata")),
                                 LocalDateTime.ofInstant(Instant.parse(contest.getEndTime()), ZoneId.of("Asia/Kolkata")),
-                                contest.getDuration() / 60));
-                        addedCount++;
+                                contest.getDuration() / 60)
+                        );
                     }
                 }
             } else {
@@ -478,7 +612,7 @@ public class UserService implements IUserService {
         lcurl = "https://leetcode-stats.tashif.codes/Pritam1293/contests";
         try {
             LC_ContestDTO response = restTemplate.getForObject(lcurl, LC_ContestDTO.class);
-            if (response.getStatus().equals("success")) {
+            if (response != null && response.getStatus().equals("success")) {
                 // last 4 contests
                 List<ContestHistory> history = response.getContestHistory();
                 if (history != null && !history.isEmpty()) {
@@ -497,19 +631,16 @@ public class UserService implements IUserService {
                                     "leetcode",
                                     startTime,
                                     endTime,
-                                    90));
-                            addedCount++;
+                                    90)
+                            );
                         }
                     }
                 }
             }
-            System.out.println("Added " + addedCount + " LeetCode contests");
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("");
             System.out.println("Error fetching Leetcode past contests: " + e.getMessage());
-            System.out.println("");
-            System.out.println("Added " + addedCount + " LeetCode contests (future only).");
             System.out.println("");
         }
     }
@@ -521,6 +652,7 @@ public class UserService implements IUserService {
     }
 
     @Override
+    @Cacheable(value = "codeforcesProfile", key = "#username")
     public Codeforces getCodeforcesProfile(String username) {
         if (userRepository.findByUsername(username) == null) {
             throw new IllegalArgumentException("User not found with username: " + username);
@@ -532,11 +664,19 @@ public class UserService implements IUserService {
         String profileUrl = "https://codeforces.com/api/user.info?handles=" + cfid;
         String contestUrl = "https://codeforces.com/api/user.rating?handle=" + cfid;
         try {
-            CF_UserDTO profileResponse = restTemplate.getForObject(profileUrl, CF_UserDTO.class);
+            // Execute API calls in parallel
+            CompletableFuture<CF_UserDTO> profileFuture = CompletableFuture
+                    .supplyAsync(() -> restTemplate.getForObject(profileUrl, CF_UserDTO.class));
+            CompletableFuture<CF_ContestDTO> contestFuture = CompletableFuture
+                    .supplyAsync(() -> restTemplate.getForObject(contestUrl, CF_ContestDTO.class));
+
+            // Wait for both API calls to complete with timeout
+            CF_UserDTO profileResponse = profileFuture.get(10, TimeUnit.SECONDS);
+            CF_ContestDTO contestResponse = contestFuture.get(10, TimeUnit.SECONDS);
+
             if (profileResponse == null || profileResponse.getStatus().equals("FAILED")) {
                 throw new RuntimeException("Failed to fetch Codeforces profile for user: " + cfid);
             }
-            CF_ContestDTO contestResponse = restTemplate.getForObject(contestUrl, CF_ContestDTO.class);
             if (contestResponse == null || contestResponse.getStatus().equals("FAILED")) {
                 throw new RuntimeException("Failed to fetch Codeforces contests for user: " + cfid);
             }
@@ -571,18 +711,19 @@ public class UserService implements IUserService {
             CF_UserDTO.Result result = profileResponse.getResult().get(0);
             java.util.List<CF_ContestDTO.Result> contestResults = contestResponse.getResult();
             List<UserContestHistory> contestHistory = new ArrayList<>();
-            for (CF_ContestDTO.Result contestResult : contestResults) {
-                contestHistory.add(new UserContestHistory(
-                        Long.toString(contestResult.getContestId()),
-                        contestResult.getContestName(),
-                        contestResult.getRank(),
-                        contestResult.getOldRating(),
-                        contestResult.getNewRating()));
+            if(contestResults != null) {
+                for (CF_ContestDTO.Result contestResult : contestResults) {
+                    contestHistory.add(new UserContestHistory(
+                            Long.toString(contestResult.getContestId()),
+                            contestResult.getContestName(),
+                            contestResult.getRank(),
+                            contestResult.getOldRating(),
+                            contestResult.getNewRating()));
+                }
+
+                // Reverse the contest history array
+                java.util.Collections.reverse(contestHistory);
             }
-
-            // Reverse the contest history array
-            java.util.Collections.reverse(contestHistory);
-
             return new Codeforces(
                     result.getHandle(),
                     result.getRank(),
@@ -604,6 +745,7 @@ public class UserService implements IUserService {
     }
 
     @Override
+    @Cacheable(value = "atcoderProfile", key = "#username")
     public Atcoder getAtcoderProfile(String username) {
         if (userRepository.findByUsername(username) == null) {
             throw new IllegalArgumentException("User not found with username: " + username);
@@ -620,23 +762,30 @@ public class UserService implements IUserService {
             long currRating = -1;
             long maxRating = -1;
             List<UserContestHistory> history = new ArrayList<>();
-            for (AC_ContestDTO contest : contestHistory) {
-                if (contest.isRated()) {
-                    contestParticipations++;
+
+            if(contestHistory != null) {
+                for (AC_ContestDTO contest : contestHistory) {
+                    if (contest.isRated()) {
+                        contestParticipations++;
+                    }
+                    maxRating = Math.max(maxRating, contest.getNewRating());
+                    currRating = contest.getNewRating();
+                    String contestName = contestNameExtractor(contest.getContestName());
+                    String contestId = contestIdExtractor(contestName);
+                    history.add(new UserContestHistory(
+                            contestId,
+                            contestName,
+                            contest.getPlace(),
+                            contest.getOldRating(),
+                            contest.getNewRating()));
                 }
-                maxRating = Math.max(maxRating, contest.getNewRating());
-                currRating = contest.getNewRating();
-                String contestName = contestNameExtractor(contest.getContestName());
-                String contestId = contestIdExtractor(contestName);
-                history.add(new UserContestHistory(
-                        contestId,
-                        contestName,
-                        contest.getPlace(),
-                        contest.getOldRating(),
-                        contest.getNewRating()));
             }
+            if(currRating == -1) currRating = 0;
+            if(maxRating == -1) maxRating = 0;
             String currRank = getRankByRating(currRating);
             String maxRank = getRankByRating(maxRating);
+
+            java.util.Collections.reverse(history);
 
             return new Atcoder(
                     acid,
@@ -644,10 +793,7 @@ public class UserService implements IUserService {
                     currRating,
                     maxRating,
                     maxRank,
-                    0, // AtCoder does not provide problems solved
                     contestParticipations,
-                    0, // AtCoder does not provide total submissions
-                    0, // AtCoder does not provide accepted submissions
                     history);
         } catch (Exception e) {
             throw new RuntimeException("Failed to fetch AtCoder profile for user: " + username);
@@ -703,5 +849,187 @@ public class UserService implements IUserService {
             rankTitle = "Unrated / Newbie";
         }
         return rankTitle;
+    }
+
+    @Override
+    @Cacheable(value = "leetcodeProfile", key = "#username")
+    public Leetcode getLeetcodeProfile(String username) {
+        if (userRepository.findByUsername(username) == null) {
+            throw new IllegalArgumentException("User not found with username: " + username);
+        }
+        String lcid = userRepository.findByUsername(username).getLeetcodeUsername();
+        if (lcid == null || lcid.isEmpty()) {
+            throw new IllegalArgumentException("Leetcode username not found of user: " + username);
+        }
+        System.out.println("");
+        System.out.println("Cache miss - fetching LeetCode profile data for: " + lcid);
+        System.out.println("");
+
+        String lcuserurl = "https://leetcode-stats.tashif.codes/" + lcid + "/profile";
+        String lccontesturl = "https://leetcode-stats.tashif.codes/" + lcid + "/contests";
+
+        try {
+            // Start both API calls simultaneously
+            CompletableFuture<LC_UserDTO> userProfileFuture = CompletableFuture
+                    .supplyAsync(() -> {
+                        try {
+                            LC_UserDTO response = restTemplate.getForObject(lcuserurl, LC_UserDTO.class);
+                            System.out.println("LeetCode profile API response status: "
+                                    + (response != null ? response.getStatus() : "null response"));
+                            return response;
+                        } catch (Exception e) {
+                            System.out.println("LeetCode profile API error for " + lcid + ": " + e.getMessage());
+                            return null;
+                        }
+                    });
+
+            CompletableFuture<LC_ContestDTO> contestFuture = CompletableFuture
+                    .supplyAsync(() -> {
+                        try {
+                            LC_ContestDTO response = restTemplate.getForObject(lccontesturl, LC_ContestDTO.class);
+                            System.out.println("LeetCode contest API response status: "
+                                    + (response != null ? response.getStatus() : "null response"));
+                            return response;
+                        } catch (Exception e) {
+                            System.out.println("LeetCode contest API error for " + lcid + ": " + e.getMessage());
+                            return null;
+                        }
+                    });
+
+            // Wait for both API calls to complete with timeout protection
+            LC_UserDTO userProfileResponse = null;
+            LC_ContestDTO contestResponse = null;
+
+            try {
+                userProfileResponse = userProfileFuture.get(10, TimeUnit.SECONDS);
+                System.out.println("LeetCode profile API completed for: " + lcid);
+            } catch (Exception e) {
+                System.out.println("LeetCode profile API timeout or error for " + lcid + ": " + e.getMessage());
+            }
+
+            try {
+                contestResponse = contestFuture.get(10, TimeUnit.SECONDS);
+                System.out.println("LeetCode contest API completed for: " + lcid);
+            } catch (Exception e) {
+                System.out.println("LeetCode contest API timeout or error for " + lcid + ": " + e.getMessage());
+            }
+
+            // Check if we got valid responses
+            if (userProfileResponse == null && contestResponse == null) {
+                throw new RuntimeException("Both LeetCode APIs failed for user: " + lcid
+                        + ". Please check if the username is correct and publicly accessible.");
+            }
+
+            if (userProfileResponse != null && !"success".equals(userProfileResponse.getStatus())) {
+                System.out.println("LeetCode profile API returned non-success status: "
+                        + userProfileResponse.getStatus() + " for user: " + lcid);
+            }
+
+            if (contestResponse != null && !"success".equals(contestResponse.getStatus())) {
+                System.out.println("LeetCode contest API returned non-success status: " + contestResponse.getStatus()
+                        + " for user: " + lcid);
+            }
+
+            Leetcode leetcodeProfile = new Leetcode();
+
+            if (userProfileResponse != null && userProfileResponse.getStatus().equals("success")) {
+                // problems solved and accepted submissions
+                Level problemsSolved = new Level(0, 0, 0, 0);
+                Level acceptedSubmissions = new Level(0, 0, 0, 0);
+                if(userProfileResponse.getSubmitStats() != null || userProfileResponse.getSubmitStats().getAcSubmissionNum() != null) {
+                    for (SubmissionStat submissionStat : userProfileResponse.getSubmitStats().getAcSubmissionNum()) {
+                        if (submissionStat.getDifficulty().equals("All")) {
+                            problemsSolved.setAll(submissionStat.getCount());
+                            acceptedSubmissions.setAll(submissionStat.getSubmissions());
+                        } else if (submissionStat.getDifficulty().equals("Easy")) {
+                            problemsSolved.setEasy(submissionStat.getCount());
+                            acceptedSubmissions.setEasy(submissionStat.getSubmissions());
+                        } else if (submissionStat.getDifficulty().equals("Medium")) {
+                            problemsSolved.setMedium(submissionStat.getCount());
+                            acceptedSubmissions.setMedium(submissionStat.getSubmissions());
+                        } else if (submissionStat.getDifficulty().equals("Hard")) {
+                            problemsSolved.setHard(submissionStat.getCount());
+                            acceptedSubmissions.setHard(submissionStat.getSubmissions());
+                        }
+                    }
+                }
+                // total submissions
+                Level totalSubmissions = new Level(0, 0, 0, 0);
+                if(userProfileResponse.getSubmitStats() != null || userProfileResponse.getSubmitStats().getTotalSubmissionNum() != null) {
+                    for (SubmissionStat submissionStat : userProfileResponse.getSubmitStats().getTotalSubmissionNum()) {
+                        if (submissionStat.getDifficulty().equals("All")) {
+                            totalSubmissions.setAll(submissionStat.getSubmissions());
+                        } else if (submissionStat.getDifficulty().equals("Easy")) {
+                            totalSubmissions.setEasy(submissionStat.getSubmissions());
+                        } else if (submissionStat.getDifficulty().equals("Medium")) {
+                            totalSubmissions.setMedium(submissionStat.getSubmissions());
+                        } else if (submissionStat.getDifficulty().equals("Hard")) {
+                            totalSubmissions.setHard(submissionStat.getSubmissions());
+                        }
+                    }
+                }
+
+                List<Problem> recentSubmissions = new ArrayList<>();
+                if(userProfileResponse.getRecentSubmissions() != null) {
+                    for (RecentSubmission submission : userProfileResponse.getRecentSubmissions()) {
+                        recentSubmissions.add(new Problem(
+                                submission.getStatusDisplay(),
+                                submission.getTitle(),
+                                "https://leetcode.com/problems/" + submission.getTitleSlug() + "/description"));
+                    }
+                }
+                leetcodeProfile.setUsername(lcid);
+                leetcodeProfile.setProblemsSolved(problemsSolved);
+                leetcodeProfile.setTotalSubmissions(totalSubmissions);
+                leetcodeProfile.setAcceptedSubmissions(acceptedSubmissions);
+                leetcodeProfile.setRecentSubmissions(recentSubmissions);
+            }
+
+            if (contestResponse != null && contestResponse.getStatus().equals("success")) {
+                long rating = 0, maxRating = 0;
+                List<UserContestHistory> contestHistory = new ArrayList<>();
+                if(contestResponse.getContestHistory() != null) {
+                    for (ContestHistory history : contestResponse.getContestHistory()) {
+                        if (history.isAttended()) {
+                            contestHistory.add(new UserContestHistory(
+                                    history.getContest().getTitle().toLowerCase().replace(" ", "-"),
+                                    history.getContest().getTitle(),
+                                    history.getRanking(),
+                                    rating,
+                                    (long) (history.getRating() + 0.5))
+                            );
+                            rating = (long) (history.getRating() + 0.5);
+                            maxRating = Math.max(maxRating, rating);
+                        }
+                    }
+                }
+                java.util.Collections.reverse(contestHistory);
+
+                leetcodeProfile.setContestHistory(contestHistory);
+                leetcodeProfile.setMaxRating(maxRating);
+                leetcodeProfile.setRating((long) (contestResponse.getRating() + 0.5));
+                leetcodeProfile.setContestParticipations(contestResponse.getAttendedContestsCount());
+                if(contestResponse.getBadge() != null && contestResponse.getBadge().getName() != null) {
+                    leetcodeProfile.setRank(contestResponse.getBadge().getName());
+                } else {
+                    leetcodeProfile.setRank("Newbie");
+                }
+            }
+
+            System.out.println("LeetCode profile data cached successfully for: " + lcid);
+            return leetcodeProfile;
+        } catch (Exception e) {
+            System.out.println("");
+            System.out.println("DETAILED ERROR fetching LeetCode profile for user: " + username + " (LeetCode ID: "
+                    + lcid + ")");
+            System.out.println("Error type: " + e.getClass().getSimpleName());
+            System.out.println("Error message: " + e.getMessage());
+            System.out.println("Profile URL: " + lcuserurl);
+            System.out.println("Contest URL: " + lccontesturl);
+            System.out.println("");
+            e.printStackTrace();
+            throw new RuntimeException("Failed to fetch LeetCode profile for user: " + username + " (LeetCode ID: "
+                    + lcid + "). Error: " + e.getMessage());
+        }
     }
 }
