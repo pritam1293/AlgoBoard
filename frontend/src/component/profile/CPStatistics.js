@@ -42,10 +42,6 @@ const CPStatistics = () => {
   const CONTESTS_PER_PAGE = 5;
   const SOLUTIONS_PER_PAGE = 9;
 
-
-
-
-
   const renderLeetcodeProblemStats = () => {
     if (!platformData?.problemsSolved || selectedPlatform?.id !== 'leetcode') {
       return null;
