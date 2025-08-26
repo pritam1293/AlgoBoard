@@ -4,59 +4,77 @@ A comprehensive competitive programming statistics dashboard that aggregates and
 
 ## 📸 Screenshots
 
-### Dashboard Overview
-
-![Dashboard](./images/dashboard.png)
-_Main dashboard showing all connected platforms_
-
-### Profile Management
-
-![Profile Page](./images/profile_page.png)
-_User profile and platform connection management_
-
-### Contest Announcements
-
-![Contest Announcements](./images/contest_announcements.png)
-_Latest contest announcements and upcoming events_
-
-### All Platforms Statistics
-
-![All Platforms Stats](./images/all_platforms_stats.png)
-_Unified view of statistics across all connected platforms_
+<table>
+  <tr>
+    <td width="50%">
+      <h3>Dashboard Overview</h3>
+      <img src="./images/dashboard.png" alt="Dashboard" width="100%">
+      <i>Main dashboard showing all connected platforms</i>
+    </td>
+    <td width="50%">
+      <h3>Profile Management</h3>
+      <img src="./images/profile_page.png" alt="Profile Page" width="100%">
+      <i>User profile and platform connection management</i>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>Contest Announcements</h3>
+      <img src="./images/contest_announcements.png" alt="Contest Announcements" width="100%">
+      <i>Latest contest announcements and upcoming events</i>
+    </td>
+    <td width="50%">
+      <h3>All Platforms Statistics</h3>
+      <img src="./images/all_platforms_stats.png" alt="All Platforms Stats" width="100%">
+      <i>Unified view of statistics across all connected platforms</i>
+    </td>
+  </tr>
+</table>
 
 ### Platform-Specific Views
 
-#### Codeforces
-
-![Codeforces Stats](./images/codeforces-stats.png)
-_Codeforces profile statistics and overview_
-
-![Codeforces Contest & Problems](./images/codeforces-stats-contest_and_problems.png)
-_Contest history and problem submissions_
-
-#### LeetCode
-
-![LeetCode Overview](./images/leetcode_overview.png)
-_LeetCode profile and problem statistics_
-
-![LeetCode Progress](./images/leetcode_graph_history.png)
-_Rating progression and contest history_
-
-#### CodeChef
-
-![CodeChef Graph](./images/codechef_graph.png)
-_CodeChef rating progression chart_
-
-![CodeChef History](./images/codechef_history.png)
-_CodeChef contest participation history_
-
-#### AtCoder
-
-![AtCoder Graph](./images/atcoder_graph.png)
-_AtCoder rating progression visualization_
-
-![AtCoder History](./images/atcoder_history.png)
-_AtCoder contest history and performance_
+<table>
+  <tr>
+    <td width="50%">
+      <h4>Codeforces Overview</h4>
+      <img src="./images/codeforces-stats.png" alt="Codeforces Stats" width="100%">
+    </td>
+    <td width="50%">
+      <h4>Codeforces Details</h4>
+      <img src="./images/codeforces-stats-contest_and_problems.png" alt="Codeforces Contest & Problems" width="100%">
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h4>LeetCode Overview</h4>
+      <img src="./images/leetcode_overview.png" alt="LeetCode Overview" width="100%">
+    </td>
+    <td width="50%">
+      <h4>LeetCode Progress</h4>
+      <img src="./images/leetcode_graph_history.png" alt="LeetCode Progress" width="100%">
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h4>CodeChef Graph</h4>
+      <img src="./images/codechef_graph.png" alt="CodeChef Graph" width="100%">
+    </td>
+    <td width="50%">
+      <h4>CodeChef History</h4>
+      <img src="./images/codechef_history.png" alt="CodeChef History" width="100%">
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h4>AtCoder Graph</h4>
+      <img src="./images/atcoder_graph.png" alt="AtCoder Graph" width="100%">
+    </td>
+    <td width="50%">
+      <h4>AtCoder History</h4>
+      <img src="./images/atcoder_history.png" alt="AtCoder History" width="100%">
+    </td>
+  </tr>
+</table>
 
 ## 📚 Table of ContentsoBoard
 
