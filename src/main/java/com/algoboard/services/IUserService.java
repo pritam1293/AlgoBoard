@@ -2,6 +2,7 @@ package com.algoboard.services;
 
 import com.algoboard.entities.Atcoder;
 import com.algoboard.entities.Codeforces;
+import com.algoboard.entities.Codechef;
 import com.algoboard.entities.Leetcode;
 import com.algoboard.entities.User;
 import com.algoboard.DTO.ContestDTO;
@@ -39,7 +40,7 @@ public interface IUserService {
 
     public Atcoder getAtcoderProfile(String username);
 
-    // public Codechef getCodechefProfile(String username);
+    public Codechef getCodechefProfile(String username);
 
     public Leetcode getLeetcodeProfile(String username);
 }

@@ -1,8 +1,6 @@
 package com.algoboard.entities;
 
-import java.util.AbstractMap;
 import java.util.List;
-import java.util.Set;
 
 public class Codeforces {
     private String username;
@@ -15,12 +13,58 @@ public class Codeforces {
     private long acceptedSubmissions;
     private long contestParticipations;
     private List<UserContestHistory> contestHistory;
-    private Set<AbstractMap.SimpleEntry<Long, String>> problemSet;
+    private List<Problem> recentSubmissions;
 
+    public static class Problem {
+        private long id;
+        private String index;
+        private String name;
+        private String status;
+
+        public Problem(long id, String index, String name, String status) {
+            this.id = id;
+            this.index = index;
+            this.name = name;
+            this.status = status;
+        }
+
+        // Getters and Setters
+        public long getId() {
+            return id;
+        }
+
+        public void setId(long id) {
+            this.id = id;
+        }
+
+        public String getIndex() {
+            return index;
+        }
+
+        public void setIndex(String index) {
+            this.index = index;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
+    }
 
     public Codeforces(String username, String rank, long rating, long maxRating, String maxRank, long problemsSolved,
             long totalSubmissions, long acceptedSubmissions, long contestParticipations,
-            List<UserContestHistory> contestHistory, Set<AbstractMap.SimpleEntry<Long, String>> problemSet) {
+            List<UserContestHistory> contestHistory, List<Problem> recentSubmissions) {
 
         this.username = username;
         this.rank = rank;
@@ -32,7 +76,7 @@ public class Codeforces {
         this.acceptedSubmissions = acceptedSubmissions;
         this.contestParticipations = contestParticipations;
         this.contestHistory = contestHistory;
-        this.problemSet = problemSet;
+        this.recentSubmissions = recentSubmissions;
     }
 
     public String getUsername() {
@@ -111,11 +155,11 @@ public class Codeforces {
         return contestHistory;
     }
 
-    public Set<AbstractMap.SimpleEntry<Long, String>> getProblemSet() {
-        return problemSet;
+    public List<Problem> getRecentSubmissions() {
+        return recentSubmissions;
     }
 
-    public void setProblemSet(Set<AbstractMap.SimpleEntry<Long, String>> problemSet) {
-        this.problemSet = problemSet;
+    public void setRecentSubmissions(List<Problem> recentSubmissions) {
+        this.recentSubmissions = recentSubmissions;
     }
 }

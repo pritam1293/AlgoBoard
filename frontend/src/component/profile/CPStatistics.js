@@ -32,6 +32,7 @@ const CPStatistics = () => {
   const navigate = useNavigate();
   const [selectedPlatform, setSelectedPlatform] = useState(null);
   const [platformData, setPlatformData] = useState(null);
+  const [allPlatformsData, setAllPlatformsData] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -41,6 +42,11 @@ const CPStatistics = () => {
 
   const CONTESTS_PER_PAGE = 5;
   const SOLUTIONS_PER_PAGE = 9;
+
+  // Get list of connected platforms
+  const connectedPlatforms = PLATFORMS.filter((platform) => {
+    return Boolean(user?.[platform.usernameField]);
+  });
 
   const renderLeetcodeProblemStats = () => {
     if (!platformData?.problemsSolved || selectedPlatform?.id !== 'leetcode') {
@@ -153,10 +159,20 @@ const CPStatistics = () => {
     );
   };
 
-  // Recent submissions component for LeetCode
+  // Recent submissions component for LeetCode and Codeforces
   const renderRecentSubmissions = () => {
-    if (!platformData?.recentSubmissions || selectedPlatform?.id !== 'leetcode') {
+    if (!platformData?.recentSubmissions ||
+      (selectedPlatform?.id !== 'leetcode' && selectedPlatform?.id !== 'codeforces')) {
       return null;
+    }
+
+    if (platformData.recentSubmissions.length === 0) {
+      return (
+        <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+          <h4 className="text-lg font-semibold text-white mb-4">Recent Submissions</h4>
+          <p className="text-gray-400">No recent submissions available</p>
+        </div>
+      );
     }
 
     const submissions = platformData.recentSubmissions.slice(0, 10); // Show latest 10
@@ -169,32 +185,36 @@ const CPStatistics = () => {
             <div key={index} className="flex items-center justify-between p-3 bg-neutral-700 rounded-lg hover:bg-neutral-600 transition-colors">
               <div className="flex-1">
                 <a
-                  href={submission.problemUrl}
+                  href={
+                    selectedPlatform?.id === 'codeforces'
+                      ? `https://codeforces.com/problemset/problem/${submission.id}/${submission.index}`
+                      : submission.problemUrl
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-400 hover:text-blue-300 font-medium"
                 >
-                  {submission.problemTitle}
+                  {selectedPlatform?.id === 'codeforces' ? submission.name : submission.problemTitle}
                 </a>
               </div>
-              <div className={`px-3 py-1 rounded-full text-xs font-medium ${submission.status === 'Accepted'
+              <div className={`px-3 py-1 rounded-full text-xs font-medium ${(selectedPlatform?.id === 'codeforces' && submission.status === 'OK') ||
+                (selectedPlatform?.id === 'leetcode' && submission.status === 'Accepted')
                 ? 'bg-green-900 text-green-300'
                 : 'bg-red-900 text-red-300'
                 }`}>
-                {submission.status}
+                {selectedPlatform?.id === 'codeforces'
+                  ? (submission.status === 'OK' ? 'Accepted' :
+                    submission.status.split('_').map(word =>
+                      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                    ).join(' '))
+                  : submission.status
+                }
               </div>
             </div>
           ))}
         </div>
       </div>
     );
-  };
-
-  // Available platforms (only show connected ones)
-  const getConnectedPlatforms = () => {
-    return PLATFORMS.filter((platform) => {
-      return Boolean(user?.[platform.usernameField]);
-    });
   };
 
   // Fetch platform data when platform is selected
@@ -215,6 +235,8 @@ const CPStatistics = () => {
         stats = await platformService.getLeetcodeProfile(user.username);
       } else if (platform.id === "atcoder") {
         stats = await platformService.getAtcoderProfile(user.username);
+      } else if (platform.id === "codechef") {
+        stats = await platformService.getCodechefProfile(user.username);
       }
       // Add other platforms here when needed
 
@@ -232,10 +254,62 @@ const CPStatistics = () => {
     }
   };
 
+  // Fetch data from all connected platforms
+  const fetchAllPlatformsData = async () => {
+    if (!user?.username) return;
+
+    setLoading(true);
+    setError(null);
+    setPlatformData(null);
+
+    try {
+      console.log('Fetching stats from all connected platforms...');
+      const allData = {};
+
+      // Fetch data from all connected platforms in parallel
+      const promises = connectedPlatforms.map(async (platform) => {
+        try {
+          let stats = null;
+          if (platform.id === "codeforces") {
+            stats = await platformService.getCodeforcesProfile(user.username);
+          } else if (platform.id === "leetcode") {
+            stats = await platformService.getLeetcodeProfile(user.username);
+          } else if (platform.id === "atcoder") {
+            stats = await platformService.getAtcoderProfile(user.username);
+          } else if (platform.id === "codechef") {
+            stats = await platformService.getCodechefProfile(user.username);
+          }
+
+          if (stats?.data) {
+            allData[platform.id] = {
+              platform,
+              data: stats.data
+            };
+          }
+        } catch (err) {
+          console.error(`Error fetching ${platform.name} stats:`, err);
+        }
+      });
+
+      await Promise.all(promises);
+      setAllPlatformsData(allData);
+      console.log('All platforms data fetched:', allData);
+    } catch (err) {
+      console.error('Error fetching all platforms stats:', err);
+      setError('Failed to fetch statistics from some platforms');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle platform selection
   const handlePlatformSelect = (platform) => {
     setSelectedPlatform(platform);
-    fetchPlatformData(platform);
+    if (platform?.id === 'all') {
+      fetchAllPlatformsData();
+    } else {
+      fetchPlatformData(platform);
+    }
   };
 
   // Render contest history with pagination
@@ -266,7 +340,26 @@ const CPStatistics = () => {
               <div className="flex justify-between items-start">
                 <div>
                   <h5 className="text-white font-medium">
-                    {contest.contestName}
+                    {contest.contestId ? (
+                      <a
+                        href={(() => {
+                          const baseUrls = {
+                            codeforces: `https://codeforces.com/contest/${contest.contestId}`,
+                            codechef: `https://www.codechef.com/${contest.contestId}`,
+                            leetcode: `https://leetcode.com/contest/${contest.contestId}`,
+                            atcoder: `https://atcoder.jp/contests/${contest.contestId}`
+                          };
+                          return baseUrls[selectedPlatform?.id] || '#';
+                        })()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 hover:underline transition-colors"
+                      >
+                        {contest.contestName}
+                      </a>
+                    ) : (
+                      contest.contestName
+                    )}
                   </h5>
                   <p className="text-gray-400 text-sm">
                     Standing: {contest.standing}
@@ -544,7 +637,245 @@ const CPStatistics = () => {
     );
   };
 
-  const connectedPlatforms = getConnectedPlatforms();
+  // Render superimposed chart for all platforms
+  const renderAllPlatformsChart = () => {
+    const platformEntries = Object.entries(allPlatformsData);
+
+    if (platformEntries.length === 0) {
+      return (
+        <p className="text-gray-400">No contest history available from connected platforms</p>
+      );
+    }
+
+    const platformColors = {
+      codeforces: "rgb(59, 130, 246)", // Blue
+      leetcode: "rgb(255, 193, 7)", // Yellow
+      atcoder: "rgb(34, 197, 94)", // Green
+      codechef: "rgb(249, 115, 22)", // Orange
+    };
+
+    const datasets = [];
+
+    platformEntries.forEach(([platformId, { platform, data }]) => {
+      if (data.contestHistory && data.contestHistory.length > 0) {
+        const reversedHistory = [...data.contestHistory].reverse();
+        const color = platformColors[platformId] || "rgb(156, 163, 175)";
+
+        // Find the contest where user achieved their max rating (latest occurrence if multiple)
+        const maxRating = data.maxRating;
+        let highestRatingIndex = -1;
+        for (let i = reversedHistory.length - 1; i >= 0; i--) {
+          if (reversedHistory[i].newRating === maxRating) {
+            highestRatingIndex = i;
+            break;
+          }
+        }
+
+        datasets.push({
+          label: platform.name,
+          data: reversedHistory.map((contest) => contest.newRating),
+          borderColor: color,
+          backgroundColor: `${color.replace('rgb', 'rgba').replace(')', ', 0.05)')}`,
+          tension: 0.3,
+          pointBackgroundColor: reversedHistory.map(
+            (_, index) =>
+              index === highestRatingIndex
+                ? "rgb(255, 215, 0)"
+                : "transparent" // Hide normal points, only show golden point
+          ),
+          pointBorderColor: reversedHistory.map((_, index) =>
+            index === highestRatingIndex
+              ? "rgba(255, 255, 255, 1)"
+              : "transparent" // Hide normal point borders
+          ),
+          pointBorderWidth: reversedHistory.map((_, index) =>
+            index === highestRatingIndex ? 2 : 0
+          ),
+          pointRadius: reversedHistory.map(
+            (_, index) => (index === highestRatingIndex ? 6 : 0) // Hide normal points, show golden point
+          ),
+          pointHoverRadius: 5, // Show all points on hover
+          pointHoverBackgroundColor: reversedHistory.map((_, index) =>
+            index === highestRatingIndex
+              ? "rgb(255, 215, 0)"
+              : color
+          ),
+          pointHoverBorderColor: "#ffffff",
+          pointHoverBorderWidth: 2,
+          borderWidth: 2,
+          fill: false,
+        });
+      }
+    });
+
+    if (datasets.length === 0) {
+      return (
+        <p className="text-gray-400">No contest history available from connected platforms</p>
+      );
+    }
+
+    // Find the maximum number of contests to create labels
+    const maxContests = Math.max(...datasets.map(dataset => dataset.data.length));
+    const labels = Array.from({ length: maxContests }, (_, index) => index + 1);
+
+    const chartData = {
+      labels,
+      datasets,
+    };
+
+    const options = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: "top",
+          labels: {
+            color: "#ffffff",
+            usePointStyle: true,
+            pointStyle: 'circle',
+            padding: 20,
+            generateLabels: function (chart) {
+              const datasets = chart.data.datasets;
+              return datasets.map((dataset, index) => ({
+                text: dataset.label,
+                fillStyle: dataset.borderColor,
+                strokeStyle: dataset.borderColor,
+                fontColor: "#ffffff",
+                lineWidth: 2,
+                hidden: !chart.isDatasetVisible(index),
+                index: index
+              }));
+            }
+          },
+        },
+        title: {
+          display: false,
+        },
+        tooltip: {
+          callbacks: {
+            title: function (context) {
+              return `Contest ${context[0].label}`;
+            },
+            label: function (context) {
+              return `${context.dataset.label}: ${context.parsed.y}`;
+            },
+          },
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: false,
+          ticks: {
+            color: "rgba(255, 255, 255, 0.7)",
+            maxTicksLimit: 6,
+            font: {
+              size: 11,
+            },
+          },
+          grid: {
+            color: "rgba(255, 255, 255, 0.05)",
+            drawBorder: false,
+          },
+          border: {
+            display: false,
+          },
+        },
+      },
+      interaction: {
+        intersect: false,
+        mode: "index",
+      },
+    };
+
+    return (
+      <div className="space-y-4">
+        <h4 className="text-lg font-semibold text-white">Rating Progression</h4>
+
+        <div className="bg-neutral-700 rounded-lg p-4">
+          <div className="relative h-64 sm:h-80 md:h-96">
+            <Line data={chartData} options={options} />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render all platforms summary
+  const renderAllPlatformsSummary = () => {
+    const platformEntries = Object.entries(allPlatformsData);
+
+    if (platformEntries.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-gray-400">No data available from connected platforms</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-8">
+        {/* Basic Stats Bar - Similar to individual platform design */}
+        <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+          <h3 className="text-xl font-semibold text-white mb-4">
+            All Platforms Statistics
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {platformEntries.map(([platformId, { platform, data }]) => (
+              <div key={platformId} className="bg-neutral-700 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-white mb-2">{platform.name}</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Username:</span>
+                    <span className="text-white">{data.username}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">
+                      {platformId === 'leetcode' ? 'Rank:' : 'Rating:'}
+                    </span>
+                    <span className="text-blue-400">
+                      {platformId === 'leetcode'
+                        ? (data.rank || "Unranked")
+                        : (data.rating || 0)
+                      }
+                    </span>
+                  </div>
+                  {/* LeetCode Current Rating */}
+                  {platformId === 'leetcode' && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Rating:</span>
+                      <span className="text-yellow-400">{data.rating || 0}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Max Rating:</span>
+                    <span className="text-green-400">{data.maxRating || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Contests:</span>
+                    <span className="text-white">{data.contestParticipations || 0}</span>
+                  </div>
+                  {/* Show Rank for all platforms that have it */}
+                  {(platformId === 'codechef' || platformId === 'atcoder' || platformId === 'codeforces') && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Rank:</span>
+                      <span className="text-orange-400">{data.rank || "Unranked"}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Rating Progression Chart */}
+        <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+          {renderAllPlatformsChart()}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-neutral-900">
@@ -562,6 +893,28 @@ const CPStatistics = () => {
           </p>
         </div>
 
+        {/* Profile Update Notice */}
+        <div className="mb-6 bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-blue-200">
+                Profile Update Information
+              </h3>
+              <div className="mt-1 text-sm text-blue-300">
+                <p>
+                  Profile data updates may vary by up to 1 hour from real-time updates on the respective platforms.
+                  This ensures optimal performance while maintaining data accuracy.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Platform Dropdown */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -570,14 +923,21 @@ const CPStatistics = () => {
           <select
             value={selectedPlatform?.id || ""}
             onChange={(e) => {
-              const platform = connectedPlatforms.find(
-                (p) => p.id === e.target.value
-              );
-              if (platform) handlePlatformSelect(platform);
+              if (e.target.value === 'all') {
+                handlePlatformSelect({ id: 'all', name: 'All Platforms' });
+              } else {
+                const platform = connectedPlatforms.find(
+                  (p) => p.id === e.target.value
+                );
+                if (platform) handlePlatformSelect(platform);
+              }
             }}
             className="w-full max-w-xs px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Choose a platform...</option>
+            {connectedPlatforms.length > 1 && (
+              <option value="all">All Platforms</option>
+            )}
             {connectedPlatforms.map((platform) => (
               <option key={platform.id} value={platform.id}>
                 {platform.name}
@@ -601,8 +961,15 @@ const CPStatistics = () => {
           </div>
         )}
 
-        {/* Platform Data Display */}
-        {platformData && selectedPlatform && !loading && (
+        {/* All Platforms Data Display */}
+        {selectedPlatform?.id === 'all' && Object.keys(allPlatformsData).length > 0 && !loading && (
+          <div className="space-y-8">
+            {renderAllPlatformsSummary()}
+          </div>
+        )}
+
+        {/* Single Platform Data Display */}
+        {platformData && selectedPlatform && selectedPlatform?.id !== 'all' && !loading && (
           <div className="space-y-8">
             {/* Basic Stats */}
             <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
@@ -640,8 +1007,8 @@ const CPStatistics = () => {
                   </p>
                 </div>
 
-                {/* Hide Problems Solved, Total Submissions, and Accepted Submissions for AtCoder */}
-                {selectedPlatform?.id !== 'atcoder' && (
+                {/* Hide Problems Solved, Total Submissions, and Accepted Submissions for AtCoder and CodeChef */}
+                {selectedPlatform?.id !== 'atcoder' && selectedPlatform?.id !== 'codechef' && (
                   <>
                     <div className="text-center">
                       <p className="text-sm text-gray-400">Problems Solved</p>
@@ -668,6 +1035,24 @@ const CPStatistics = () => {
                           ? (platformData.acceptedSubmissions?.all || 0)
                           : (platformData.acceptedSubmissions || 0)
                         }
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                {/* CodeChef specific stats in basic stats section */}
+                {selectedPlatform?.id === 'codechef' && (
+                  <>
+                    <div className="text-center">
+                      <p className="text-sm text-gray-400">Current Rank</p>
+                      <p className="text-lg font-semibold text-orange-400">
+                        {platformData.rank || "Unranked"}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-gray-400">Max Rank</p>
+                      <p className="text-lg font-semibold text-yellow-400">
+                        {platformData.maxRank || "Unranked"}
                       </p>
                     </div>
                   </>
@@ -701,6 +1086,18 @@ const CPStatistics = () => {
                 {/* Recent Submissions */}
                 {renderRecentSubmissions()}
               </>
+            ) : selectedPlatform?.id === 'codechef' ? (
+              <>
+                {/* Rating Progression Chart */}
+                <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+                  {renderRatingChart()}
+                </div>
+
+                {/* Contest History */}
+                <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+                  {renderContestHistory()}
+                </div>
+              </>
             ) : (
               <>
                 {/* Rating Progression Chart */}
@@ -713,8 +1110,11 @@ const CPStatistics = () => {
                   {renderContestHistory()}
                 </div>
 
-                {/* Accepted Solutions - Only show for platforms that provide this data (exclude AtCoder) */}
-                {selectedPlatform?.id !== 'atcoder' && (
+                {/* Recent Submissions */}
+                {renderRecentSubmissions()}
+
+                {/* Accepted Solutions - Only show for platforms that provide this data (exclude AtCoder and Codeforces) */}
+                {selectedPlatform?.id !== 'atcoder' && selectedPlatform?.id !== 'codeforces' && (
                   <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
                     {renderAcceptedSolutions()}
                   </div>

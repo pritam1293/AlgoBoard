@@ -43,8 +43,19 @@ class PlatformService {
     }
   }
 
-  // TODO: Other platform methods will be added when needed
-  // async getCodechefProfile(username) { ... }
+  // Get CodeChef profile statistics
+  async getCodechefProfile(username) {
+    try {
+      const response = await apiService.get(
+        `/platforms/codechef?username=${username}`
+      );
+
+      return response;
+    } catch (error) {
+      console.error("Error fetching CodeChef profile:", error);
+      throw new Error(`Failed to fetch CodeChef profile: ${error.message}`);
+    }
+  }
 }
 
 const platformService = new PlatformService();

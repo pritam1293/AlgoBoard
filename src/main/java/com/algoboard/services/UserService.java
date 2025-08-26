@@ -8,9 +8,11 @@ import com.algoboard.DTO.Codechef.CC_ContestListDTO;
 import com.algoboard.DTO.Leetcode.LC_ContestDTO;
 import com.algoboard.DTO.Leetcode.LC_ContestListDTO;
 import com.algoboard.DTO.Leetcode.LC_UserDTO;
+import com.algoboard.DTO.Codechef.CC_ContestDTO;
 import com.algoboard.DTO.ContestDTO;
 import com.algoboard.entities.Atcoder;
 import com.algoboard.entities.Codeforces;
+import com.algoboard.entities.Codechef;
 import com.algoboard.entities.Leetcode;
 import com.algoboard.entities.UserContestHistory;
 import com.algoboard.entities.User;
@@ -38,6 +40,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
@@ -58,6 +61,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class UserService implements IUserService {
+    // Timezone constants for consistent handling across all datetime operations
+    private static final ZoneId IST_ZONE = ZoneId.of("Asia/Kolkata");
+    private static final ZoneOffset IST_OFFSET = ZoneOffset.of("+05:30");
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
@@ -71,7 +78,6 @@ public class UserService implements IUserService {
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
         this.cacheManager = cacheManager;
-        // check();
         System.out.println("");
         System.out.println("MongoDB connected.");
         System.out.println("");
@@ -225,6 +231,7 @@ public class UserService implements IUserService {
         if (user != null) {
             boolean codeforcesChanged = false;
             boolean atcoderChanged = false;
+            boolean codechefChanged = false;
             boolean leetcodeChanged = false;
 
             // Check Codeforces username change
@@ -243,11 +250,12 @@ public class UserService implements IUserService {
                 atcoderChanged = true;
             }
 
-            // Check CodeChef username change (no cache to clear)
+            // Check CodeChef username change
             if (codechefId != null && !Objects.equals(codechefId, user.getCodechefUsername())) {
                 System.out.println(
                         "CodeChef username changing from '" + user.getCodechefUsername() + "' to '" + codechefId + "'");
                 user.setCodechefUsername(codechefId);
+                codechefChanged = true;
             }
 
             // Check LeetCode username change
@@ -268,6 +276,10 @@ public class UserService implements IUserService {
             if (atcoderChanged) {
                 evictAtcoderCache(username);
                 System.out.println("✓ AtCoder cache cleared for user: " + username);
+            }
+            if (codechefChanged) {
+                evictCodechefCache(username);
+                System.out.println("✓ CodeChef cache cleared for user: " + username);
             }
             if (leetcodeChanged) {
                 evictLeetcodeCache(username);
@@ -324,33 +336,40 @@ public class UserService implements IUserService {
     // Automatically refresh cache every 30 minutes
     @CacheEvict(value = "contestList", allEntries = true)
     @Scheduled(fixedRate = 1800000) // 30 minutes in milliseconds
-    public void refreshContestCache() {
+    protected void refreshContestCache() {
         System.out.println("Contest cache cleared - will refresh on next request");
     }
 
-    // Automatically refresh LeetCode profile cache every 2 hours
+    // Automatically refresh LeetCode profile cache every 1 hours
     @CacheEvict(value = "leetcodeProfile", allEntries = true)
-    @Scheduled(fixedRate = 7200000) // 2 hours in milliseconds
-    public void refreshLeetcodeProfileCache() {
+    @Scheduled(fixedRate = 3600000) // 1 hours in milliseconds
+    protected void refreshLeetcodeProfileCache() {
         System.out.println("LeetCode profile cache cleared - will refresh on next request");
     }
 
     // Automatically refresh Codeforces profile cache every 1 hours
     @CacheEvict(value = "codeforcesProfile", allEntries = true)
     @Scheduled(fixedRate = 3600000) // 1 hours in milliseconds
-    public void refreshCodeforcesProfileCache() {
+    protected void refreshCodeforcesProfileCache() {
         System.out.println("Codeforces profile cache cleared - will refresh on next request");
     }
 
     // Automatically refresh AtCoder profile cache every 1 hours
     @CacheEvict(value = "atcoderProfile", allEntries = true)
     @Scheduled(fixedRate = 3600000) // 1 hours in milliseconds
-    public void refreshAtcoderProfileCache() {
+    protected void refreshAtcoderProfileCache() {
         System.out.println("AtCoder profile cache cleared - will refresh on next request");
     }
 
+    // Automatically refresh CodeChef profile cache every 1 hours
+    @CacheEvict(value = "codechefProfile", allEntries = true)
+    @Scheduled(fixedRate = 3600000) // 1 hours in milliseconds
+    protected void refreshCodechefProfileCache() {
+        System.out.println("CodeChef profile cache cleared - will refresh on next request");
+    }
+
     // Selective cache eviction methods for individual users
-    public void evictCodeforcesCache(String username) {
+    private void evictCodeforcesCache(String username) {
         System.out.println("🗑️ Evicting Codeforces cache for user: " + username);
         if (cacheManager.getCache("codeforcesProfile") != null) {
             cacheManager.getCache("codeforcesProfile").evict(username);
@@ -358,7 +377,7 @@ public class UserService implements IUserService {
         }
     }
 
-    public void evictAtcoderCache(String username) {
+    private void evictAtcoderCache(String username) {
         System.out.println("🗑️ Evicting AtCoder cache for user: " + username);
         if (cacheManager.getCache("atcoderProfile") != null) {
             cacheManager.getCache("atcoderProfile").evict(username);
@@ -366,11 +385,19 @@ public class UserService implements IUserService {
         }
     }
 
-    public void evictLeetcodeCache(String username) {
+    private void evictLeetcodeCache(String username) {
         System.out.println("🗑️ Evicting LeetCode cache for user: " + username);
         if (cacheManager.getCache("leetcodeProfile") != null) {
             cacheManager.getCache("leetcodeProfile").evict(username);
             System.out.println("✅ LeetCode cache actually evicted for: " + username);
+        }
+    }
+
+    private void evictCodechefCache(String username) {
+        System.out.println("🗑️ Evicting CodeChef cache for user: " + username);
+        if (cacheManager.getCache("codechefProfile") != null) {
+            cacheManager.getCache("codechefProfile").evict(username);
+            System.out.println("✅ CodeChef cache actually evicted for: " + username);
         }
     }
 
@@ -424,10 +451,10 @@ public class UserService implements IUserService {
                                 "https://codeforces.com/contest/" + contest.getId(),
                                 "codeforces",
                                 LocalDateTime.ofEpochSecond(contest.getStartTimeSeconds(), 0,
-                                        java.time.ZoneOffset.of("+05:30")),
+                                        IST_OFFSET),
                                 LocalDateTime.ofEpochSecond(
                                         contest.getStartTimeSeconds() + contest.getDurationSeconds(), 0,
-                                        java.time.ZoneOffset.of("+05:30")),
+                                        IST_OFFSET),
                                 (long) contest.getDurationSeconds() / 60)
 
                         );
@@ -508,8 +535,8 @@ public class UserService implements IUserService {
                                 "https://atcoder.jp/contests/" + contestId,
                                 "atcoder",
                                 LocalDateTime.ofInstant(Instant.parse(contest.getStartTime()),
-                                        ZoneId.of("Asia/Kolkata")),
-                                LocalDateTime.ofInstant(Instant.parse(contest.getEndTime()), ZoneId.of("Asia/Kolkata")),
+                                        IST_ZONE),
+                                LocalDateTime.ofInstant(Instant.parse(contest.getEndTime()), IST_ZONE),
                                 contest.getDuration() / 60));
                     }
                 }
@@ -538,7 +565,7 @@ public class UserService implements IUserService {
                     String dateStr = cols.get(0).text();
                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssZ");
                     ZonedDateTime zonedDateTime = ZonedDateTime.parse(dateStr, formatter);
-                    final LocalDateTime startTime = zonedDateTime.withZoneSameInstant(ZoneId.of("Asia/Kolkata"))
+                    final LocalDateTime startTime = zonedDateTime.withZoneSameInstant(IST_ZONE)
                             .toLocalDateTime();
 
                     Element linkElement = cols.get(1).selectFirst("a");
@@ -590,10 +617,10 @@ public class UserService implements IUserService {
                                 contest.getTitle(),
                                 contest.getUrl(),
                                 "leetcode",
-                                LocalDateTime.ofInstant(Instant.parse(contest.getStartTime()), ZoneId.of("Asia/Kolkata")),
-                                LocalDateTime.ofInstant(Instant.parse(contest.getEndTime()), ZoneId.of("Asia/Kolkata")),
-                                contest.getDuration() / 60)
-                        );
+                                LocalDateTime.ofInstant(Instant.parse(contest.getStartTime()),
+                                        IST_ZONE),
+                                LocalDateTime.ofInstant(Instant.parse(contest.getEndTime()), IST_ZONE),
+                                contest.getDuration() / 60));
                     }
                 }
             } else {
@@ -619,7 +646,7 @@ public class UserService implements IUserService {
                     Collections.reverse(history);
                     for (int index = 0; index < Math.min(4, history.size()); index++) {
                         LocalDateTime startTime = LocalDateTime.ofEpochSecond(
-                                history.get(index).getContest().getStartTime(), 0, java.time.ZoneOffset.of("+05:30"));
+                                history.get(index).getContest().getStartTime(), 0, IST_OFFSET);
                         LocalDateTime endTime = startTime.plusMinutes(90);
                         final String contestId = history.get(index).getContest().getTitle().toLowerCase().replace(" ",
                                 "-");
@@ -631,8 +658,7 @@ public class UserService implements IUserService {
                                     "leetcode",
                                     startTime,
                                     endTime,
-                                    90)
-                            );
+                                    90));
                         }
                     }
                 }
@@ -685,6 +711,7 @@ public class UserService implements IUserService {
             long totalSubmissions = 0;
             long acceptedSubmissions = 0;
             Set<AbstractMap.SimpleEntry<Long, String>> problemSet = new HashSet<>();
+            List<Codeforces.Problem> recentSubmissions = new ArrayList<>();
 
             while (true) {
                 String submissionsUrl = "https://codeforces.com/api/user.status?handle=" + cfid + "&from=" + from
@@ -702,6 +729,14 @@ public class UserService implements IUserService {
                     problemSet.add(new AbstractMap.SimpleEntry<>(
                             submission.getProblem().getContestId(),
                             submission.getProblem().getIndex()));
+                    if (recentSubmissions.size() < 10) {
+                        //last 10 submissions
+                        recentSubmissions.add(new Codeforces.Problem(
+                                submission.getProblem().getContestId(),
+                                submission.getProblem().getIndex(),
+                                submission.getProblem().getName(),
+                                submission.getVerdict()));
+                    }
                 }
                 if (submissionsResponse.getResult().size() < count) {
                     break;
@@ -711,7 +746,7 @@ public class UserService implements IUserService {
             CF_UserDTO.Result result = profileResponse.getResult().get(0);
             java.util.List<CF_ContestDTO.Result> contestResults = contestResponse.getResult();
             List<UserContestHistory> contestHistory = new ArrayList<>();
-            if(contestResults != null) {
+            if (contestResults != null) {
                 for (CF_ContestDTO.Result contestResult : contestResults) {
                     contestHistory.add(new UserContestHistory(
                             Long.toString(contestResult.getContestId()),
@@ -735,7 +770,7 @@ public class UserService implements IUserService {
                     acceptedSubmissions,
                     contestHistory.size(),
                     contestHistory,
-                    problemSet);
+                    recentSubmissions);
         } catch (Exception e) {
             System.out.println("");
             System.out.println("Error fetching Codeforces profile: " + e.getMessage());
@@ -763,7 +798,7 @@ public class UserService implements IUserService {
             long maxRating = -1;
             List<UserContestHistory> history = new ArrayList<>();
 
-            if(contestHistory != null) {
+            if (contestHistory != null) {
                 for (AC_ContestDTO contest : contestHistory) {
                     if (contest.isRated()) {
                         contestParticipations++;
@@ -780,8 +815,10 @@ public class UserService implements IUserService {
                             contest.getNewRating()));
                 }
             }
-            if(currRating == -1) currRating = 0;
-            if(maxRating == -1) maxRating = 0;
+            if (currRating == -1)
+                currRating = 0;
+            if (maxRating == -1)
+                maxRating = 0;
             String currRank = getRankByRating(currRating);
             String maxRank = getRankByRating(maxRating);
 
@@ -849,6 +886,76 @@ public class UserService implements IUserService {
             rankTitle = "Unrated / Newbie";
         }
         return rankTitle;
+    }
+
+    @Override
+    @Cacheable(value = "codechefProfile", key = "#username")
+    public Codechef getCodechefProfile(String username) {
+        if (userRepository.findByUsername(username) == null) {
+            throw new IllegalArgumentException("User not found with username: " + username);
+        }
+        String ccid = userRepository.findByUsername(username).getCodechefUsername();
+        if (ccid == null || ccid.isEmpty()) {
+            throw new IllegalArgumentException("Codechef username not found of user: " + username);
+        }
+        System.out.println("");
+        System.out.println("Cache miss - fetching Codechef profile data for: " + ccid);
+        String ccurl = "https://clist.by/account/" + ccid + "/resource/codechef.com/ratings/?resource=codechef.com";
+        Codechef codechefProfile = new Codechef();
+        try {
+            CC_ContestDTO codechefResponse = restTemplate.getForObject(ccurl, CC_ContestDTO.class);
+            if (codechefResponse != null && codechefResponse.getStatus().equals("ok")) {
+                codechefProfile.setUsername(ccid);
+
+                long maxRating = -1, currentRating = -1;
+                List<UserContestHistory> history = new ArrayList<>();
+                if (codechefResponse.getData() != null && codechefResponse.getData().getResources() != null
+                        && codechefResponse.getData().getResources().getCodechefCom() != null
+                        && codechefResponse.getData().getResources().getCodechefCom().getData() != null
+                        && codechefResponse.getData().getResources().getCodechefCom().getData().size() > 0) {
+                    List<CC_ContestDTO.Contest> contests = codechefResponse.getData().getResources().getCodechefCom()
+                            .getData().get(0);
+                    for (CC_ContestDTO.Contest contest : contests) {
+                        history.add(new UserContestHistory(
+                                contest.getKey(),
+                                contest.getName(),
+                                Long.parseLong(contest.getPlace()),
+                                contest.getOldRating() != null ? contest.getOldRating() : 0,
+                                contest.getNewRating() != null ? contest.getNewRating() : 0));
+                        maxRating = Math.max(maxRating, contest.getNewRating() != null ? contest.getNewRating() : 0);
+                        currentRating = contest.getNewRating() != null ? contest.getNewRating() : currentRating;
+                    }
+                }
+                java.util.Collections.reverse(history);
+                codechefProfile.setMaxRating(maxRating < 0 ? 0 : maxRating);
+                codechefProfile.setRating(currentRating < 0 ? 0 : currentRating);
+                codechefProfile.setContestHistory(history);
+                codechefProfile.setContestParticipations(history.size());
+                codechefProfile.setRank(getCodechefRankByRating(currentRating));
+                codechefProfile.setMaxRank(getCodechefRankByRating(maxRating));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch Codechef profile for user: " + username);
+        }
+        return codechefProfile;
+    }
+
+    final private String getCodechefRankByRating(long rating) {
+        if (rating >= 2500)
+            return "7 star";
+        if (rating >= 2200)
+            return "6 star";
+        if (rating >= 2000)
+            return "5 star";
+        if (rating >= 1800)
+            return "4 star";
+        if (rating >= 1600)
+            return "3 star";
+        if (rating >= 1400)
+            return "2 star";
+        if (rating >= 0)
+            return "1 star";
+        return "Unrated";
     }
 
     @Override
@@ -936,7 +1043,8 @@ public class UserService implements IUserService {
                 // problems solved and accepted submissions
                 Level problemsSolved = new Level(0, 0, 0, 0);
                 Level acceptedSubmissions = new Level(0, 0, 0, 0);
-                if(userProfileResponse.getSubmitStats() != null || userProfileResponse.getSubmitStats().getAcSubmissionNum() != null) {
+                if (userProfileResponse.getSubmitStats() != null
+                        && userProfileResponse.getSubmitStats().getAcSubmissionNum() != null) {
                     for (SubmissionStat submissionStat : userProfileResponse.getSubmitStats().getAcSubmissionNum()) {
                         if (submissionStat.getDifficulty().equals("All")) {
                             problemsSolved.setAll(submissionStat.getCount());
@@ -955,7 +1063,8 @@ public class UserService implements IUserService {
                 }
                 // total submissions
                 Level totalSubmissions = new Level(0, 0, 0, 0);
-                if(userProfileResponse.getSubmitStats() != null || userProfileResponse.getSubmitStats().getTotalSubmissionNum() != null) {
+                if (userProfileResponse.getSubmitStats() != null
+                        || userProfileResponse.getSubmitStats().getTotalSubmissionNum() != null) {
                     for (SubmissionStat submissionStat : userProfileResponse.getSubmitStats().getTotalSubmissionNum()) {
                         if (submissionStat.getDifficulty().equals("All")) {
                             totalSubmissions.setAll(submissionStat.getSubmissions());
@@ -970,7 +1079,7 @@ public class UserService implements IUserService {
                 }
 
                 List<Problem> recentSubmissions = new ArrayList<>();
-                if(userProfileResponse.getRecentSubmissions() != null) {
+                if (userProfileResponse.getRecentSubmissions() != null) {
                     for (RecentSubmission submission : userProfileResponse.getRecentSubmissions()) {
                         recentSubmissions.add(new Problem(
                                 submission.getStatusDisplay(),
@@ -988,7 +1097,7 @@ public class UserService implements IUserService {
             if (contestResponse != null && contestResponse.getStatus().equals("success")) {
                 long rating = 0, maxRating = 0;
                 List<UserContestHistory> contestHistory = new ArrayList<>();
-                if(contestResponse.getContestHistory() != null) {
+                if (contestResponse.getContestHistory() != null) {
                     for (ContestHistory history : contestResponse.getContestHistory()) {
                         if (history.isAttended()) {
                             contestHistory.add(new UserContestHistory(
@@ -996,8 +1105,7 @@ public class UserService implements IUserService {
                                     history.getContest().getTitle(),
                                     history.getRanking(),
                                     rating,
-                                    (long) (history.getRating() + 0.5))
-                            );
+                                    (long) (history.getRating() + 0.5)));
                             rating = (long) (history.getRating() + 0.5);
                             maxRating = Math.max(maxRating, rating);
                         }
@@ -1009,7 +1117,7 @@ public class UserService implements IUserService {
                 leetcodeProfile.setMaxRating(maxRating);
                 leetcodeProfile.setRating((long) (contestResponse.getRating() + 0.5));
                 leetcodeProfile.setContestParticipations(contestResponse.getAttendedContestsCount());
-                if(contestResponse.getBadge() != null && contestResponse.getBadge().getName() != null) {
+                if (contestResponse.getBadge() != null && contestResponse.getBadge().getName() != null) {
                     leetcodeProfile.setRank(contestResponse.getBadge().getName());
                 } else {
                     leetcodeProfile.setRank("Newbie");

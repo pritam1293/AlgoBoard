@@ -3,6 +3,7 @@ package com.algoboard.controller;
 import com.algoboard.entities.Atcoder;
 import com.algoboard.entities.Codeforces;
 import com.algoboard.entities.Leetcode;
+import com.algoboard.entities.Codechef;
 import com.algoboard.entities.User;
 import com.algoboard.services.IUserService;
 import com.algoboard.services.EmailService;
@@ -318,6 +319,23 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.status(500)
                     .body(ResponseUtil.createErrorResponse("Error fetching AtCoder profile: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("platforms/codechef")
+    public ResponseEntity<?> getCodechefProfile(@RequestParam String username) {
+        try {
+            Codechef codechefProfile = userService.getCodechefProfile(username);
+            if (codechefProfile != null) {
+                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Codechef profile retrieved successfully",
+                        codechefProfile));
+            } else {
+                return ResponseEntity.status(404)
+                        .body(ResponseUtil.createErrorResponse("Codechef profile not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Error fetching Codechef profile: " + e.getMessage()));
         }
     }
 

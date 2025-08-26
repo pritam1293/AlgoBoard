@@ -19,6 +19,7 @@ public class CacheConfig {
                 "contestList",
                 "leetcodeProfile",
                 "codeforcesProfile",
+                "codechefProfile",
                 "atcoderProfile");
         return cacheManager;
     }
