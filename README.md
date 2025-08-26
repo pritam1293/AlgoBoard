@@ -2,7 +2,22 @@
 
 A comprehensive competitive programming statistics dashboard that aggregates and visualizes your performance across multiple programming platforms.
 
-## 🚀 Features
+## � Table of Contents
+
+- [Features](#-features)
+- [Technology Stack](#️-technology-stack)
+- [What This Project Accomplishes](#-what-this-project-accomplishes)
+- [Technical Implementation](#-technical-implementation)
+- [Problem Solved](#-problem-solved)
+- [Getting Started](#-getting-started)
+- [Usage](#-usage)
+- [Future Enhancements](#-future-enhancements)
+- [Developer](#-developer)
+- [License](#-license)
+- [Contributing](#-contributing)
+- [Support](#-support)
+
+## �🚀 Features
 
 ### Multi-Platform Integration
 
