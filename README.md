@@ -2,6 +2,66 @@
 
 A comprehensive competitive programming statistics dashboard that aggregates and visualizes your performance across multiple programming platforms.
 
+## 📸 Screenshots
+
+### Dashboard Overview
+
+![Dashboard](./images/dashboard.png)
+_Main dashboard showing all connected platforms_
+
+### Profile Management
+
+![Profile Page](./images/profile_page.png)
+_User profile and platform connection management_
+
+### Contest Announcements
+
+![Contest Announcements](./images/contest_announcements.png)
+_Latest contest announcements and upcoming events_
+
+### All Platforms Statistics
+
+![All Platforms Stats](./images/all_platforms_stats.png)
+_Unified view of statistics across all connected platforms_
+
+### Platform-Specific Views
+
+#### Codeforces
+
+![Codeforces Stats](./images/codeforces-stats.png)
+_Codeforces profile statistics and overview_
+
+![Codeforces Contest & Problems](./images/codeforces-stats-contest_and_problems.png)
+_Contest history and problem submissions_
+
+#### LeetCode
+
+![LeetCode Overview](./images/leetcode_overview.png)
+_LeetCode profile and problem statistics_
+
+![LeetCode Progress](./images/leetcode_graph_history.png)
+_Rating progression and contest history_
+
+#### CodeChef
+
+![CodeChef Graph](./images/codechef_graph.png)
+_CodeChef rating progression chart_
+
+![CodeChef History](./images/codechef_history.png)
+_CodeChef contest participation history_
+
+#### AtCoder
+
+![AtCoder Graph](./images/atcoder_graph.png)
+_AtCoder rating progression visualization_
+
+![AtCoder History](./images/atcoder_history.png)
+_AtCoder contest history and performance_
+
+## 📚 Table of ContentsoBoard
+
+A comprehensive competitive programming statistics dashboard that aggregates and visualizes your performance across multiple programming platforms.
+
 ## � Table of Contents
 
 - [Features](#-features)
