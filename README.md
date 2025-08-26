@@ -63,6 +63,13 @@ A comprehensive competitive programming statistics dashboard that aggregates and
 - **Caching Strategy**: Hourly data refresh for optimal performance
 - **Responsive Design**: Mobile-first approach with Tailwind CSS
 
+### Database
+
+- **MongoDB**: NoSQL document database for flexible data storage
+- **Spring Data MongoDB**: MongoDB integration with Spring Boot
+- **Document-based Storage**: User profiles, platform connections, and cached statistics
+- **Flexible Schema**: Easy adaptation to different platform data structures
+
 ## 📊 What This Project Accomplishes
 
 ### 1. **Unified Dashboard**
