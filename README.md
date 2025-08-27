@@ -80,7 +80,7 @@ A comprehensive competitive programming statistics dashboard that aggregates and
 
 A comprehensive competitive programming statistics dashboard that aggregates and visualizes your performance across multiple programming platforms.
 
-## � Table of Contents
+## 💻 Table of Contents
 
 - [Features](#-features)
 - [Technology Stack](#️-technology-stack)
@@ -91,11 +91,10 @@ A comprehensive competitive programming statistics dashboard that aggregates and
 - [Usage](#-usage)
 - [Future Enhancements](#-future-enhancements)
 - [Developer](#-developer)
-- [License](#-license)
 - [Contributing](#-contributing)
 - [Support](#-support)
 
-## �🚀 Features
+## 🚀 Features
 
 ### Multi-Platform Integration
 
