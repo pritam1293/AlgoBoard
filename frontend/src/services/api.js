@@ -74,8 +74,8 @@ class ApiService {
     return await this.axiosInstance.put(endpoint, data);
   }
 
-  async delete(endpoint) {
-    return await this.axiosInstance.delete(endpoint);
+  async delete(endpoint, data) {
+    return await this.axiosInstance.delete(endpoint, { data });
   }
 }
 

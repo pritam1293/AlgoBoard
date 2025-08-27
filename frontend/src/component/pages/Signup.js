@@ -29,6 +29,8 @@ const Signup = () => {
   const [passwordStrength, setPasswordStrength] = useState(
     getPasswordStrength("")
   );
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     const value =
@@ -58,9 +60,22 @@ const Signup = () => {
     setIsLoading(true);
     setErrors({});
 
+    // Debug logging
+    console.log("=== SIGNUP FORM DEBUG ===");
+    console.log("Form data received:", formData);
+    console.log("Password field:", formData.password);
+    console.log("Confirm password field:", formData.confirmPassword);
+    console.log("Password length:", formData.password?.length);
+    console.log("Confirm password length:", formData.confirmPassword?.length);
+    console.log("Passwords are equal:", formData.password === formData.confirmPassword);
+    console.log("=========================");
+
     // Use AuthContext validation
     const validationErrors = validateSignupForm(formData);
+    console.log("Validation errors returned:", validationErrors);
+
     if (Object.keys(validationErrors).length > 0) {
+      console.log("Validation failed with errors:", validationErrors);
       setErrors(validationErrors);
       setIsLoading(false);
       return;
@@ -132,7 +147,7 @@ const Signup = () => {
 
               <div className="space-y-2">
                 {/* First Name and Last Name Fields */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <FormInput
                     id="firstName"
                     name="firstName"
@@ -201,48 +216,157 @@ const Signup = () => {
                 />
 
                 {/* Password Fields */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <FormInput
-                      id="password"
-                      name="password"
-                      type="password"
-                      label="Password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      placeholder="Enter password"
-                      error={errors.password}
-                      title="Password must contain: 8-15 characters, one uppercase (A-Z), one lowercase (a-z), one number (0-9), and one special character (!@#$%^&*)"
-                    />
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-medium text-neutral-300 mb-2"
+                    >
+                      Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="password"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="Enter password"
+                        title="Password must contain: 8-15 characters, one uppercase (A-Z), one lowercase (a-z), one number (0-9), and one special character (!@#$%^&*)"
+                        className={`block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 bg-gray-800 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm pr-10 ${errors.password
+                          ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                          : ""
+                          }`}
+                      />
+                      <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <svg
+                            className="h-5 w-5 text-gray-400 hover:text-gray-300"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                            />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="h-5 w-5 text-gray-400 hover:text-gray-300"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    {errors.password && (
+                      <p className="mt-1 text-sm text-red-400">{errors.password}</p>
+                    )}
                     {formData.password && (
                       <div className="mt-1 flex items-center">
                         <span className="text-sm text-gray-400">Strength:</span>
                         <span
-                          className={`ml-1 text-sm font-medium ${
-                            passwordStrength.strength === "weak"
-                              ? "text-red-400"
-                              : passwordStrength.strength === "medium"
+                          className={`ml-1 text-sm font-medium ${passwordStrength.strength === "weak"
+                            ? "text-red-400"
+                            : passwordStrength.strength === "medium"
                               ? "text-yellow-400"
                               : passwordStrength.strength === "good"
-                              ? "text-blue-400"
-                              : "text-green-400"
-                          }`}
+                                ? "text-blue-400"
+                                : "text-green-400"
+                            }`}
                         >
                           {passwordStrength.strength}
                         </span>
                       </div>
                     )}
                   </div>
-                  <FormInput
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    label="Confirm Password"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="Confirm password"
-                    error={errors.confirmPassword}
-                  />
+                  <div>
+                    <label
+                      htmlFor="confirmPassword"
+                      className="block text-sm font-medium text-neutral-300 mb-2"
+                    >
+                      Confirm Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        placeholder="Confirm password"
+                        className={`block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 bg-gray-800 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm pr-10 ${errors.confirmPassword
+                          ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                          : ""
+                          }`}
+                      />
+                      <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      >
+                        {showConfirmPassword ? (
+                          <svg
+                            className="h-5 w-5 text-gray-400 hover:text-gray-300"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                            />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="h-5 w-5 text-gray-400 hover:text-gray-300"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    {errors.confirmPassword && (
+                      <p className="mt-1 text-sm text-red-400">{errors.confirmPassword}</p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Checkboxes */}
@@ -303,11 +427,10 @@ const Signup = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className={`w-full py-2 ${
-                    isLoading
-                      ? BUTTON_CLASSES.primaryDisabled
-                      : BUTTON_CLASSES.primary
-                  }`}
+                  className={`w-full py-2 ${isLoading
+                    ? BUTTON_CLASSES.primaryDisabled
+                    : BUTTON_CLASSES.primary
+                    }`}
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center">

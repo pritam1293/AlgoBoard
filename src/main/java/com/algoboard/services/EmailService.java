@@ -91,6 +91,34 @@ public class EmailService {
         }
     }
 
+    @Async("emailTaskExecutor")
+    public void sendPasswordResetSuccessMessage(String toEmail, String firstName) {
+        try {
+            String subject = "Your AlgoBoard password has been changed";
+            String message = "the password has been changed successfully";
+            String htmlContent = processChangeTemplate(firstName, message);
+
+            sendEmail(toEmail, subject, htmlContent);
+            logger.info("Password reset success message sent successfully to: " + toEmail);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to send password reset success message to: " + toEmail, e);
+        }
+    }
+
+    @Async("emailTaskExecutor")
+    public void sendAccountDeletionMessage(String toEmail, String firstName) {
+        try {
+            String subject = "Your AlgoBoard account has been deleted";
+            String message = "We're sorry to see you go. Your account has been deleted successfully.";
+            String htmlContent = processChangeTemplate(firstName, message);
+
+            sendEmail(toEmail, subject, htmlContent);
+            logger.info("Account deletion message sent successfully to: " + toEmail);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to send account deletion message to: " + toEmail, e);
+        }
+    }
+
     // Process welcome email template with user data
     private String processWelcomeTemplate(String firstName) {
         String template = """

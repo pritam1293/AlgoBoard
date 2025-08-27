@@ -31,27 +31,27 @@ export const validationRules = {
     if (!value) return 'Password is required';
     if (value.length < 8) return 'Password must be at least 8 characters';
     if (value.length > 15) return 'Password must be 15 characters or less';
-    
+
     // Check for uppercase letter
     if (!/[A-Z]/.test(value)) {
       return 'Password must contain at least one uppercase letter';
     }
-    
+
     // Check for lowercase letter
     if (!/[a-z]/.test(value)) {
       return 'Password must contain at least one lowercase letter';
     }
-    
+
     // Check for number
     if (!/[0-9]/.test(value)) {
       return 'Password must contain at least one number';
     }
-    
+
     // Check for special character
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) {
+    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(value)) {
       return 'Password must contain at least one special character (!@#$%^&*()_+-=[]{};\'"\\|,.<>/?)';
     }
-    
+
     return null;
   },
 
@@ -96,18 +96,18 @@ export const getPasswordStrength = (password) => {
       met: /[0-9]/.test(password)
     },
     {
-      test: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+      test: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password),
       message: 'One special character (!@#$%^&*)',
-      met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+      met: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)
     }
   ];
-  
+
   const metCount = requirements.filter(req => req.met).length;
-  const strength = metCount === 0 ? 'weak' : 
-                  metCount <= 2 ? 'weak' :
-                  metCount <= 3 ? 'medium' :
-                  metCount <= 4 ? 'good' : 'strong';
-  
+  const strength = metCount === 0 ? 'weak' :
+    metCount <= 2 ? 'weak' :
+      metCount <= 3 ? 'medium' :
+        metCount <= 4 ? 'good' : 'strong';
+
   return {
     requirements,
     strength,
@@ -119,52 +119,103 @@ export const getPasswordStrength = (password) => {
 // Validation schemas for different forms
 export const validationSchemas = {
   login: {
-    username: [validationRules.required],
-    password: [validationRules.required]
+    username: [
+      (value) => {
+        if (!value || (typeof value === 'string' && !value.trim())) {
+          return 'Username or Email is required';
+        }
+        return null;
+      }
+    ],
+    password: [
+      (value) => {
+        if (!value || (typeof value === 'string' && !value.trim())) {
+          return 'Password is required';
+        }
+        return null;
+      }
+    ]
   },
-  
+
   signup: {
     firstName: [(value) => validationRules.name(value, 'First name')],
     lastName: [(value) => validationRules.name(value, 'Last name')],
     username: [validationRules.username],
-    email: [validationRules.required, validationRules.email],
+    email: [
+      (value) => {
+        if (!value || (typeof value === 'string' && !value.trim())) {
+          return 'Email is required';
+        }
+        return null;
+      },
+      validationRules.email
+    ],
     password: [validationRules.password],
     confirmPassword: [
-      validationRules.required,
+      (value) => {
+        if (!value || (typeof value === 'string' && !value.trim())) {
+          return 'Confirm password is required';
+        }
+        return null;
+      },
       (value, allData) => validationRules.confirmPassword(allData.password, value)
     ]
   },
-  
+
   profile: {
     firstName: [(value) => validationRules.name(value, 'First name')],
     lastName: [(value) => validationRules.name(value, 'Last name')],
-    email: [validationRules.required, validationRules.email]
+    email: [
+      (value) => {
+        if (!value || (typeof value === 'string' && !value.trim())) {
+          return 'Email is required';
+        }
+        return null;
+      },
+      validationRules.email
+    ]
     // student field doesn't need validation as it's a boolean checkbox
   }
 };
 
 // Main validation function
 export const validateFormData = (data, schema) => {
+  console.log("validateFormData called with data:", data);
+  console.log("validateFormData called with schema:", schema);
+
   const errors = {};
-  
+
   for (const [field, rules] of Object.entries(schema)) {
+    console.log(`Validating field: ${field}, value:`, data[field]);
+
     for (const rule of rules) {
       let error;
-      
-      // Handle rules that need access to all form data (like confirmPassword)
-      if (rule.length > 1) {
+
+      // Check if this is the confirmPassword validation that needs access to all data
+      // by checking if the rule is the second rule in confirmPassword array
+      const isConfirmPasswordRule = field === 'confirmPassword' && rules.indexOf(rule) === 1;
+
+      console.log(`Field ${field}, rule index ${rules.indexOf(rule)}, isConfirmPasswordRule: ${isConfirmPasswordRule}`);
+
+      if (isConfirmPasswordRule) {
+        console.log(`Calling confirmPassword rule with value: "${data[field]}" and allData:`, data);
         error = rule(data[field], data);
       } else {
-        error = rule(data[field], field);
+        console.log(`Calling regular rule with value: "${data[field]}"`);
+        error = rule(data[field]);
       }
-      
+
+      console.log(`Field ${field}, rule result:`, error);
+
       if (error) {
         errors[field] = error;
+        console.log(`Error added for field ${field}:`, error);
         break; // Stop at first error for this field
       }
     }
   }
-  
+
+  console.log("Final validation errors:", errors);
   return errors;
 };
 
@@ -172,22 +223,24 @@ export const validateFormData = (data, schema) => {
 export const validateField = (fieldName, value, schema, allData = {}) => {
   const rules = schema[fieldName];
   if (!rules) return null;
-  
+
   for (const rule of rules) {
     let error;
-    
-    // Handle rules that need access to all form data
-    if (rule.length > 1) {
+
+    // Check if this is the confirmPassword validation that needs access to all data
+    const isConfirmPasswordRule = fieldName === 'confirmPassword' && rules.indexOf(rule) === 1;
+
+    if (isConfirmPasswordRule) {
       error = rule(value, { ...allData, [fieldName]: value });
     } else {
-      error = rule(value, fieldName);
+      error = rule(value);
     }
-    
+
     if (error) {
       return error;
     }
   }
-  
+
   return null;
 };
 
@@ -209,14 +262,14 @@ export const sanitizeFormData = {
   // Remove extra spaces and normalize names
   normalizeNames: (data) => {
     const normalized = { ...data };
-    
+
     if (normalized.firstName) {
       normalized.firstName = normalized.firstName.trim().replace(/\s+/g, ' ');
     }
     if (normalized.lastName) {
       normalized.lastName = normalized.lastName.trim().replace(/\s+/g, ' ');
     }
-    
+
     return normalized;
   },
 
@@ -232,8 +285,12 @@ export const sanitizeFormData = {
 
 // Combined sanitization function
 export const sanitizeData = (data) => {
+  console.log("sanitizeData called with:", data);
   let sanitized = sanitizeFormData.trimStrings(data);
+  console.log("After trimStrings:", sanitized);
   sanitized = sanitizeFormData.normalizeNames(sanitized);
+  console.log("After normalizeNames:", sanitized);
   sanitized = sanitizeFormData.normalizeEmail(sanitized);
+  console.log("After normalizeEmail:", sanitized);
   return sanitized;
 };

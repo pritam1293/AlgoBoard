@@ -29,7 +29,7 @@ public interface IUserService {
 
     public boolean resetPassword(String email, String newPassword);
 
-    public String deleteUser(String username);
+    public String deleteUser(String username, String password);
 
     public boolean addCPProfiles(String username, String codeforcesId, String atcoderId, String codechefId,
             String leetcodeId);

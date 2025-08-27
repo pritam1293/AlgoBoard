@@ -215,13 +215,13 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public String deleteUser(String username) {
+    public String deleteUser(String username, String password) {
         User user = userRepository.findByUsername(username);
-        if (user != null) {
+        if(user != null && passwordEncoder.matches(password, user.getPassword())) {
             userRepository.delete(user);
             return "User deleted successfully.";
         }
-        throw new IllegalArgumentException("User not found with username: " + username);
+        throw new IllegalArgumentException("Invalid username or password.");
     }
 
     @Override

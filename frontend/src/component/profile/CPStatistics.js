@@ -831,23 +831,9 @@ const CPStatistics = () => {
                     <span className="text-white">{data.username}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">
-                      {platformId === 'leetcode' ? 'Rank:' : 'Rating:'}
-                    </span>
-                    <span className="text-blue-400">
-                      {platformId === 'leetcode'
-                        ? (data.rank || "Unranked")
-                        : (data.rating || 0)
-                      }
-                    </span>
+                    <span className="text-gray-400">Rating:</span>
+                    <span className="text-blue-400">{data.rating || 0}</span>
                   </div>
-                  {/* LeetCode Current Rating */}
-                  {platformId === 'leetcode' && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Rating:</span>
-                      <span className="text-yellow-400">{data.rating || 0}</span>
-                    </div>
-                  )}
                   <div className="flex justify-between">
                     <span className="text-gray-400">Max Rating:</span>
                     <span className="text-green-400">{data.maxRating || 0}</span>
@@ -856,13 +842,10 @@ const CPStatistics = () => {
                     <span className="text-gray-400">Contests:</span>
                     <span className="text-white">{data.contestParticipations || 0}</span>
                   </div>
-                  {/* Show Rank for all platforms that have it */}
-                  {(platformId === 'codechef' || platformId === 'atcoder' || platformId === 'codeforces') && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Rank:</span>
-                      <span className="text-orange-400">{data.rank || "Unranked"}</span>
-                    </div>
-                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Rank:</span>
+                    <span className="text-orange-400">{data.rank || "Unranked"}</span>
+                  </div>
                 </div>
               </div>
             ))}

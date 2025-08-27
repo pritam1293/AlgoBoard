@@ -81,15 +81,13 @@ export const AuthProvider = ({ children }) => {
   const signup = async (userData) => {
     try {
       const sanitizedUserData = sanitizeData(userData);
-      const validationErrors = validateFormData(
-        sanitizedUserData,
-        validationSchemas.signup
-      );
-      if (Object.keys(validationErrors).length > 0) {
-        const firstError = Object.values(validationErrors)[0];
-        throw new Error(firstError);
-      }
-      const response = await authService.signup(sanitizedUserData);
+      console.log("AuthContext signup - sanitized data:", sanitizedUserData);
+
+      // Remove confirmPassword from data sent to backend as it's not needed
+      const { confirmPassword, ...dataForBackend } = sanitizedUserData;
+      console.log("AuthContext signup - data for backend:", dataForBackend);
+
+      const response = await authService.signup(dataForBackend);
       // response is the profile object
       return response;
     } catch (error) {
@@ -177,8 +175,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const validateSignupForm = (data) => {
+    console.log("validateSignupForm called with data:", data);
     const sanitizedData = sanitizeData(data);
-    return validateFormData(sanitizedData, validationSchemas.signup);
+    console.log("After sanitization:", sanitizedData);
+    const result = validateFormData(sanitizedData, validationSchemas.signup);
+    console.log("validateSignupForm result:", result);
+    return result;
   };
 
   const validateProfileForm = (data) => {

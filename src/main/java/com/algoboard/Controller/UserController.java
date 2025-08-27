@@ -229,9 +229,11 @@ public class UserController {
     }
 
     @DeleteMapping("/users/delete")
-    public ResponseEntity<?> deleteUser(@RequestParam String username) {
+    public ResponseEntity<?> deleteUser(@RequestBody Map<String, String> payload) {
+        String username = payload.get("username");
+        String password = payload.get("password");
         try {
-            String response = userService.deleteUser(username);
+            String response = userService.deleteUser(username, password);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse(response, null));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400)
