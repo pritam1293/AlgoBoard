@@ -2,17 +2,11 @@ package com.algoboard.entities;
 
 import java.util.List;
 
-public class Leetcode {
+public class Leetcode extends Platforms {
 
-    private String username;
-    private String rank;
-    private long rating;
-    private long maxRating;
     private Level problemsSolved;
     private Level totalSubmissions;
     private Level acceptedSubmissions;
-    private long contestParticipations;
-    private List<UserContestHistory> contestHistory;
     private List<Problem> recentSubmissions;
 
     public static class Level {
@@ -98,53 +92,17 @@ public class Leetcode {
     }
 
     public Leetcode() {
+        super();
     }
 
     public Leetcode(String username, String rank, long rating, long maxRating,
             Level problemsSolved, Level totalSubmissions, Level acceptedSubmissions,
             long contestParticipations, List<UserContestHistory> contestHistory, List<Problem> recentSubmissions) {
-        this.username = username;
-        this.rank = rank;
-        this.rating = rating;
-        this.maxRating = maxRating;
+        super(username, rank, rating, maxRating, contestParticipations, contestHistory);
         this.problemsSolved = problemsSolved;
         this.totalSubmissions = totalSubmissions;
         this.acceptedSubmissions = acceptedSubmissions;
-        this.contestParticipations = contestParticipations;
-        this.contestHistory = contestHistory;
         this.recentSubmissions = recentSubmissions;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getRank() {
-        return rank;
-    }
-
-    public void setRank(String rank) {
-        this.rank = rank;
-    }
-
-    public long getRating() {
-        return rating;
-    }
-
-    public void setRating(long rating) {
-        this.rating = rating;
-    }
-
-    public long getMaxRating() {
-        return maxRating;
-    }
-
-    public void setMaxRating(long maxRating) {
-        this.maxRating = maxRating;
     }
 
     public Level getProblemsSolved() {
@@ -169,22 +127,6 @@ public class Leetcode {
 
     public void setAcceptedSubmissions(Level acceptedSubmissions) {
         this.acceptedSubmissions = acceptedSubmissions;
-    }
-
-    public long getContestParticipations() {
-        return contestParticipations;
-    }
-
-    public void setContestParticipations(long contestParticipations) {
-        this.contestParticipations = contestParticipations;
-    }
-
-    public List<UserContestHistory> getContestHistory() {
-        return contestHistory;
-    }
-
-    public void setContestHistory(List<UserContestHistory> contestHistory) {
-        this.contestHistory = contestHistory;
     }
 
     public List<Problem> getRecentSubmissions() {
