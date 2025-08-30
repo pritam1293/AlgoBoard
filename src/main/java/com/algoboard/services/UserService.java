@@ -217,7 +217,7 @@ public class UserService implements IUserService {
     @Override
     public String deleteUser(String username, String password) {
         User user = userRepository.findByUsername(username);
-        if(user != null && passwordEncoder.matches(password, user.getPassword())) {
+        if (user != null && passwordEncoder.matches(password, user.getPassword())) {
             userRepository.delete(user);
             return "User deleted successfully.";
         }
@@ -730,7 +730,7 @@ public class UserService implements IUserService {
                             submission.getProblem().getContestId(),
                             submission.getProblem().getIndex()));
                     if (recentSubmissions.size() < 10) {
-                        //last 10 submissions
+                        // last 10 submissions
                         recentSubmissions.add(new Codeforces.Problem(
                                 submission.getProblem().getContestId(),
                                 submission.getProblem().getIndex(),
