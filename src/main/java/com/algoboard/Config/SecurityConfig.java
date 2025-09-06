@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -22,7 +21,7 @@ import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true)
+// Removed @EnableMethodSecurity - no more method-level security needed
 public class SecurityConfig {
 
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
@@ -45,8 +44,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/platforms/**").permitAll()
                         .requestMatchers("/api/home").permitAll()
                         .requestMatchers("/api/users/**").permitAll()
-                        .requestMatchers("/api/admin/auth/**").permitAll() // Allow admin auth endpoints
-                        .requestMatchers("/api/admin/**").permitAll() // Other admin endpoints require ADMIN role
+                        // Removed all admin security - no admin endpoints anymore
                         // .requestMatchers("/api/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

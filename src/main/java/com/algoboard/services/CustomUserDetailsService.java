@@ -42,10 +42,10 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     /**
-     * Get user authorities/roles based on their assigned role
+     * Get user authorities - simplified, no roles needed
      */
     private Collection<? extends GrantedAuthority> getAuthorities(User user) {
-        // Return the user's role as a GrantedAuthority
-        return Collections.singletonList(new SimpleGrantedAuthority(user.getRole().getAuthority()));
+        // Return default USER authority - no more role-based security
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
     }
 }

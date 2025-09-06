@@ -22,7 +22,6 @@ public class User {
     private String leetcodeUsername;
     private String resetOtp;
     private LocalDateTime resetOtpExpiry;
-    private Role role = Role.USER; // Default role is USER
 
     public User(String username, String firstName, String lastName, String password, String email, boolean student,
             String codeforcesUsername, String atcoderUsername, String codechefUsername, String leetcodeUsername,
@@ -39,12 +38,11 @@ public class User {
         this.leetcodeUsername = leetcodeUsername;
         this.resetOtp = resetOtp;
         this.resetOtpExpiry = resetOtpExpiry;
-        this.role = Role.USER; // Default role
     }
 
     // Default constructor
     public User() {
-        this.role = Role.USER;
+        
     }
 
     public String getUsername() {
@@ -143,11 +141,5 @@ public class User {
         this.resetOtpExpiry = resetOtpExpiry;
     }
 
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
+    // Removed role getter and setter - no more RBAC
 }
