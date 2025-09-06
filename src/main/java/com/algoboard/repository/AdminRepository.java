@@ -1,12 +1,12 @@
 package com.algoboard.repository;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
-import com.algoboard.entities.User;
+import com.algoboard.entities.Admin;
 
-public interface UserRepository extends MongoRepository<User, String> {
-    User findByUsername(String username);
+public interface AdminRepository extends MongoRepository<Admin, String> {
+    Admin findByUsername(String username);
 
-    User findByEmail(String email);
+    Admin findByEmail(String email);
 
     boolean existsByUsername(String username);
 

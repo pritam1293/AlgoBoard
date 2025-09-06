@@ -9,10 +9,10 @@ import com.algoboard.services.IUserService;
 import com.algoboard.services.EmailService;
 import com.algoboard.services.CustomUserDetailsService;
 import com.algoboard.jwt.JwtService;
-import com.algoboard.DTO.RequestDTO.AuthenticationResponse;
+import com.algoboard.DTO.RequestDTO.UserAuthenticationResponse;
 import com.algoboard.utils.ResponseUtil;
 import java.util.Map;
-import com.algoboard.DTO.RequestDTO.Profile;
+import com.algoboard.DTO.RequestDTO.UserProfile;
 import org.springframework.dao.DuplicateKeyException;
 import com.algoboard.DTO.ContestDTO;
 import java.util.List;
@@ -54,7 +54,7 @@ public class UserController {
     @PostMapping("/auth/signup")
     public ResponseEntity<?> signup(@RequestBody User user) {
         try {
-            Profile newProfile = userService.registerUser(user);
+            UserProfile newProfile = userService.registerUser(user);
 
             // Send welcome email asynchronously (don't block the response)
             try {
@@ -80,13 +80,21 @@ public class UserController {
     }
 
     @PostMapping("/auth/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
         try {
             // Authenticate user
-            String username = payload.get("username");
-            String email = payload.get("email");
-            String password = payload.get("password");
-            Profile profile = userService.authenticateUser(username, email, password);
+            String username = "";
+            String email = "";
+            String password = "";
+            if(credentials.containsKey("username")) {
+                username = credentials.get("username");
+            } else if(credentials.containsKey("email")) {
+                email = credentials.get("email");
+            }
+            if(credentials.containsKey("password")) {
+                password = credentials.get("password");
+            }
+            UserProfile profile = userService.authenticateUser(username, email, password);
 
             // Load UserDetails for JWT generation
             UserDetails userDetails = customUserDetailsService.loadUserByUsername(profile.getUsername());
@@ -95,7 +103,7 @@ public class UserController {
             String jwtToken = jwtService.generateToken(userDetails);
 
             // Create authentication response
-            AuthenticationResponse authResponse = new AuthenticationResponse(
+            UserAuthenticationResponse authResponse = new UserAuthenticationResponse(
                     jwtToken,
                     profile,
                     jwtService.getExpirationTime() / 1000 // Convert to seconds
@@ -120,7 +128,7 @@ public class UserController {
     @GetMapping("/users/profile")
     public ResponseEntity<?> getUserProfile(@RequestParam String username) {
         try {
-            Profile profile = userService.getUserProfile(username);
+            UserProfile profile = userService.getUserProfile(username);
             if (profile != null) {
                 return ResponseEntity
                         .ok(ResponseUtil.createSuccessResponse("User profile retrieved successfully", profile));
@@ -134,9 +142,9 @@ public class UserController {
     }
 
     @PutMapping("/users/profile")
-    public ResponseEntity<?> updateUser(@RequestBody Profile profile) {
+    public ResponseEntity<?> updateUser(@RequestBody UserProfile profile) {
         try {
-            Profile updatedProfile = userService.updateUserDetails(profile);
+            UserProfile updatedProfile = userService.updateUserDetails(profile);
             // send an email notification
             try {
                 emailService.sendProfileUpdateNotification(updatedProfile.getEmail(), updatedProfile.getFirstName(),
@@ -396,4 +404,5 @@ public class UserController {
                     .body(ResponseUtil.createErrorResponse("Error searching user profiles: " + e.getMessage()));
         }
     }
+
 }

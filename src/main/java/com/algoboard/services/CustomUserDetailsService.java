@@ -42,13 +42,10 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     /**
-     * Get user authorities/roles
-     * For now, all users have ROLE_USER
-     * You can extend this later to support different roles
+     * Get user authorities/roles based on their assigned role
      */
     private Collection<? extends GrantedAuthority> getAuthorities(User user) {
-        // For now, assign ROLE_USER to all users
-        // You can add role field to User entity later and implement role-based access
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+        // Return the user's role as a GrantedAuthority
+        return Collections.singletonList(new SimpleGrantedAuthority(user.getRole().getAuthority()));
     }
 }

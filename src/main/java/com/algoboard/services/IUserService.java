@@ -10,16 +10,16 @@ import com.algoboard.DTO.ContestDTO;
 import java.util.Map;
 import java.util.List;
 
-import com.algoboard.DTO.RequestDTO.Profile;
+import com.algoboard.DTO.RequestDTO.UserProfile;
 
 public interface IUserService {
-    public Profile registerUser(User user);
+    public UserProfile registerUser(User user);
 
-    public Profile authenticateUser(String username, String email, String password);
+    public UserProfile authenticateUser(String username, String email, String password);
 
-    public Profile getUserProfile(String username);
+    public UserProfile getUserProfile(String username);
 
-    public Profile updateUserDetails(Profile profile);
+    public UserProfile updateUserDetails(UserProfile profile);
 
     public Map<String, String> updatePassword(String username, String oldPassword, String newPassword);
 

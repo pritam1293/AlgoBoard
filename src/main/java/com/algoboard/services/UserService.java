@@ -12,7 +12,7 @@ import com.algoboard.entities.Leetcode;
 import com.algoboard.entities.User;
 import com.algoboard.DTO.Atcoder.AC_ContestListDTO;
 import com.algoboard.repository.UserRepository;
-import com.algoboard.DTO.RequestDTO.Profile;
+import com.algoboard.DTO.RequestDTO.UserProfile;
 import com.algoboard.DTO.Leetcode.LC_ContestDTO.ContestHistory;
 
 import java.util.List;
@@ -73,7 +73,7 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public Profile registerUser(User user) {
+    public UserProfile registerUser(User user) {
         try {
             if(userRepository.existsByUsername(user.getUsername())) {
                 throw new IllegalArgumentException("User with the same username already exists.");
@@ -97,7 +97,7 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public Profile authenticateUser(String username, String email, String password) {
+    public UserProfile authenticateUser(String username, String email, String password) {
         if (username != null && !username.isEmpty()) {
             User user = userRepository.findByUsername(username);
             if (user != null && passwordEncoder.matches(password, user.getPassword())) {
@@ -114,7 +114,7 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public Profile getUserProfile(String username) {
+    public UserProfile getUserProfile(String username) {
         User user = userRepository.findByUsername(username);
         if (user != null) {
             return createProfile(user);
@@ -123,7 +123,7 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public Profile updateUserDetails(Profile profile) {
+    public UserProfile updateUserDetails(UserProfile profile) {
         User existingUser = userRepository.findByUsername(profile.getUsername());
         if (existingUser != null) {
             if (profile.getFirstName() != null) {
@@ -144,8 +144,8 @@ public class UserService implements IUserService {
         throw new IllegalArgumentException("User does not exist with username: " + profile.getUsername());
     }
 
-    private Profile createProfile(User user) {
-        return new Profile(
+    private UserProfile createProfile(User user) {
+        return new UserProfile(
                 user.getUsername(),
                 user.getFirstName(),
                 user.getLastName(),
@@ -193,6 +193,7 @@ public class UserService implements IUserService {
             user.setResetOtp(null);
             user.setResetOtpExpiry(null);
             userRepository.save(user);
+            System.out.println("");
             System.out.println("OTP verified successfully for email: " + email);
             return true;
         }
@@ -234,32 +235,24 @@ public class UserService implements IUserService {
 
             // Check Codeforces username change
             if (codeforcesId != null && !Objects.equals(codeforcesId, user.getCodeforcesUsername())) {
-                System.out.println("Codeforces username changing from '" + user.getCodeforcesUsername() + "' to '"
-                        + codeforcesId + "'");
                 user.setCodeforcesUsername(codeforcesId);
                 codeforcesChanged = true;
             }
 
             // Check AtCoder username change
             if (atcoderId != null && !Objects.equals(atcoderId, user.getAtcoderUsername())) {
-                System.out.println(
-                        "AtCoder username changing from '" + user.getAtcoderUsername() + "' to '" + atcoderId + "'");
                 user.setAtcoderUsername(atcoderId);
                 atcoderChanged = true;
             }
 
             // Check CodeChef username change
             if (codechefId != null && !Objects.equals(codechefId, user.getCodechefUsername())) {
-                System.out.println(
-                        "CodeChef username changing from '" + user.getCodechefUsername() + "' to '" + codechefId + "'");
                 user.setCodechefUsername(codechefId);
                 codechefChanged = true;
             }
 
             // Check LeetCode username change
             if (leetcodeId != null && !Objects.equals(leetcodeId, user.getLeetcodeUsername())) {
-                System.out.println(
-                        "LeetCode username changing from '" + user.getLeetcodeUsername() + "' to '" + leetcodeId + "'");
                 user.setLeetcodeUsername(leetcodeId);
                 leetcodeChanged = true;
             }
@@ -269,19 +262,15 @@ public class UserService implements IUserService {
             // Clear cache only for platforms that were actually changed
             if (codeforcesChanged) {
                 evictCodeforcesCache(username);
-                System.out.println("✓ Codeforces cache cleared for user: " + username);
             }
             if (atcoderChanged) {
                 evictAtcoderCache(username);
-                System.out.println("✓ AtCoder cache cleared for user: " + username);
             }
             if (codechefChanged) {
                 evictCodechefCache(username);
-                System.out.println("✓ CodeChef cache cleared for user: " + username);
             }
             if (leetcodeChanged) {
                 evictLeetcodeCache(username);
-                System.out.println("✓ LeetCode cache cleared for user: " + username);
             }
 
             return true;
@@ -292,7 +281,6 @@ public class UserService implements IUserService {
     @Override
     @Cacheable(value = "contestList", key = "'all_contests'")
     public List<ContestDTO> getContestList() {
-        System.out.println("Cache miss - fetching contest data from APIs...");
         List<ContestDTO> allContests = new ArrayList<>();
 
         // Start all API calls simultaneously - directly populate allContests
@@ -334,68 +322,59 @@ public class UserService implements IUserService {
     // Automatically refresh cache every 30 minutes
     @CacheEvict(value = "contestList", allEntries = true)
     @Scheduled(fixedRate = 1800000) // 30 minutes in milliseconds
-    protected void refreshContestCache() {
-        System.out.println("Contest cache cleared - will refresh on next request");
-    }
+    protected void refreshContestListCache() {
 
+    }
     // Automatically refresh LeetCode profile cache every 1 hours
     @CacheEvict(value = "leetcodeProfile", allEntries = true)
     @Scheduled(fixedRate = 3600000) // 1 hours in milliseconds
     protected void refreshLeetcodeProfileCache() {
-        System.out.println("LeetCode profile cache cleared - will refresh on next request");
+
     }
 
     // Automatically refresh Codeforces profile cache every 1 hours
     @CacheEvict(value = "codeforcesProfile", allEntries = true)
     @Scheduled(fixedRate = 3600000) // 1 hours in milliseconds
     protected void refreshCodeforcesProfileCache() {
-        System.out.println("Codeforces profile cache cleared - will refresh on next request");
+
     }
 
     // Automatically refresh AtCoder profile cache every 1 hours
     @CacheEvict(value = "atcoderProfile", allEntries = true)
     @Scheduled(fixedRate = 3600000) // 1 hours in milliseconds
     protected void refreshAtcoderProfileCache() {
-        System.out.println("AtCoder profile cache cleared - will refresh on next request");
+
     }
 
     // Automatically refresh CodeChef profile cache every 1 hours
     @CacheEvict(value = "codechefProfile", allEntries = true)
     @Scheduled(fixedRate = 3600000) // 1 hours in milliseconds
     protected void refreshCodechefProfileCache() {
-        System.out.println("CodeChef profile cache cleared - will refresh on next request");
+
     }
 
     // Selective cache eviction methods for individual users
     private void evictCodeforcesCache(String username) {
-        System.out.println("🗑️ Evicting Codeforces cache for user: " + username);
         if (cacheManager.getCache("codeforcesProfile") != null) {
             cacheManager.getCache("codeforcesProfile").evict(username);
-            System.out.println("✅ Codeforces cache actually evicted for: " + username);
         }
     }
 
     private void evictAtcoderCache(String username) {
-        System.out.println("🗑️ Evicting AtCoder cache for user: " + username);
         if (cacheManager.getCache("atcoderProfile") != null) {
             cacheManager.getCache("atcoderProfile").evict(username);
-            System.out.println("✅ AtCoder cache actually evicted for: " + username);
         }
     }
 
     private void evictLeetcodeCache(String username) {
-        System.out.println("🗑️ Evicting LeetCode cache for user: " + username);
         if (cacheManager.getCache("leetcodeProfile") != null) {
             cacheManager.getCache("leetcodeProfile").evict(username);
-            System.out.println("✅ LeetCode cache actually evicted for: " + username);
         }
     }
 
     private void evictCodechefCache(String username) {
-        System.out.println("🗑️ Evicting CodeChef cache for user: " + username);
         if (cacheManager.getCache("codechefProfile") != null) {
             cacheManager.getCache("codechefProfile").evict(username);
-            System.out.println("✅ CodeChef cache actually evicted for: " + username);
         }
     }
 

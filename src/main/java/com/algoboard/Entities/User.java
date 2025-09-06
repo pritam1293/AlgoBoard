@@ -5,7 +5,6 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 
-
 @Document(collection = "users")
 public class User {
     @Id
@@ -23,9 +22,11 @@ public class User {
     private String leetcodeUsername;
     private String resetOtp;
     private LocalDateTime resetOtpExpiry;
+    private Role role = Role.USER; // Default role is USER
 
     public User(String username, String firstName, String lastName, String password, String email, boolean student,
-            String codeforcesUsername, String atcoderUsername, String codechefUsername, String leetcodeUsername, String resetOtp, LocalDateTime resetOtpExpiry) {
+            String codeforcesUsername, String atcoderUsername, String codechefUsername, String leetcodeUsername,
+            String resetOtp, LocalDateTime resetOtpExpiry) {
         this.username = username;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -38,6 +39,12 @@ public class User {
         this.leetcodeUsername = leetcodeUsername;
         this.resetOtp = resetOtp;
         this.resetOtpExpiry = resetOtpExpiry;
+        this.role = Role.USER; // Default role
+    }
+
+    // Default constructor
+    public User() {
+        this.role = Role.USER;
     }
 
     public String getUsername() {
@@ -134,5 +141,13 @@ public class User {
 
     public void setResetOtpExpiry(LocalDateTime resetOtpExpiry) {
         this.resetOtpExpiry = resetOtpExpiry;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 }
