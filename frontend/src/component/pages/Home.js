@@ -101,7 +101,7 @@ const Home = () => {
           <h2 className="text-xl font-semibold text-white mb-4">
             Getting Started
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="p-4 bg-gray-700 rounded-lg">
               <h3 className="text-white font-medium mb-2">
                 📊 Connect Your Accounts
@@ -146,6 +146,36 @@ const Home = () => {
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
                 >
                   <span className="mr-2">View Statistics</span>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="p-4 bg-gray-700 rounded-lg">
+              <h3 className="text-white font-medium mb-2">
+                🔍 Search Users
+              </h3>
+              <p className="text-gray-400 text-sm mb-4">
+                Search and explore other users' competitive programming
+                statistics and progress across platforms.
+              </p>
+              <div className="flex justify-center">
+                <button
+                  onClick={() => navigate("/search")}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
+                >
+                  <span className="mr-2">Search Users</span>
                   <svg
                     className="w-4 h-4"
                     fill="none"
