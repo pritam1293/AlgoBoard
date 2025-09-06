@@ -13,6 +13,7 @@ import com.algoboard.DTO.RequestDTO.AuthenticationResponse;
 import com.algoboard.utils.ResponseUtil;
 import java.util.Map;
 import com.algoboard.DTO.RequestDTO.Profile;
+import org.springframework.dao.DuplicateKeyException;
 import com.algoboard.DTO.ContestDTO;
 import java.util.List;
 import java.util.HashMap;
@@ -66,6 +67,9 @@ public class UserController {
             // Remove password from response for security
             return ResponseEntity
                     .ok(ResponseUtil.createSuccessResponse("Signup successful. Welcome email sent!", newProfile));
+        } catch (DuplicateKeyException e) {
+            return ResponseEntity.status(400)
+                    .body(ResponseUtil.createErrorResponse("Signup failed: " + e.getMessage()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400)
                     .body(ResponseUtil.createErrorResponse("Signup failed: " + e.getMessage()));

@@ -44,6 +44,7 @@ import org.jsoup.select.Elements;
 import org.jsoup.nodes.Element;
 import java.io.IOException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.DuplicateKeyException;
 
 @Service
 public class UserService implements IUserService {
@@ -73,17 +74,26 @@ public class UserService implements IUserService {
 
     @Override
     public Profile registerUser(User user) {
-        if (userRepository.existsById(user.getUsername())) {
-            throw new IllegalArgumentException("User with the same username already exists.");
+        try {
+            if(userRepository.existsByUsername(user.getUsername())) {
+                throw new IllegalArgumentException("User with the same username already exists.");
+            }
+            if(userRepository.existsByEmail(user.getEmail())) {
+                throw new IllegalArgumentException("User with the same email already exists.");
+            }
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            userRepository.save(user);
+            return createProfile(user);
+        } catch(DuplicateKeyException e) {
+            String message = e.getMessage().toLowerCase();
+            if(message.contains("username")) {
+                throw new IllegalArgumentException("User with the same username already exists.");
+            } else if(message.contains("email")) {
+                throw new IllegalArgumentException("User with the same email already exists.");
+            } else {
+                throw new IllegalArgumentException("User with the same username or email already exists.");
+            }
         }
-        if (userRepository.existsByEmail(user.getEmail())) {
-            throw new IllegalArgumentException("User with the same email already exists.");
-        }
-
-        // Hash the password before saving
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userRepository.save(user);
-        return createProfile(user);
     }
 
     @Override
