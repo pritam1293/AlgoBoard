@@ -56,6 +56,20 @@ class PlatformService {
       throw new Error(`Failed to fetch CodeChef profile: ${error.message}`);
     }
   }
+
+  // Get ALL platforms data in one optimized call (uses backend parallel processing)
+  async getAllPlatformsData(username) {
+    try {
+      const response = await apiService.get(
+        `/users/search?username=${username}`
+      );
+
+      return response;
+    } catch (error) {
+      console.error("Error fetching all platforms data:", error);
+      throw new Error(`Failed to fetch all platforms data: ${error.message}`);
+    }
+  }
 }
 
 const platformService = new PlatformService();

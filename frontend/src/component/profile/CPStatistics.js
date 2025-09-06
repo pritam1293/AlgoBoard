@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import Navbar from "../common/Navbar";
 import BackButton from "../common/BackButton";
@@ -30,7 +30,7 @@ ChartJS.register(
 const CPStatistics = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [selectedPlatform, setSelectedPlatform] = useState(null);
+  const [selectedPlatform, setSelectedPlatform] = useState({ id: 'all', name: 'All Platforms' }); // Default to "All Platforms"
   const [platformData, setPlatformData] = useState(null);
   const [allPlatformsData, setAllPlatformsData] = useState({});
   const [loading, setLoading] = useState(false);
@@ -254,7 +254,7 @@ const CPStatistics = () => {
     }
   };
 
-  // Fetch data from all connected platforms
+  // Fetch data from all connected platforms - OPTIMIZED VERSION
   const fetchAllPlatformsData = async () => {
     if (!user?.username) return;
 
@@ -263,44 +263,46 @@ const CPStatistics = () => {
     setPlatformData(null);
 
     try {
-      console.log('Fetching stats from all connected platforms...');
-      const allData = {};
+      console.log('Fetching stats from all connected platforms using optimized endpoint...');
 
-      // Fetch data from all connected platforms in parallel
-      const promises = connectedPlatforms.map(async (platform) => {
-        try {
-          let stats = null;
-          if (platform.id === "codeforces") {
-            stats = await platformService.getCodeforcesProfile(user.username);
-          } else if (platform.id === "leetcode") {
-            stats = await platformService.getLeetcodeProfile(user.username);
-          } else if (platform.id === "atcoder") {
-            stats = await platformService.getAtcoderProfile(user.username);
-          } else if (platform.id === "codechef") {
-            stats = await platformService.getCodechefProfile(user.username);
-          }
+      // Single API call that fetches all platforms in parallel on the backend
+      const response = await platformService.getAllPlatformsData(user.username);
 
-          if (stats?.data) {
-            allData[platform.id] = {
+      if (response?.data) {
+        const allData = {};
+
+        // Transform the response to match the expected format
+        const platformsData = response.data;
+
+        // Map each platform's data
+        connectedPlatforms.forEach(platform => {
+          const platformId = platform.id;
+          if (platformsData[platformId]) {
+            allData[platformId] = {
               platform,
-              data: stats.data
+              data: platformsData[platformId]
             };
           }
-        } catch (err) {
-          console.error(`Error fetching ${platform.name} stats:`, err);
-        }
-      });
+        });
 
-      await Promise.all(promises);
-      setAllPlatformsData(allData);
-      console.log('All platforms data fetched:', allData);
+        setAllPlatformsData(allData);
+        console.log('All platforms data fetched successfully:', allData);
+      }
     } catch (err) {
       console.error('Error fetching all platforms stats:', err);
-      setError('Failed to fetch statistics from some platforms');
+      setError('Failed to fetch statistics from platforms');
     } finally {
       setLoading(false);
     }
   };
+
+  // Auto-load all platforms data when component mounts (only once)
+  useEffect(() => {
+    if (user?.username && connectedPlatforms.length > 0) {
+      fetchAllPlatformsData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.username, connectedPlatforms.length]); // Only re-run when username or connected platforms change
 
   // Handle platform selection
   const handlePlatformSelect = (platform) => {
@@ -951,6 +953,15 @@ const CPStatistics = () => {
           </div>
         )}
 
+        {/* No All Platforms Data Yet (but not loading) */}
+        {selectedPlatform?.id === 'all' && Object.keys(allPlatformsData).length === 0 && !loading && (
+          <div className="text-center py-12">
+            <p className="text-gray-400 text-lg">
+              No platform data available. Make sure you have connected platforms in your profile.
+            </p>
+          </div>
+        )}
+
         {/* Single Platform Data Display */}
         {platformData && selectedPlatform && selectedPlatform?.id !== 'all' && !loading && (
           <div className="space-y-8">
@@ -1104,15 +1115,6 @@ const CPStatistics = () => {
                 )}
               </>
             )}
-          </div>
-        )}
-
-        {/* No Platform Selected */}
-        {!selectedPlatform && !loading && (
-          <div className="text-center py-12">
-            <p className="text-gray-400 text-lg">
-              Select a platform from the dropdown to view your statistics
-            </p>
           </div>
         )}
 

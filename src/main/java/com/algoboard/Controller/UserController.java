@@ -371,7 +371,7 @@ public class UserController {
         }
     }
 
-    @GetMapping("search/user")
+    @GetMapping("users/search")
     public ResponseEntity<?> searchUser(@RequestParam String username) {
         try {
             // Create async tasks for each profile fetch
@@ -404,5 +404,4 @@ public class UserController {
                     .body(ResponseUtil.createErrorResponse("Error searching user profiles: " + e.getMessage()));
         }
     }
-
 }
