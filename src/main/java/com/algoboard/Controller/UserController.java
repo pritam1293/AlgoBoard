@@ -15,7 +15,8 @@ import java.util.Map;
 import com.algoboard.DTO.RequestDTO.Profile;
 import com.algoboard.DTO.ContestDTO;
 import java.util.List;
-
+import java.util.HashMap;
+import java.util.concurrent.CompletableFuture;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -358,14 +359,37 @@ public class UserController {
         }
     }
 
-    @PostMapping("/test/email/login")
-    public ResponseEntity<?> testLoginEmail(@RequestParam String email, @RequestParam String firstName) {
+    @GetMapping("search/user")
+    public ResponseEntity<?> searchUser(@RequestParam String username) {
         try {
-            emailService.sendLoginNotification(email, firstName);
-            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Login notification sent to: " + email, null));
+            // Create async tasks for each profile fetch
+            CompletableFuture<Codeforces> codeforcesTask = CompletableFuture
+                    .supplyAsync(() -> userService.getCodeforcesProfile(username));
+
+            CompletableFuture<Atcoder> atcoderTask = CompletableFuture
+                    .supplyAsync(() -> userService.getAtcoderProfile(username));
+
+            CompletableFuture<Codechef> codechefTask = CompletableFuture
+                    .supplyAsync(() -> userService.getCodechefProfile(username));
+
+            CompletableFuture<Leetcode> leetcodeTask = CompletableFuture
+                    .supplyAsync(() -> userService.getLeetcodeProfile(username));
+
+            // Wait for all tasks to complete
+            CompletableFuture.allOf(codeforcesTask, atcoderTask, codechefTask, leetcodeTask).join();
+
+            // Collect results
+            Map<String, Object> profiles = new HashMap<>();
+            profiles.put("codeforces", codeforcesTask.get());
+            profiles.put("atcoder", atcoderTask.get());
+            profiles.put("codechef", codechefTask.get());
+            profiles.put("leetcode", leetcodeTask.get());
+
+            return ResponseEntity
+                    .ok(ResponseUtil.createSuccessResponse("User profiles retrieved successfully", profiles));
         } catch (Exception e) {
             return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Failed to send login notification: " + e.getMessage()));
+                    .body(ResponseUtil.createErrorResponse("Error searching user profiles: " + e.getMessage()));
         }
     }
 }
