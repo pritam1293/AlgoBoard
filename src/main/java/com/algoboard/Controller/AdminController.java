@@ -31,6 +31,8 @@ public class AdminController {
         try {
             AdminProfile profile = adminService.registerAdmin(admin);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Signup successful", profile));
+        } catch(IllegalArgumentException e) {
+            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Signup failed: " + e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ResponseUtil.createErrorResponse("Error registering admin"));
         }
@@ -52,6 +54,8 @@ public class AdminController {
             }
             AdminProfile profile = adminService.authenticateAdmin(username, email, password);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Login successful", profile));
+        } catch(IllegalArgumentException e) {
+            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Login failed: " + e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ResponseUtil.createErrorResponse("Invalid credentials"));
         }

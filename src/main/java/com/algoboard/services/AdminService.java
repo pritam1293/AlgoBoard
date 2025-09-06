@@ -17,10 +17,10 @@ public class AdminService implements IAdminService {
     @Override
     public AdminProfile registerAdmin(Admin admin) {
         if(adminRepository.existsByUsername(admin.getUsername())) {
-            throw new RuntimeException("Username already exists");
+            throw new IllegalArgumentException("Username already exists");
         }
         if(adminRepository.existsByEmail(admin.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new IllegalArgumentException("Email already exists");
         }
         adminRepository.save(admin);
         return ExtractProfile(admin);
@@ -39,7 +39,7 @@ public class AdminService implements IAdminService {
                 return ExtractProfile(admin);
             }
         }
-        throw new RuntimeException("Invalid credentials");
+        throw new IllegalArgumentException("Invalid credentials");
     }
 
     private AdminProfile ExtractProfile(Admin admin) {
