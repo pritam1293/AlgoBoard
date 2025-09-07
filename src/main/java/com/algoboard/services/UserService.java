@@ -179,8 +179,6 @@ public class UserService implements IUserService {
             user.setResetOtpExpiry(LocalDateTime.now().plusMinutes(15)); // Set OTP
             userRepository.save(user);
             emailService.sendOtpForPasswordReset(email, otp);
-            System.out.println("");
-            System.out.println("OTP generated and email sent successfully");
             return true;
         }
         return false;
@@ -193,8 +191,6 @@ public class UserService implements IUserService {
             user.setResetOtp(null);
             user.setResetOtpExpiry(null);
             userRepository.save(user);
-            System.out.println("");
-            System.out.println("OTP verified successfully for email: " + email);
             return true;
         }
         return false;
@@ -206,8 +202,6 @@ public class UserService implements IUserService {
         if (user != null) {
             user.setPassword(passwordEncoder.encode(newPassword));
             userRepository.save(user);
-            System.out.println("");
-            System.out.println("Password reset successfully for email: " + email);
             return true;
         }
         return false;
@@ -433,20 +427,16 @@ public class UserService implements IUserService {
                                         contest.getStartTimeSeconds() + contest.getDurationSeconds(), 0,
                                         IST_OFFSET),
                                 (long) contest.getDurationSeconds() / 60)
-
                         );
                     }
                     if (++cnt == 6) {
                         break;// Limit to 6 contests
                     }
                 }
-            } else {
-                System.out.println("Codeforces API response was null or status not OK");
             }
         } catch (Exception e) {
             System.out.println("");
             System.out.println("Error fetching Codeforces contests: " + e.getMessage());
-            System.out.println("Returning empty Codeforces contest list.");
             System.out.println("");
         }
     }
@@ -464,13 +454,10 @@ public class UserService implements IUserService {
                 addCodechefContests(allContests, response.getPresentContests(), formatter, -1);
                 addCodechefContests(allContests, response.getFutureContests(), formatter, -1);
                 addCodechefContests(allContests, response.getPastContests(), formatter, 4);
-            } else {
-                System.out.println("CodeChef API response was null or status not success");
             }
         } catch (Exception e) {
             System.out.println("");
             System.out.println("Error fetching CodeChef contests: " + e.getMessage());
-            System.out.println("Returning empty CodeChef contest list.");
             System.out.println("");
         }
     }
@@ -517,15 +504,11 @@ public class UserService implements IUserService {
                                 contest.getDuration() / 60));
                     }
                 }
-            } else {
-                System.out.println("Atcoder API response was null or status not OK");
             }
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("");
             System.out.println("Error fetching Atcoder contests: " + e.getMessage());
-            System.out.println("");
-            System.out.println("Returning empty Atcoder contest list.");
             System.out.println("");
         }
         // past contests
@@ -600,15 +583,11 @@ public class UserService implements IUserService {
                                 contest.getDuration() / 60));
                     }
                 }
-            } else {
-                System.out.println("Leetcode API response was null or status not OK");
             }
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("");
             System.out.println("Error fetching Leetcode contests: " + e.getMessage());
-            System.out.println("");
-            System.out.println("Returning empty Leetcode contest list.");
             System.out.println("");
         }
 

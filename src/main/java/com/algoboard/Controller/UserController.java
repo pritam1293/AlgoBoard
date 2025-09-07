@@ -184,8 +184,6 @@ public class UserController {
     @PostMapping("auth/request-reset") // forgot password - enter email
     public ResponseEntity<?> requestPasswordReset(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
-        System.out.println("");
-        System.out.println("password reset request with email: " + email);
         try {
             userService.generateAndSendOtp(email);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("OTP sent to your email", null));
@@ -202,8 +200,6 @@ public class UserController {
     public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         String otp = payload.get("otp");
-        System.out.println("");
-        System.out.println("OTP verification request for email: " + email + " with OTP: " + otp);
         try {
             boolean valid = userService.verifyOtp(email, otp);
             if (valid) {
@@ -223,8 +219,6 @@ public class UserController {
     public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         String newPassword = payload.get("newPassword");
-        System.out.println("");
-        System.out.println("new password request with email: " + email);
         try {
             boolean success = userService.resetPassword(email, newPassword);
             if (success) {
