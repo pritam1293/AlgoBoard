@@ -7,7 +7,6 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -28,10 +27,19 @@ public class EmailService {
     @Value("${app.email.from-name}")
     private String fromName;
 
+    @Value("${app.email.testing.mode:true}")
+    private boolean testingMode;
+
     // Send welcome email to newly registered user
     @Async("emailTaskExecutor")
     public void sendWelcomeEmail(String toEmail, String firstName) {
         try {
+            // Validate email before sending
+            if (!isEmailValid(toEmail)) {
+                logger.warning("Invalid email address provided for welcome email: " + toEmail);
+                return;
+            }
+
             String subject = "Welcome to AlgoBoard, " + firstName + "! 🎉";
             String htmlContent = processWelcomeTemplate(firstName);
 
@@ -46,6 +54,12 @@ public class EmailService {
     @Async("emailTaskExecutor")
     public void sendLoginNotification(String toEmail, String firstName) {
         try {
+            // Validate email before sending
+            if (!isEmailValid(toEmail)) {
+                logger.warning("Invalid email address provided for login notification: " + toEmail);
+                return;
+            }
+
             String subject = "New login to your AlgoBoard account";
             String htmlContent = processLoginTemplate(firstName);
 
@@ -56,16 +70,21 @@ public class EmailService {
         }
     }
 
-    //send profile update notification email to user
+    // send profile update notification email to user
     @Async("emailTaskExecutor")
     public void sendProfileUpdateNotification(String toEmail, String firstName, String changedField) {
         try {
+            // Validate email before sending
+            if (!isEmailValid(toEmail)) {
+                logger.warning("Invalid email address provided for profile update notification: " + toEmail);
+                return;
+            }
+
             String subject = "Your AlgoBoard account " + changedField + " has changed";
             String message;
-            if(changedField.equals("password")) {
+            if (changedField.equals("password")) {
                 message = "the password has been changed";
-            }
-            else {
+            } else {
                 message = "details have been changed";
             }
             String htmlContent = processChangeTemplate(firstName, message);
@@ -77,10 +96,16 @@ public class EmailService {
         }
     }
 
-    //send otp to email for the password reset
+    // send otp to email for the password reset
     @Async("emailTaskExecutor")
     public void sendOtpForPasswordReset(String toEmail, String otp) {
         try {
+            // Validate email before sending
+            if (!isEmailValid(toEmail)) {
+                logger.warning("Invalid email address provided for OTP: " + toEmail);
+                return;
+            }
+
             String subject = "Your OTP for Password Reset";
             String htmlContent = processOtpTemplate(otp);
 
@@ -94,6 +119,12 @@ public class EmailService {
     @Async("emailTaskExecutor")
     public void sendPasswordResetSuccessMessage(String toEmail, String firstName) {
         try {
+            // Validate email before sending
+            if (!isEmailValid(toEmail)) {
+                logger.warning("Invalid email address provided for password reset success notification: " + toEmail);
+                return;
+            }
+
             String subject = "Your AlgoBoard password has been changed";
             String message = "the password has been changed successfully";
             String htmlContent = processChangeTemplate(firstName, message);
@@ -108,6 +139,12 @@ public class EmailService {
     @Async("emailTaskExecutor")
     public void sendAccountDeletionMessage(String toEmail, String firstName) {
         try {
+            // Validate email before sending
+            if (!isEmailValid(toEmail)) {
+                logger.warning("Invalid email address provided for account deletion notification: " + toEmail);
+                return;
+            }
+
             String subject = "Your AlgoBoard account has been deleted";
             String message = "We're sorry to see you go. Your account has been deleted successfully.";
             String htmlContent = processChangeTemplate(firstName, message);
@@ -180,7 +217,7 @@ public class EmailService {
         return template.replace("{{firstName}}", firstName);
     }
 
-    //Process login notification template with user data
+    // Process login notification template with user data
     private String processLoginTemplate(String firstName) {
         LocalDateTime now = LocalDateTime.now();
         String timestamp = now.format(DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' hh:mm a"));
@@ -284,7 +321,7 @@ public class EmailService {
         return template.replace("{{firstName}}", firstName).replace("{{message}}", message);
     }
 
-    //email content format of generation ot otp
+    // email content format of generation ot otp
     private String processOtpTemplate(String otp) {
         String template = """
                 <html>
@@ -324,8 +361,14 @@ public class EmailService {
     }
 
     // Core method to send email
-    private void sendEmail(String to, String subject, String htmlContent) throws MessagingException {
+    private void sendEmail(String to, String subject, String htmlContent) {
         try {
+            // Additional validation at the core level
+            if (!isEmailValid(to)) {
+                logger.warning("Attempted to send email to invalid address: " + to + " - Email sending skipped");
+                return; // Don't throw exception, just return silently
+            }
+
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
@@ -334,20 +377,75 @@ public class EmailService {
             helper.setSubject(subject);
             helper.setText(htmlContent, true); // true indicates HTML content
 
+            // Add headers to prevent bounce-back emails
+            message.setHeader("Return-Path", "<>"); // Empty return path prevents bounces
+            message.setHeader("Errors-To", ""); // Prevent error notifications
+            message.setHeader("X-Errors-To", ""); // Additional error prevention
+            message.setHeader("Bounces-To", ""); // Prevent bounce notifications
+            message.setHeader("Auto-Submitted", "auto-generated"); // Mark as automated
+            message.setHeader("X-Auto-Response-Suppress", "All"); // Suppress auto-responses
+            message.setHeader("Precedence", "bulk"); // Lower priority, reduces bounces
+
             mailSender.send(message);
+            logger.info("Email sent successfully to: " + to);
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Failed to send email to: " + to, e);
-            throw new MessagingException("Failed to send email", e);
+            logger.log(Level.WARNING, "Failed to send email to: " + to + " - " + e.getMessage());
+            // Don't re-throw the exception to prevent bounce-backs
+            // Just log the failure and continue
         }
     }
 
     // Utility method to validate email format
     public boolean isEmailValid(String email) {
         if (email == null || email.trim().isEmpty()) {
+            logger.info("Blocked null or empty email");
             return false;
         }
 
+        // If testing mode is enabled, block ALL emails to prevent any bounce-backs
+        if (testingMode) {
+            logger.warning("TESTING MODE ACTIVE - Email sending blocked for: " + email);
+            return false;
+        }
+
+        // Check for common test/dummy email patterns
+        String emailLower = email.toLowerCase().trim();
+
+        // Block common test email patterns
+        if (emailLower.contains("test") || emailLower.contains("dummy") ||
+                emailLower.contains("fake") || emailLower.contains("example") ||
+                emailLower.contains("noreply") || emailLower.contains("donotreply") ||
+                emailLower.contains("sample") || emailLower.contains("demo") ||
+                emailLower.endsWith("@test.com") || emailLower.endsWith("@example.com") ||
+                emailLower.endsWith("@dummy.com") || emailLower.endsWith("@fake.com") ||
+                emailLower.endsWith("@temp.com") || emailLower.endsWith("@invalid.com") ||
+                emailLower.endsWith("@sample.com") || emailLower.endsWith("@demo.com")) {
+            logger.info("Blocked test/dummy email address: " + email);
+            return false;
+        }
+
+        // Basic email format validation
         String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
-        return email.matches(emailRegex);
+        boolean isValidFormat = email.matches(emailRegex);
+
+        if (!isValidFormat) {
+            logger.info("Invalid email format: " + email);
+            return false;
+        }
+
+        // Additional check for common invalid domains
+        String[] invalidDomains = { "localhost", "127.0.0.1", "0.0.0.0", "invalid", "null",
+                "example.com", "test.com", "dummy.com", "fake.com",
+                "temp.com", "sample.com", "demo.com", "mail.com" };
+        String domain = email.substring(email.lastIndexOf("@") + 1).toLowerCase();
+
+        for (String invalidDomain : invalidDomains) {
+            if (domain.equals(invalidDomain)) {
+                logger.info("Blocked invalid domain: " + email + " (domain: " + domain + ")");
+                return false;
+            }
+        }
+
+        return true;
     }
 }

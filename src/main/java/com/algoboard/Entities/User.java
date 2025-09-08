@@ -4,6 +4,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Document(collection = "users")
 public class User {
@@ -16,26 +17,30 @@ public class User {
     @Indexed(unique = true)
     private String email;
     boolean student;
+    private String institutionName;
     private String codeforcesUsername;
     private String atcoderUsername;
     private String codechefUsername;
     private String leetcodeUsername;
+    private List<String> friends;
     private String resetOtp;
     private LocalDateTime resetOtpExpiry;
 
     public User(String username, String firstName, String lastName, String password, String email, boolean student,
-            String codeforcesUsername, String atcoderUsername, String codechefUsername, String leetcodeUsername,
-            String resetOtp, LocalDateTime resetOtpExpiry) {
+            String institutionName, String codeforcesUsername, String atcoderUsername, String codechefUsername,
+            String leetcodeUsername, List<String> friends, String resetOtp, LocalDateTime resetOtpExpiry) {
         this.username = username;
         this.firstName = firstName;
         this.lastName = lastName;
         this.password = password;
         this.email = email;
         this.student = student;
+        this.institutionName = institutionName;
         this.codeforcesUsername = codeforcesUsername;
         this.atcoderUsername = atcoderUsername;
         this.codechefUsername = codechefUsername;
         this.leetcodeUsername = leetcodeUsername;
+        this.friends = friends;
         this.resetOtp = resetOtp;
         this.resetOtpExpiry = resetOtpExpiry;
     }
@@ -93,6 +98,14 @@ public class User {
         this.student = student;
     }
 
+    public String getInstitutionName() {
+        return institutionName;
+    }
+
+    public void setInstitutionName(String institutionName) {
+        this.institutionName = institutionName;
+    }
+
     public String getCodeforcesUsername() {
         return codeforcesUsername;
     }
@@ -125,6 +138,14 @@ public class User {
         this.leetcodeUsername = leetcodeUsername;
     }
 
+    public List<String> getFriends() {
+        return friends;
+    }
+
+    public void setFriends(List<String> friends) {
+        this.friends = friends;
+    }
+
     public String getResetOtp() {
         return resetOtp;
     }
@@ -140,6 +161,4 @@ public class User {
     public void setResetOtpExpiry(LocalDateTime resetOtpExpiry) {
         this.resetOtpExpiry = resetOtpExpiry;
     }
-
-    // Removed role getter and setter - no more RBAC
 }

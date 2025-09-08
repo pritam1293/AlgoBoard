@@ -126,17 +126,23 @@ public class UserService implements IUserService {
     public UserProfile updateUserDetails(UserProfile profile) {
         User existingUser = userRepository.findByUsername(profile.getUsername());
         if (existingUser != null) {
-            if (profile.getFirstName() != null) {
+            if (profile.getFirstName() != null && !profile.getFirstName().isEmpty() && !profile.getFirstName().equals(existingUser.getFirstName())) {
                 existingUser.setFirstName(profile.getFirstName());
             }
-            if (profile.getLastName() != null) {
+            if (profile.getLastName() != null && !profile.getLastName().isEmpty() && !profile.getLastName().equals(existingUser.getLastName())) {
                 existingUser.setLastName(profile.getLastName());
             }
-            if (profile.getEmail() != null) {
+            if (profile.getEmail() != null && !profile.getEmail().isEmpty() && !profile.getEmail().equals(existingUser.getEmail())) {
                 existingUser.setEmail(profile.getEmail());
             }
             if (profile.isStudent() != existingUser.isStudent()) {
                 existingUser.setStudent(profile.isStudent());
+            }
+            if( profile.getInstitutionName() != null && !profile.getInstitutionName().isEmpty() && !profile.getInstitutionName().equals(existingUser.getInstitutionName())) {
+                existingUser.setInstitutionName(profile.getInstitutionName());
+            }
+            if(profile.getFriends() != null && !profile.getFriends().isEmpty()) {
+                existingUser.setFriends(profile.getFriends());
             }
             userRepository.save(existingUser);
             return createProfile(existingUser);
@@ -151,10 +157,12 @@ public class UserService implements IUserService {
                 user.getLastName(),
                 user.getEmail(),
                 user.isStudent(),
+                user.getInstitutionName(),
                 user.getCodeforcesUsername(),
                 user.getAtcoderUsername(),
                 user.getCodechefUsername(),
-                user.getLeetcodeUsername());
+                user.getLeetcodeUsername(),
+                user.getFriends());
     }
 
     @Override
