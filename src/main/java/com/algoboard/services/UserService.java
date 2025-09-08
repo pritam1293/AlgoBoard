@@ -437,7 +437,6 @@ public class UserService implements IUserService {
         } catch (Exception e) {
             System.out.println("");
             System.out.println("Error fetching Codeforces contests: " + e.getMessage());
-            System.out.println("");
         }
     }
 
@@ -458,7 +457,6 @@ public class UserService implements IUserService {
         } catch (Exception e) {
             System.out.println("");
             System.out.println("Error fetching CodeChef contests: " + e.getMessage());
-            System.out.println("");
         }
     }
 
@@ -509,7 +507,6 @@ public class UserService implements IUserService {
             e.printStackTrace();
             System.out.println("");
             System.out.println("Error fetching Atcoder contests: " + e.getMessage());
-            System.out.println("");
         }
         // past contests
         acurl = "https://atcoder.jp/contests/archive";
@@ -588,7 +585,6 @@ public class UserService implements IUserService {
             e.printStackTrace();
             System.out.println("");
             System.out.println("Error fetching Leetcode contests: " + e.getMessage());
-            System.out.println("");
         }
 
         // past contests
@@ -623,7 +619,6 @@ public class UserService implements IUserService {
             e.printStackTrace();
             System.out.println("");
             System.out.println("Error fetching Leetcode past contests: " + e.getMessage());
-            System.out.println("");
         }
     }
 

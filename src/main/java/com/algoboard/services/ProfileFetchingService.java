@@ -138,9 +138,6 @@ public class ProfileFetchingService {
                     contestHistory,
                     recentSubmissions);
         } catch (Exception e) {
-            System.out.println("");
-            System.out.println("Error fetching Codeforces profile: " + e.getMessage());
-            System.out.println("");
             throw new RuntimeException("Failed to fetch Codeforces profile for user: " + username);
         }
     }
@@ -262,8 +259,6 @@ public class ProfileFetchingService {
         if (ccid == null || ccid.isEmpty()) {
             throw new IllegalArgumentException("Codechef username not found of user: " + username);
         }
-        System.out.println("");
-        System.out.println("Cache miss - fetching Codechef profile data for: " + ccid);
         String ccurl = "https://clist.by/account/" + ccid + "/resource/codechef.com/ratings/?resource=codechef.com";
         Codechef codechefProfile = new Codechef();
         try {
@@ -331,9 +326,6 @@ public class ProfileFetchingService {
         if (lcid == null || lcid.isEmpty()) {
             throw new IllegalArgumentException("Leetcode username not found of user: " + username);
         }
-        System.out.println("");
-        System.out.println("Cache miss - fetching LeetCode profile data for: " + lcid);
-        System.out.println("");
 
         String lcuserurl = "https://leetcode-stats.tashif.codes/" + lcid + "/profile";
         String lccontesturl = "https://leetcode-stats.tashif.codes/" + lcid + "/contests";
@@ -344,11 +336,8 @@ public class ProfileFetchingService {
                     .supplyAsync(() -> {
                         try {
                             LC_UserDTO response = restTemplate.getForObject(lcuserurl, LC_UserDTO.class);
-                            System.out.println("LeetCode profile API response status: "
-                                    + (response != null ? response.getStatus() : "null response"));
                             return response;
                         } catch (Exception e) {
-                            System.out.println("LeetCode profile API error for " + lcid + ": " + e.getMessage());
                             return null;
                         }
                     });
@@ -357,11 +346,8 @@ public class ProfileFetchingService {
                     .supplyAsync(() -> {
                         try {
                             LC_ContestDTO response = restTemplate.getForObject(lccontesturl, LC_ContestDTO.class);
-                            System.out.println("LeetCode contest API response status: "
-                                    + (response != null ? response.getStatus() : "null response"));
                             return response;
                         } catch (Exception e) {
-                            System.out.println("LeetCode contest API error for " + lcid + ": " + e.getMessage());
                             return null;
                         }
                     });
@@ -372,32 +358,19 @@ public class ProfileFetchingService {
 
             try {
                 userProfileResponse = userProfileFuture.get(10, TimeUnit.SECONDS);
-                System.out.println("LeetCode profile API completed for: " + lcid);
             } catch (Exception e) {
                 System.out.println("LeetCode profile API timeout or error for " + lcid + ": " + e.getMessage());
             }
 
             try {
                 contestResponse = contestFuture.get(10, TimeUnit.SECONDS);
-                System.out.println("LeetCode contest API completed for: " + lcid);
             } catch (Exception e) {
                 System.out.println("LeetCode contest API timeout or error for " + lcid + ": " + e.getMessage());
             }
 
             // Check if we got valid responses
             if (userProfileResponse == null && contestResponse == null) {
-                throw new RuntimeException("Both LeetCode APIs failed for user: " + lcid
-                        + ". Please check if the username is correct and publicly accessible.");
-            }
-
-            if (userProfileResponse != null && !"success".equals(userProfileResponse.getStatus())) {
-                System.out.println("LeetCode profile API returned non-success status: "
-                        + userProfileResponse.getStatus() + " for user: " + lcid);
-            }
-
-            if (contestResponse != null && !"success".equals(contestResponse.getStatus())) {
-                System.out.println("LeetCode contest API returned non-success status: " + contestResponse.getStatus()
-                        + " for user: " + lcid);
+                throw new RuntimeException("failed to fetch leetcode profile data for user: " + lcid);
             }
 
             Leetcode leetcodeProfile = new Leetcode();
@@ -487,7 +460,6 @@ public class ProfileFetchingService {
                 }
             }
 
-            System.out.println("LeetCode profile data cached successfully for: " + lcid);
             return leetcodeProfile;
         } catch (Exception e) {
             System.out.println("");
@@ -495,9 +467,6 @@ public class ProfileFetchingService {
                     + lcid + ")");
             System.out.println("Error type: " + e.getClass().getSimpleName());
             System.out.println("Error message: " + e.getMessage());
-            System.out.println("Profile URL: " + lcuserurl);
-            System.out.println("Contest URL: " + lccontesturl);
-            System.out.println("");
             e.printStackTrace();
             throw new RuntimeException("Failed to fetch LeetCode profile for user: " + username + " (LeetCode ID: "
                     + lcid + "). Error: " + e.getMessage());
