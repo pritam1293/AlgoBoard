@@ -412,7 +412,7 @@ public class UserService implements IUserService {
         String cfurl = "https://codeforces.com/api/contest.list";
         try {
             CF_ContestListDTO response = restTemplate.getForObject(cfurl, CF_ContestListDTO.class);
-            int cnt = 0;
+            int pastContestCount = 0;
             if (response != null && response.getStatus().equals("OK")) {
                 for (CF_ContestListDTO.CodeforcesContest contest : response.getResult()) {
                     if(contest.getPhase().equals("BEFORE")) {
@@ -443,8 +443,22 @@ public class UserService implements IUserService {
                                             IST_ZONE),
                                     contest.getDurationSeconds() / 60));
                         }
+                    } else if(contest.getPhase().equals("SYSTEM_TEST")) {
+                        synchronized (allContests) {
+                            allContests.add(new ContestDTO(
+                                    String.valueOf(contest.getId()),
+                                    contest.getName(),
+                                    "https://codeforces.com/contests/" + contest.getId(),
+                                    "codeforces",
+                                    LocalDateTime.ofInstant(Instant.ofEpochSecond(contest.getStartTimeSeconds()),
+                                            IST_ZONE),
+                                    LocalDateTime.ofInstant(Instant.ofEpochSecond(
+                                            contest.getStartTimeSeconds() + contest.getDurationSeconds()),
+                                            IST_ZONE),
+                                    contest.getDurationSeconds() / 60));
+                        }
                     } else {
-                        cnt++;
+                        pastContestCount++;
                         synchronized (allContests) {
                             allContests.add(new ContestDTO(
                                     String.valueOf(contest.getId()),
@@ -459,8 +473,8 @@ public class UserService implements IUserService {
                                     contest.getDurationSeconds() / 60));
                         }
                     }
-                    if (cnt == 3) {
-                        break;// Limit to 3 contests
+                    if (pastContestCount == 3) {
+                        break;// Limit to 3 past contests
                     }
                 }
             }

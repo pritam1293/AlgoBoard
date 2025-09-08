@@ -103,7 +103,41 @@ const Home = () => {
       return `${diffMinutes}m ${diffSeconds}s`;
     }
     return `${diffSeconds}s`;
-  };  // Helper function to get platform color
+  };
+
+  // Helper function to format duration from minutes to readable format
+  const formatDuration = (durationInMinutes) => {
+    if (!durationInMinutes || durationInMinutes === 'TBD') return 'TBD';
+
+    const totalMinutes = parseInt(durationInMinutes);
+    if (isNaN(totalMinutes)) return 'TBD';
+
+    const days = Math.floor(totalMinutes / (24 * 60));
+    const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+    const minutes = totalMinutes % 60;
+
+    const parts = [];
+    if (days > 0) parts.push(`${days} day${days > 1 ? 's' : ''}`);
+    if (hours > 0) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`);
+    if (minutes > 0) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`);
+
+    return parts.length > 0 ? parts.join(', ') : '0 minutes';
+  };
+
+  // Helper function to format date and time
+  const formatDateTime = (dateTime) => {
+    const date = new Date(dateTime);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    });
+  };
+
+  // Helper function to get platform color
   const getPlatformColor = (platform) => {
     const colors = {
       'codeforces': 'bg-blue-600/20 border-blue-500/30 text-blue-400',
@@ -215,11 +249,7 @@ const Home = () => {
                   </div>
                   <p className="text-neutral-400 text-sm mt-3 flex items-center">
                     <span className="mr-2">🗓️</span>
-                    Released: {new Date().toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
+                    Released: September 1, 2025
                   </p>
                 </div>
               </div>
@@ -260,12 +290,12 @@ const Home = () => {
                       </h3>
                       <div className="flex flex-wrap gap-4 text-sm text-neutral-400">
                         <span className="flex items-center">
-                          <span className="mr-1">⏰</span>
-                          Ends in: {getTimeRemaining(contest.endTime)}
+                          <span className="mr-1">🏁</span>
+                          Ends at: {formatDateTime(contest.endTime)}
                         </span>
                         <span className="flex items-center">
                           <span className="mr-1">⏱️</span>
-                          Duration: {contest.duration || 'TBD'}
+                          Duration: {formatDuration(contest.duration)}
                         </span>
                       </div>
                     </div>
@@ -326,12 +356,12 @@ const Home = () => {
                       </h3>
                       <div className="flex flex-wrap gap-4 text-sm text-neutral-400">
                         <span className="flex items-center">
-                          <span className="mr-1">⏰</span>
-                          Starts in: {getTimeUntilContest(contest.startTime)}
+                          <span className="mr-1">🚀</span>
+                          Starts at: {formatDateTime(contest.startTime)}
                         </span>
                         <span className="flex items-center">
                           <span className="mr-1">⏱️</span>
-                          Duration: {contest.duration || 'TBD'}
+                          Duration: {formatDuration(contest.duration)}
                         </span>
                       </div>
                     </div>
