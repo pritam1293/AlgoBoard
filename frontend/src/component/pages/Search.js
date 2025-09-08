@@ -43,7 +43,7 @@ const Search = () => {
     // Get available platforms
     const connectedPlatforms = PLATFORMS;
 
-    // Get username from URL params if coming from navbar search
+    // Handle search functionality - moved backend logic to service layer
     const handleSearch = useCallback(async (username = searchUsername) => {
         if (!username.trim()) {
             setError('Please enter a username to search');
@@ -58,7 +58,6 @@ const Search = () => {
         setSelectedPlatform({ id: 'all', name: 'All Platforms' });
 
         try {
-            // Use the /api/users/search endpoint to fetch all platforms data
             const response = await platformService.getAllPlatformsData(username.trim());
 
             if (response) {
@@ -82,7 +81,6 @@ const Search = () => {
                 setAllPlatformsData(allData);
             }
         } catch (err) {
-            console.error('Search error details:', err);
             setError(err.message || 'User not found or error occurred');
             setAllPlatformsData({});
             setSearchedUser(null);

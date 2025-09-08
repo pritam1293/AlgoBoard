@@ -1,11 +1,97 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "../common/Navbar";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import contestService from "../../services/contestService";
 
 const Home = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [upcomingContests, setUpcomingContests] = useState([]);
+  const [contestsLoading, setContestsLoading] = useState(true);
+
+  // Fetch contests on component mount
+  useEffect(() => {
+    const fetchUpcomingContests = async () => {
+      try {
+        setContestsLoading(true);
+        const response = await contestService.getAllContests();
+
+        console.log("Raw contest API response:", response);
+
+        if (response?.data) {
+          console.log("Contest data received:", response.data);
+
+          // Filter contests starting within 24 hours
+          const now = new Date();
+          const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+          console.log("Current time:", now.toISOString());
+          console.log("24 hours from now:", next24Hours.toISOString());
+
+          const upcoming = response.data.filter(contest => {
+            console.log("Checking contest:", contest.contestName, "Start time:", contest.startTime);
+
+            const startTime = new Date(contest.startTime);
+
+            console.log("Parsed start time:", startTime.toISOString());
+            console.log("Is valid date:", !isNaN(startTime.getTime()));
+            console.log("Is future:", startTime >= now);
+            console.log("Is within 24h:", startTime <= next24Hours);
+            console.log("Time difference (hours):", (startTime - now) / (1000 * 60 * 60));
+
+            return !isNaN(startTime.getTime()) && startTime >= now && startTime <= next24Hours;
+          });
+
+          console.log("Filtered upcoming contests:", upcoming);
+
+          // Sort by start time and limit to 3 contests
+          const sortedUpcoming = upcoming
+            .sort((a, b) => {
+              const aTime = new Date(a.startTime);
+              const bTime = new Date(b.startTime);
+              return aTime - bTime;
+            })
+            .slice(0, 3);
+
+          console.log("Final sorted contests:", sortedUpcoming);
+          setUpcomingContests(sortedUpcoming);
+        }
+      } catch (error) {
+        console.error("Failed to fetch contests:", error);
+        setUpcomingContests([]);
+      } finally {
+        setContestsLoading(false);
+      }
+    };
+
+    fetchUpcomingContests();
+  }, []);
+
+  // Helper function to format time until contest
+  const getTimeUntilContest = (startTime) => {
+    const now = new Date();
+    const start = new Date(startTime);
+    const diffMs = start - now;
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (diffHours > 0) {
+      return `${diffHours}h ${diffMinutes}m`;
+    }
+    return `${diffMinutes}m`;
+  };
+
+  // Helper function to get platform color
+  const getPlatformColor = (platform) => {
+    const colors = {
+      'codeforces': 'bg-blue-600/20 border-blue-500/30 text-blue-400',
+      'codechef': 'bg-orange-600/20 border-orange-500/30 text-orange-400',
+      'atcoder': 'bg-green-600/20 border-green-500/30 text-green-400',
+      'leetcode': 'bg-yellow-600/20 border-yellow-500/30 text-yellow-400'
+    };
+    return colors[platform?.toLowerCase()] || 'bg-gray-600/20 border-gray-500/30 text-gray-400';
+  };
 
   return (
     <div className="min-h-screen bg-neutral-900">
@@ -19,72 +105,96 @@ const Home = () => {
           </h1>
         </div>
 
+        {/* Features Overview Section */}
+        <div className="mb-8">
+          <div className="bg-gradient-to-r from-blue-900/50 to-purple-900/50 rounded-lg p-6 border border-neutral-700">
+            <h2 className="text-2xl font-semibold text-white mb-4 flex items-center">
+              <span className="mr-3">🚀</span>
+              Welcome to AlgoBoard
+            </h2>
+            <div className="space-y-4">
+              <p className="text-neutral-200 text-lg leading-relaxed">
+                Track your complete competitive programming journey at one centralized platform.
+                Monitor your progress, analyze your performance, and stay motivated across multiple coding platforms.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div className="bg-neutral-800/50 rounded-lg p-4">
+                  <h3 className="text-white font-medium mb-2 flex items-center">
+                    <span className="mr-2">📊</span>
+                    Comprehensive Analytics
+                  </h3>
+                  <p className="text-neutral-300 text-sm">
+                    Visualize your rating progression, contest history, and problem-solving statistics
+                    with interactive charts and detailed insights.
+                  </p>
+                </div>
+                <div className="bg-neutral-800/50 rounded-lg p-4">
+                  <h3 className="text-white font-medium mb-2 flex items-center">
+                    <span className="mr-2">🔗</span>
+                    Multi-Platform Support
+                  </h3>
+                  <p className="text-neutral-300 text-sm">
+                    Connect accounts from Codeforces, CodeChef, AtCoder, and LeetCode
+                    to get a unified view of your competitive programming profile.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 p-4 bg-neutral-800/30 rounded-lg border-l-4 border-blue-500">
+                <p className="text-neutral-200 text-sm flex items-center">
+                  <span className="mr-2">💬</span>
+                  <strong>Need Help?</strong>
+                  <span className="ml-2">
+                    Encountered any issues or have suggestions? Reach out to our support team at
+                    <a href="mailto:support@algoboard.com" className="text-blue-400 hover:text-blue-300 ml-1 underline">
+                      support@algoboard.com
+                    </a>
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Announcements Section */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-white mb-4">
-            📢 Announcements
+          <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+            <span className="mr-2">📢</span>
+            Latest Updates
           </h2>
           <div className="space-y-4">
-            {/* Important Announcement */}
-            <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-4">
+            {/* New Features Announcement */}
+            <div className="bg-neutral-800 rounded-lg p-4 border-l-4 border-green-500">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
-                  <span className="inline-flex items-center justify-center w-8 h-8 bg-blue-600 rounded-full">
-                    <span className="text-white text-sm font-bold">!</span>
+                  <span className="inline-flex items-center justify-center w-10 h-10 bg-green-600 rounded-full">
+                    <span className="text-white text-lg">✨</span>
                   </span>
                 </div>
-                <div className="ml-3 flex-1">
-                  <h3 className="text-neutral-200 font-medium">
-                    Welcome to AlgoBoard!
+                <div className="ml-4 flex-1">
+                  <h3 className="text-neutral-200 font-semibold text-lg">
+                    Enhanced Profile Tracking Now Live!
                   </h3>
-                  <p className="text-neutral-300 text-sm mt-1">
-                    Connect your competitive programming accounts to start
-                    tracking your progress across multiple platforms.
+                  <p className="text-neutral-300 mt-2 leading-relaxed">
+                    We've significantly improved our profile tracking capabilities. Now enjoy comprehensive
+                    statistics and real-time data synchronization for:
                   </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Feature Update */}
-            <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-4">
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <span className="inline-flex items-center justify-center w-8 h-8 bg-green-600 rounded-full">
-                    <span className="text-white text-sm">✨</span>
-                  </span>
-                </div>
-                <div className="ml-3 flex-1">
-                  <h3 className="text-neutral-200 font-medium">
-                    New Feature: Rating Tracking
-                  </h3>
-                  <p className="text-neutral-300 text-sm mt-1">
-                    We've added automatic rating synchronization for Codeforces,
-                    AtCoder, Leetcode, and CodeChef platforms.
-                  </p>
-                  <p className="text-neutral-400 text-xs mt-2">
-                    August 12, 2025
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* System Info */}
-            <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-4">
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <span className="inline-flex items-center justify-center w-8 h-8 bg-yellow-600 rounded-full">
-                    <span className="text-white text-sm">🔧</span>
-                  </span>
-                </div>
-                <div className="ml-3 flex-1">
-                  <h3 className="text-neutral-200 font-medium">
-                    Scheduled Maintenance
-                  </h3>
-                  <p className="text-neutral-300 text-sm mt-1">
-                    System is under maintenance.
-                  </p>
-                  <p className="text-neutral-400 text-xs mt-2">
-                    {new Date().toLocaleDateString("en-US", {
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+                    <div className="bg-blue-600/20 px-3 py-2 rounded-lg border border-blue-500/30">
+                      <span className="text-blue-400 font-medium text-sm">Codeforces</span>
+                    </div>
+                    <div className="bg-orange-600/20 px-3 py-2 rounded-lg border border-orange-500/30">
+                      <span className="text-orange-400 font-medium text-sm">CodeChef</span>
+                    </div>
+                    <div className="bg-green-600/20 px-3 py-2 rounded-lg border border-green-500/30">
+                      <span className="text-green-400 font-medium text-sm">AtCoder</span>
+                    </div>
+                    <div className="bg-yellow-600/20 px-3 py-2 rounded-lg border border-yellow-500/30">
+                      <span className="text-yellow-400 font-medium text-sm">LeetCode</span>
+                    </div>
+                  </div>
+                  <p className="text-neutral-400 text-sm mt-3 flex items-center">
+                    <span className="mr-2">🗓️</span>
+                    Released: {new Date().toLocaleDateString("en-US", {
                       month: "long",
                       day: "numeric",
                       year: "numeric",
@@ -93,6 +203,85 @@ const Home = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Contest Announcements Section */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+            <span className="mr-2">🏆</span>
+            Upcoming Contests (Next 24 Hours)
+          </h2>
+          <div className="space-y-3">
+            {contestsLoading ? (
+              <div className="bg-neutral-800 rounded-lg p-4 border-l-4 border-yellow-500">
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500 mr-3"></div>
+                  <span className="text-neutral-300">Loading upcoming contests...</span>
+                </div>
+              </div>
+            ) : upcomingContests.length > 0 ? (
+              upcomingContests.map((contest, index) => (
+                <div key={index} className="bg-neutral-800 rounded-lg p-4 border-l-4 border-red-500">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2">
+                        <span className={`px-3 py-1 rounded-lg border text-xs font-medium mr-3 ${getPlatformColor(contest.platform)}`}>
+                          {contest.platform?.toUpperCase()}
+                        </span>
+                        <span className="text-red-400 text-sm font-medium bg-red-600/20 px-2 py-1 rounded border border-red-500/30">
+                          Starts in {getTimeUntilContest(contest.startTime)}
+                        </span>
+                      </div>
+                      <h3 className="text-neutral-200 font-semibold text-lg mb-1">
+                        {contest.name}
+                      </h3>
+                      <div className="flex flex-wrap gap-4 text-sm text-neutral-400">
+                        <span className="flex items-center">
+                          <span className="mr-1">🕐</span>
+                          {new Date(contest.startTime).toLocaleString()}
+                        </span>
+                        <span className="flex items-center">
+                          <span className="mr-1">⏱️</span>
+                          Duration: {contest.duration || 'TBD'}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => navigate("/contests")}
+                      className="ml-4 px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="bg-neutral-800 rounded-lg p-4 border-l-4 border-gray-500">
+                <div className="flex items-center">
+                  <span className="text-neutral-300">No contests starting in the next 24 hours.</span>
+                  <button
+                    onClick={() => navigate("/contests")}
+                    className="ml-auto px-4 py-2 bg-neutral-700 text-white text-sm rounded-lg hover:bg-neutral-600 transition-colors"
+                  >
+                    View All Contests
+                  </button>
+                </div>
+              </div>
+            )}
+            {upcomingContests.length > 0 && (
+              <div className="text-center">
+                <button
+                  onClick={() => navigate("/contests")}
+                  className="inline-flex items-center px-4 py-2 bg-neutral-700 text-neutral-300 rounded-lg hover:bg-neutral-600 transition-colors"
+                >
+                  <span className="mr-2">View All Contests</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

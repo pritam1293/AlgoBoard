@@ -81,11 +81,9 @@ export const AuthProvider = ({ children }) => {
   const signup = async (userData) => {
     try {
       const sanitizedUserData = sanitizeData(userData);
-      console.log("AuthContext signup - sanitized data:", sanitizedUserData);
 
       // Remove confirmPassword from data sent to backend as it's not needed
       const { confirmPassword, ...dataForBackend } = sanitizedUserData;
-      console.log("AuthContext signup - data for backend:", dataForBackend);
 
       const response = await authService.signup(dataForBackend);
       // response is the profile object
@@ -175,11 +173,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const validateSignupForm = (data) => {
-    console.log("validateSignupForm called with data:", data);
     const sanitizedData = sanitizeData(data);
-    console.log("After sanitization:", sanitizedData);
     const result = validateFormData(sanitizedData, validationSchemas.signup);
-    console.log("validateSignupForm result:", result);
     return result;
   };
 

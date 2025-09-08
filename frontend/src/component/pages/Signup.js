@@ -60,22 +60,10 @@ const Signup = () => {
     setIsLoading(true);
     setErrors({});
 
-    // Debug logging
-    console.log("=== SIGNUP FORM DEBUG ===");
-    console.log("Form data received:", formData);
-    console.log("Password field:", formData.password);
-    console.log("Confirm password field:", formData.confirmPassword);
-    console.log("Password length:", formData.password?.length);
-    console.log("Confirm password length:", formData.confirmPassword?.length);
-    console.log("Passwords are equal:", formData.password === formData.confirmPassword);
-    console.log("=========================");
-
     // Use AuthContext validation
     const validationErrors = validateSignupForm(formData);
-    console.log("Validation errors returned:", validationErrors);
 
     if (Object.keys(validationErrors).length > 0) {
-      console.log("Validation failed with errors:", validationErrors);
       setErrors(validationErrors);
       setIsLoading(false);
       return;

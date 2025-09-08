@@ -217,8 +217,8 @@ const CPStatistics = () => {
     );
   };
 
-  // Fetch platform data when platform is selected
-  const fetchPlatformData = async (platform) => {
+  // Handle platform data loading - moved backend calls to service layer
+  const loadPlatformData = async (platform) => {
     if (!platform || !user?.username) return;
 
     setLoading(true);
@@ -226,36 +226,22 @@ const CPStatistics = () => {
     setPlatformData(null);
 
     try {
-      console.log(`Fetching ${platform.name} stats...`);
-
-      let stats = null;
-      if (platform.id === "codeforces") {
-        stats = await platformService.getCodeforcesProfile(user.username);
-      } else if (platform.id === "leetcode") {
-        stats = await platformService.getLeetcodeProfile(user.username);
-      } else if (platform.id === "atcoder") {
-        stats = await platformService.getAtcoderProfile(user.username);
-      } else if (platform.id === "codechef") {
-        stats = await platformService.getCodechefProfile(user.username);
-      }
-      // Add other platforms here when needed
+      const stats = await platformService.getProfileByPlatform(platform.id, user.username);
 
       if (stats?.data) {
-        console.log(`${platform.name} data received successfully`);
         setPlatformData(stats.data);
         setContestPage(0); // Reset pagination
         setSolutionsPage(0);
       }
     } catch (err) {
-      console.error(`Error fetching ${platform.name} stats:`, err);
       setError(`Failed to fetch ${platform.name} statistics`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch data from all connected platforms - OPTIMIZED VERSION
-  const fetchAllPlatformsData = async () => {
+  // Handle all platforms data loading - uses service layer
+  const loadAllPlatformsData = async () => {
     if (!user?.username) return;
 
     setLoading(true);
@@ -263,18 +249,13 @@ const CPStatistics = () => {
     setPlatformData(null);
 
     try {
-      console.log('Fetching stats from all connected platforms using optimized endpoint...');
-
-      // Single API call that fetches all platforms in parallel on the backend
       const response = await platformService.getAllPlatformsData(user.username);
 
       if (response?.data) {
         const allData = {};
-
-        // Transform the response to match the expected format
         const platformsData = response.data;
 
-        // Map each platform's data
+        // Transform the response to match the expected format
         connectedPlatforms.forEach(platform => {
           const platformId = platform.id;
           if (platformsData[platformId]) {
@@ -286,10 +267,8 @@ const CPStatistics = () => {
         });
 
         setAllPlatformsData(allData);
-        console.log('All platforms data fetched successfully:', allData);
       }
     } catch (err) {
-      console.error('Error fetching all platforms stats:', err);
       setError('Failed to fetch statistics from platforms');
     } finally {
       setLoading(false);
@@ -299,7 +278,7 @@ const CPStatistics = () => {
   // Auto-load all platforms data when component mounts (only once)
   useEffect(() => {
     if (user?.username && connectedPlatforms.length > 0) {
-      fetchAllPlatformsData();
+      loadAllPlatformsData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.username, connectedPlatforms.length]); // Only re-run when username or connected platforms change
@@ -308,9 +287,9 @@ const CPStatistics = () => {
   const handlePlatformSelect = (platform) => {
     setSelectedPlatform(platform);
     if (platform?.id === 'all') {
-      fetchAllPlatformsData();
+      loadAllPlatformsData();
     } else {
-      fetchPlatformData(platform);
+      loadPlatformData(platform);
     }
   };
 

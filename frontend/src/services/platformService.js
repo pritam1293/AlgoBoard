@@ -57,6 +57,22 @@ class PlatformService {
     }
   }
 
+  // Get profile data for specific platform
+  async getProfileByPlatform(platformId, username) {
+    switch (platformId) {
+      case 'codeforces':
+        return await this.getCodeforcesProfile(username);
+      case 'leetcode':
+        return await this.getLeetcodeProfile(username);
+      case 'atcoder':
+        return await this.getAtcoderProfile(username);
+      case 'codechef':
+        return await this.getCodechefProfile(username);
+      default:
+        throw new Error(`Unsupported platform: ${platformId}`);
+    }
+  }
+
   // Get ALL platforms data in one optimized call (uses backend parallel processing)
   async getAllPlatformsData(username) {
     try {
