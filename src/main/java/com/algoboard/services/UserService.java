@@ -415,22 +415,52 @@ public class UserService implements IUserService {
             int cnt = 0;
             if (response != null && response.getStatus().equals("OK")) {
                 for (CF_ContestListDTO.CodeforcesContest contest : response.getResult()) {
-                    synchronized (allContests) {
-                        allContests.add(new ContestDTO(
-                                String.valueOf(contest.getId()),
-                                contest.getName(),
-                                "https://codeforces.com/contest/" + contest.getId(),
-                                "codeforces",
-                                LocalDateTime.ofEpochSecond(contest.getStartTimeSeconds(), 0,
-                                        IST_OFFSET),
-                                LocalDateTime.ofEpochSecond(
-                                        contest.getStartTimeSeconds() + contest.getDurationSeconds(), 0,
-                                        IST_OFFSET),
-                                (long) contest.getDurationSeconds() / 60)
-                        );
+                    if(contest.getPhase().equals("BEFORE")) {
+                        synchronized (allContests) {
+                            allContests.add(new ContestDTO(
+                                    String.valueOf(contest.getId()),
+                                    contest.getName(),
+                                    "https://codeforces.com/contests/" + contest.getId(),
+                                    "codeforces",
+                                    LocalDateTime.ofInstant(Instant.ofEpochSecond(contest.getStartTimeSeconds()),
+                                            IST_ZONE),
+                                    LocalDateTime.ofInstant(Instant.ofEpochSecond(
+                                            contest.getStartTimeSeconds() + contest.getDurationSeconds()),
+                                            IST_ZONE),
+                                    contest.getDurationSeconds() / 60));
+                        }
+                    } else if(contest.getPhase().equals("CODING")) {
+                        synchronized (allContests) {
+                            allContests.add(new ContestDTO(
+                                    String.valueOf(contest.getId()),
+                                    contest.getName(),
+                                    "https://codeforces.com/contests/" + contest.getId(),
+                                    "codeforces",
+                                    LocalDateTime.ofInstant(Instant.ofEpochSecond(contest.getStartTimeSeconds()),
+                                            IST_ZONE),
+                                    LocalDateTime.ofInstant(Instant.ofEpochSecond(
+                                            contest.getStartTimeSeconds() + contest.getDurationSeconds()),
+                                            IST_ZONE),
+                                    contest.getDurationSeconds() / 60));
+                        }
+                    } else {
+                        cnt++;
+                        synchronized (allContests) {
+                            allContests.add(new ContestDTO(
+                                    String.valueOf(contest.getId()),
+                                    contest.getName(),
+                                    "https://codeforces.com/contests/" + contest.getId(),
+                                    "codeforces",
+                                    LocalDateTime.ofInstant(Instant.ofEpochSecond(contest.getStartTimeSeconds()),
+                                            IST_ZONE),
+                                    LocalDateTime.ofInstant(Instant.ofEpochSecond(
+                                            contest.getStartTimeSeconds() + contest.getDurationSeconds()),
+                                            IST_ZONE),
+                                    contest.getDurationSeconds() / 60));
+                        }
                     }
-                    if (++cnt == 6) {
-                        break;// Limit to 6 contests
+                    if (cnt == 3) {
+                        break;// Limit to 3 contests
                     }
                 }
             }

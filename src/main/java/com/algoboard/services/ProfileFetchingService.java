@@ -9,7 +9,7 @@ import com.algoboard.entities.Leetcode.Level;
 import com.algoboard.entities.Leetcode.Problem;
 import com.algoboard.DTO.Atcoder.AC_ContestDTO;
 import com.algoboard.DTO.Codechef.CC_ContestDTO;
-import com.algoboard.DTO.Codeforces.CF_ContestDTO;
+import com.algoboard.DTO.Codeforces.CF_ContestHistoryDTO;
 import com.algoboard.DTO.Codeforces.CF_SubmissionsDTO;
 import com.algoboard.DTO.Codeforces.CF_UserDTO;
 import com.algoboard.DTO.Leetcode.LC_ContestDTO;
@@ -59,12 +59,12 @@ public class ProfileFetchingService {
             // Execute API calls in parallel
             CompletableFuture<CF_UserDTO> profileFuture = CompletableFuture
                     .supplyAsync(() -> restTemplate.getForObject(profileUrl, CF_UserDTO.class));
-            CompletableFuture<CF_ContestDTO> contestFuture = CompletableFuture
-                    .supplyAsync(() -> restTemplate.getForObject(contestUrl, CF_ContestDTO.class));
+            CompletableFuture<CF_ContestHistoryDTO> contestFuture = CompletableFuture
+                    .supplyAsync(() -> restTemplate.getForObject(contestUrl, CF_ContestHistoryDTO.class));
 
             // Wait for both API calls to complete with timeout
             CF_UserDTO profileResponse = profileFuture.get(10, TimeUnit.SECONDS);
-            CF_ContestDTO contestResponse = contestFuture.get(10, TimeUnit.SECONDS);
+            CF_ContestHistoryDTO contestResponse = contestFuture.get(10, TimeUnit.SECONDS);
 
             if (profileResponse == null || profileResponse.getStatus().equals("FAILED")) {
                 throw new RuntimeException("Failed to fetch Codeforces profile for user: " + cfid);
@@ -110,10 +110,10 @@ public class ProfileFetchingService {
                 from += count;
             }
             CF_UserDTO.Result result = profileResponse.getResult().get(0);
-            java.util.List<CF_ContestDTO.Result> contestResults = contestResponse.getResult();
+            java.util.List<CF_ContestHistoryDTO.Result> contestResults = contestResponse.getResult();
             List<UserContestHistory> contestHistory = new ArrayList<>();
             if (contestResults != null) {
-                for (CF_ContestDTO.Result contestResult : contestResults) {
+                for (CF_ContestHistoryDTO.Result contestResult : contestResults) {
                     contestHistory.add(new UserContestHistory(
                             Long.toString(contestResult.getContestId()),
                             contestResult.getContestName(),

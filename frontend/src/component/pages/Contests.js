@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../common/Navbar";
+import BackButton from "../common/BackButton";
 import { useAuth } from "../../context/AuthContext";
 import contestService from "../../services/contestService";
 
 const Contests = () => {
     const { user, logout } = useAuth();
+    const navigate = useNavigate();
     const [contests, setContests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -146,11 +149,14 @@ const Contests = () => {
         codechef: "/images/platforms/codechef_logo.jpg",
         atcoder: "/images/platforms/atcoder_logo.png",
         leetcode: "/images/platforms/LeetCode_logo.png",
-    }; if (loading) {
+    };
+
+    if (loading) {
         return (
             <div className="min-h-screen bg-neutral-900">
                 <Navbar user={user} onLogout={logout} />
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <BackButton onBack={() => navigate("/home")} />
                     <div className="flex items-center justify-center h-64">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
                     </div>
@@ -164,6 +170,7 @@ const Contests = () => {
             <div className="min-h-screen bg-neutral-900">
                 <Navbar user={user} onLogout={logout} />
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <BackButton onBack={() => navigate("/home")} />
                     <div className="bg-red-900 border border-red-700 rounded-lg p-4">
                         <h3 className="text-red-200 font-medium">Error Loading Contests</h3>
                         <p className="text-red-300 text-sm mt-1">{error}</p>
@@ -184,6 +191,7 @@ const Contests = () => {
             <Navbar user={user} onLogout={logout} />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <BackButton onBack={() => navigate("/home")} />
                 {/* Header */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-white mb-2">

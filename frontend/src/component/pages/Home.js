@@ -8,60 +8,102 @@ const Home = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [upcomingContests, setUpcomingContests] = useState([]);
+  const [runningContests, setRunningContests] = useState([]);
   const [contestsLoading, setContestsLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   // Fetch contests on component mount
   useEffect(() => {
-    const fetchUpcomingContests = async () => {
+    const fetchContests = async () => {
       try {
         setContestsLoading(true);
         const response = await contestService.getAllContests();
 
         if (response?.data) {
-          // Filter contests starting within 24 hours
           const now = new Date();
           const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
+          // Filter currently running contests
+          const running = response.data.filter(contest => {
+            const startTime = new Date(contest.startTime);
+            const endTime = new Date(contest.endTime);
+            return !isNaN(startTime.getTime()) && !isNaN(endTime.getTime()) &&
+              now >= startTime && now <= endTime;
+          });
+
+          // Filter upcoming contests (starting within 24 hours)
           const upcoming = response.data.filter(contest => {
+            const startTime = new Date(contest.startTime);
             return !isNaN(startTime.getTime()) && startTime >= now && startTime <= next24Hours;
           });
 
-          // Sort by start time and limit to 3 contests
-          const sortedUpcoming = upcoming
-            .sort((a, b) => {
-              const aTime = new Date(a.startTime);
-              const bTime = new Date(b.startTime);
-              return aTime - bTime;
-            })
-            .slice(0, 3);
-
-          setUpcomingContests(sortedUpcoming);
+          // Show all running and upcoming contests without any limit
+          setRunningContests(running);
+          setUpcomingContests(upcoming);
         }
       } catch (error) {
         setUpcomingContests([]);
+        setRunningContests([]);
       } finally {
         setContestsLoading(false);
       }
     };
 
-    fetchUpcomingContests();
+    fetchContests();
   }, []);
 
-  // Helper function to format time until contest
-  const getTimeUntilContest = (startTime) => {
-    const now = new Date();
-    const start = new Date(startTime);
-    const diffMs = start - now;
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  // Update current time every second for countdown timers
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
 
-    if (diffHours > 0) {
-      return `${diffHours}h ${diffMinutes}m`;
+    return () => clearInterval(timer);
+  }, []);
+
+  // Helper function to format time until contest starts (with seconds)
+  const getTimeUntilContest = (startTime) => {
+    const start = new Date(startTime);
+    const diffMs = start - currentTime;
+
+    if (diffMs <= 0) return "Starting now";
+
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    const diffSeconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+    if (diffDays > 0) {
+      return `${diffDays}d ${diffHours}h ${diffMinutes}m ${diffSeconds}s`;
+    } else if (diffHours > 0) {
+      return `${diffHours}h ${diffMinutes}m ${diffSeconds}s`;
+    } else if (diffMinutes > 0) {
+      return `${diffMinutes}m ${diffSeconds}s`;
     }
-    return `${diffMinutes}m`;
+    return `${diffSeconds}s`;
   };
 
-  // Helper function to get platform color
+  // Helper function to format time remaining for running contests (with seconds)
+  const getTimeRemaining = (endTime) => {
+    const end = new Date(endTime);
+    const diffMs = end - currentTime;
+
+    if (diffMs <= 0) return "Contest ended";
+
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    const diffSeconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+    if (diffDays > 0) {
+      return `${diffDays}d ${diffHours}h ${diffMinutes}m ${diffSeconds}s`;
+    } else if (diffHours > 0) {
+      return `${diffHours}h ${diffMinutes}m ${diffSeconds}s`;
+    } else if (diffMinutes > 0) {
+      return `${diffMinutes}m ${diffSeconds}s`;
+    }
+    return `${diffSeconds}s`;
+  };  // Helper function to get platform color
   const getPlatformColor = (platform) => {
     const colors = {
       'codeforces': 'bg-blue-600/20 border-blue-500/30 text-blue-400',
@@ -185,6 +227,73 @@ const Home = () => {
           </div>
         </div>
 
+        {/* Currently Running Contests Section */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+            <span className="mr-2">🔴</span>
+            Currently Running Contests
+          </h2>
+          <div className="space-y-3">
+            {contestsLoading ? (
+              <div className="bg-neutral-800 rounded-lg p-4 border-l-4 border-yellow-500">
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500 mr-3"></div>
+                  <span className="text-neutral-300">Loading running contests...</span>
+                </div>
+              </div>
+            ) : runningContests.length > 0 ? (
+              runningContests.map((contest, index) => (
+                <div key={index} className="bg-neutral-800 rounded-lg p-4 border-l-4 border-green-500">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2">
+                        <span className={`px-3 py-1 rounded-lg border text-xs font-medium mr-3 ${getPlatformColor(contest.platform)}`}>
+                          {contest.platform?.toUpperCase()}
+                        </span>
+                        <span className="text-green-400 text-sm font-medium bg-green-600/20 px-2 py-1 rounded border border-green-500/30 flex items-center">
+                          <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                          LIVE - Ends in {getTimeRemaining(contest.endTime)}
+                        </span>
+                      </div>
+                      <h3 className="text-neutral-200 font-semibold text-lg mb-1">
+                        {contest.name}
+                      </h3>
+                      <div className="flex flex-wrap gap-4 text-sm text-neutral-400">
+                        <span className="flex items-center">
+                          <span className="mr-1">⏰</span>
+                          Ends in: {getTimeRemaining(contest.endTime)}
+                        </span>
+                        <span className="flex items-center">
+                          <span className="mr-1">⏱️</span>
+                          Duration: {contest.duration || 'TBD'}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => navigate("/contests")}
+                      className="ml-4 px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      Join Contest
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="bg-neutral-800 rounded-lg p-4 border-l-4 border-gray-500">
+                <div className="flex items-center">
+                  <span className="text-neutral-300">No contests are currently running.</span>
+                  <button
+                    onClick={() => navigate("/contests")}
+                    className="ml-auto px-4 py-2 bg-neutral-700 text-white text-sm rounded-lg hover:bg-neutral-600 transition-colors"
+                  >
+                    View All Contests
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Contest Announcements Section */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
@@ -217,8 +326,8 @@ const Home = () => {
                       </h3>
                       <div className="flex flex-wrap gap-4 text-sm text-neutral-400">
                         <span className="flex items-center">
-                          <span className="mr-1">🕐</span>
-                          {new Date(contest.startTime).toLocaleString()}
+                          <span className="mr-1">⏰</span>
+                          Starts in: {getTimeUntilContest(contest.startTime)}
                         </span>
                         <span className="flex items-center">
                           <span className="mr-1">⏱️</span>
