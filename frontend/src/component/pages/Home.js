@@ -17,33 +17,14 @@ const Home = () => {
         setContestsLoading(true);
         const response = await contestService.getAllContests();
 
-        console.log("Raw contest API response:", response);
-
         if (response?.data) {
-          console.log("Contest data received:", response.data);
-
           // Filter contests starting within 24 hours
           const now = new Date();
           const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-          console.log("Current time:", now.toISOString());
-          console.log("24 hours from now:", next24Hours.toISOString());
-
           const upcoming = response.data.filter(contest => {
-            console.log("Checking contest:", contest.contestName, "Start time:", contest.startTime);
-
-            const startTime = new Date(contest.startTime);
-
-            console.log("Parsed start time:", startTime.toISOString());
-            console.log("Is valid date:", !isNaN(startTime.getTime()));
-            console.log("Is future:", startTime >= now);
-            console.log("Is within 24h:", startTime <= next24Hours);
-            console.log("Time difference (hours):", (startTime - now) / (1000 * 60 * 60));
-
             return !isNaN(startTime.getTime()) && startTime >= now && startTime <= next24Hours;
           });
-
-          console.log("Filtered upcoming contests:", upcoming);
 
           // Sort by start time and limit to 3 contests
           const sortedUpcoming = upcoming
@@ -54,11 +35,9 @@ const Home = () => {
             })
             .slice(0, 3);
 
-          console.log("Final sorted contests:", sortedUpcoming);
           setUpcomingContests(sortedUpcoming);
         }
       } catch (error) {
-        console.error("Failed to fetch contests:", error);
         setUpcomingContests([]);
       } finally {
         setContestsLoading(false);

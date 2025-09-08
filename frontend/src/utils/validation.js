@@ -180,14 +180,9 @@ export const validationSchemas = {
 
 // Main validation function
 export const validateFormData = (data, schema) => {
-  console.log("validateFormData called with data:", data);
-  console.log("validateFormData called with schema:", schema);
-
   const errors = {};
 
   for (const [field, rules] of Object.entries(schema)) {
-    console.log(`Validating field: ${field}, value:`, data[field]);
-
     for (const rule of rules) {
       let error;
 
@@ -195,17 +190,11 @@ export const validateFormData = (data, schema) => {
       // by checking if the rule is the second rule in confirmPassword array
       const isConfirmPasswordRule = field === 'confirmPassword' && rules.indexOf(rule) === 1;
 
-      console.log(`Field ${field}, rule index ${rules.indexOf(rule)}, isConfirmPasswordRule: ${isConfirmPasswordRule}`);
-
       if (isConfirmPasswordRule) {
-        console.log(`Calling confirmPassword rule with value: "${data[field]}" and allData:`, data);
         error = rule(data[field], data);
       } else {
-        console.log(`Calling regular rule with value: "${data[field]}"`);
         error = rule(data[field]);
       }
-
-      console.log(`Field ${field}, rule result:`, error);
 
       if (error) {
         errors[field] = error;
@@ -285,12 +274,8 @@ export const sanitizeFormData = {
 
 // Combined sanitization function
 export const sanitizeData = (data) => {
-  console.log("sanitizeData called with:", data);
   let sanitized = sanitizeFormData.trimStrings(data);
-  console.log("After trimStrings:", sanitized);
   sanitized = sanitizeFormData.normalizeNames(sanitized);
-  console.log("After normalizeNames:", sanitized);
   sanitized = sanitizeFormData.normalizeEmail(sanitized);
-  console.log("After normalizeEmail:", sanitized);
   return sanitized;
 };

@@ -47,16 +47,7 @@ const userService = {
   // Add competitive programming platform
   async addCPPlatform(payload) {
     try {
-      console.log("🚀 API Call: POST /add/cp/profiles");
-      console.log("📤 Request payload:", JSON.stringify(payload, null, 2));
-      console.log(
-        "🔗 Full URL:",
-        `${apiService.axiosInstance.defaults.baseURL}/add/cp/profiles`
-      );
-
       const response = await apiService.post("/add/cp/profiles", payload);
-
-      console.log("✅ API Response:", JSON.stringify(response, null, 2));
       return response;
     } catch (error) {
       console.error("❌ Error adding competitive programming platform:", error);
