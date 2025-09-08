@@ -76,9 +76,9 @@ export const validationRules = {
 export const getPasswordStrength = (password) => {
   const requirements = [
     {
-      test: password && password.length >= 8 && password.length <= 15,
-      message: '8-15 characters',
-      met: password && password.length >= 8 && password.length <= 15
+      test: password && password.length >= 6 && password.length <= 12,
+      message: '6-12 characters',
+      met: password && password.length >= 6 && password.length <= 12
     },
     {
       test: /[A-Z]/.test(password),
