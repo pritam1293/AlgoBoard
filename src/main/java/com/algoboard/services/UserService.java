@@ -10,7 +10,7 @@ import com.algoboard.entities.Codeforces;
 import com.algoboard.entities.Codechef;
 import com.algoboard.entities.Leetcode;
 import com.algoboard.entities.User;
-import com.algoboard.DTO.Atcoder.AC_ContestListDTO;
+// import com.algoboard.DTO.Atcoder.AC_ContestListDTO;
 import com.algoboard.repository.UserRepository;
 import com.algoboard.DTO.RequestDTO.UserProfile;
 import com.algoboard.DTO.Leetcode.LC_ContestDTO.ContestHistory;
@@ -68,27 +68,27 @@ public class UserService implements IUserService {
         this.cacheManager = cacheManager;
         this.profileFetchingService = profileFetchingService;
         System.out.println("");
-        System.out.println("MongoDB connected.");
+        System.out.println("MongoDB is connected.");
         System.out.println("");
     }
 
     @Override
     public UserProfile registerUser(User user) {
         try {
-            if(userRepository.existsByUsername(user.getUsername())) {
+            if (userRepository.existsByUsername(user.getUsername())) {
                 throw new IllegalArgumentException("User with the same username already exists.");
             }
-            if(userRepository.existsByEmail(user.getEmail())) {
+            if (userRepository.existsByEmail(user.getEmail())) {
                 throw new IllegalArgumentException("User with the same email already exists.");
             }
             user.setPassword(passwordEncoder.encode(user.getPassword()));
             userRepository.save(user);
             return createProfile(user);
-        } catch(DuplicateKeyException e) {
+        } catch (DuplicateKeyException e) {
             String message = e.getMessage().toLowerCase();
-            if(message.contains("username")) {
+            if (message.contains("username")) {
                 throw new IllegalArgumentException("User with the same username already exists.");
-            } else if(message.contains("email")) {
+            } else if (message.contains("email")) {
                 throw new IllegalArgumentException("User with the same email already exists.");
             } else {
                 throw new IllegalArgumentException("User with the same username or email already exists.");
@@ -126,22 +126,26 @@ public class UserService implements IUserService {
     public UserProfile updateUserDetails(UserProfile profile) {
         User existingUser = userRepository.findByUsername(profile.getUsername());
         if (existingUser != null) {
-            if (profile.getFirstName() != null && !profile.getFirstName().isEmpty() && !profile.getFirstName().equals(existingUser.getFirstName())) {
+            if (profile.getFirstName() != null && !profile.getFirstName().isEmpty()
+                    && !profile.getFirstName().equals(existingUser.getFirstName())) {
                 existingUser.setFirstName(profile.getFirstName());
             }
-            if (profile.getLastName() != null && !profile.getLastName().isEmpty() && !profile.getLastName().equals(existingUser.getLastName())) {
+            if (profile.getLastName() != null && !profile.getLastName().isEmpty()
+                    && !profile.getLastName().equals(existingUser.getLastName())) {
                 existingUser.setLastName(profile.getLastName());
             }
-            if (profile.getEmail() != null && !profile.getEmail().isEmpty() && !profile.getEmail().equals(existingUser.getEmail())) {
+            if (profile.getEmail() != null && !profile.getEmail().isEmpty()
+                    && !profile.getEmail().equals(existingUser.getEmail())) {
                 existingUser.setEmail(profile.getEmail());
             }
             if (profile.isStudent() != existingUser.isStudent()) {
                 existingUser.setStudent(profile.isStudent());
             }
-            if( profile.getInstitutionName() != null && !profile.getInstitutionName().isEmpty() && !profile.getInstitutionName().equals(existingUser.getInstitutionName())) {
+            if (profile.getInstitutionName() != null && !profile.getInstitutionName().isEmpty()
+                    && !profile.getInstitutionName().equals(existingUser.getInstitutionName())) {
                 existingUser.setInstitutionName(profile.getInstitutionName());
             }
-            if(profile.getFriends() != null && !profile.getFriends().isEmpty()) {
+            if (profile.getFriends() != null && !profile.getFriends().isEmpty()) {
                 existingUser.setFriends(profile.getFriends());
             }
             userRepository.save(existingUser);
@@ -327,6 +331,7 @@ public class UserService implements IUserService {
     protected void refreshContestListCache() {
 
     }
+
     // Automatically refresh LeetCode profile cache every 1 hours
     @CacheEvict(value = "leetcodeProfile", allEntries = true)
     @Scheduled(fixedRate = 3600000) // 1 hours in milliseconds
@@ -423,7 +428,7 @@ public class UserService implements IUserService {
             int pastContestCount = 0;
             if (response != null && response.getStatus().equals("OK")) {
                 for (CF_ContestListDTO.CodeforcesContest contest : response.getResult()) {
-                    if(contest.getPhase().equals("BEFORE")) {
+                    if (contest.getPhase().equals("BEFORE")) {
                         synchronized (allContests) {
                             allContests.add(new ContestDTO(
                                     String.valueOf(contest.getId()),
@@ -437,7 +442,7 @@ public class UserService implements IUserService {
                                             IST_ZONE),
                                     contest.getDurationSeconds() / 60));
                         }
-                    } else if(contest.getPhase().equals("CODING")) {
+                    } else if (contest.getPhase().equals("CODING")) {
                         synchronized (allContests) {
                             allContests.add(new ContestDTO(
                                     String.valueOf(contest.getId()),
@@ -451,7 +456,7 @@ public class UserService implements IUserService {
                                             IST_ZONE),
                                     contest.getDurationSeconds() / 60));
                         }
-                    } else if(contest.getPhase().equals("SYSTEM_TEST")) {
+                    } else if (contest.getPhase().equals("SYSTEM_TEST")) {
                         synchronized (allContests) {
                             allContests.add(new ContestDTO(
                                     String.valueOf(contest.getId()),
@@ -534,40 +539,135 @@ public class UserService implements IUserService {
     }
 
     private void getAtcoderContestList(List<ContestDTO> allContests) {
-        String acurl = "https://contest-hive.vercel.app/api/atcoder";
+        // Start both API calls simultaneously
+        CompletableFuture<Void> upcomingFuture = CompletableFuture
+                .runAsync(() -> fetchAtcoderUpcomingContests(allContests));
+        CompletableFuture<Void> pastFuture = CompletableFuture.runAsync(() -> fetchAtcoderPastContests(allContests));
+
+        // Wait for both to complete with timeout protection
+        try {
+            upcomingFuture.get(8, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            System.out.println("AtCoder upcoming contests timeout or error: " + e.getMessage());
+        }
 
         try {
-            String rawResponse = restTemplate.getForObject(acurl, String.class);
-            AC_ContestListDTO response = objectMapper.readValue(rawResponse, AC_ContestListDTO.class);
-            if (response != null && response.isOk()) {
-                for (AC_ContestListDTO.AtcoderContest contest : response.getData()) {
-                    final String contestId = contestIdExtractorFromUrl(contest.getUrl());
-                    synchronized (allContests) {
-                        allContests.add(new ContestDTO(
-                                contestId,
-                                contest.getTitle(),
-                                "https://atcoder.jp/contests/" + contestId,
-                                "atcoder",
-                                LocalDateTime.ofInstant(Instant.parse(contest.getStartTime()),
-                                        IST_ZONE),
-                                LocalDateTime.ofInstant(Instant.parse(contest.getEndTime()), IST_ZONE),
-                                contest.getDuration() / 60));
+            pastFuture.get(8, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            System.out.println("AtCoder past contests timeout or error: " + e.getMessage());
+        }
+    }
+
+    private void fetchAtcoderUpcomingContests(List<ContestDTO> allContests) {
+        String acurl = "https://atcoder.jp/contests/";
+        try {
+            Document doc = Jsoup.connect(acurl).get();
+
+            // Try multiple selectors to find the upcoming contests table
+            Element upcomingTable = null;
+
+            // First try: Look for h3 with "Upcoming Contests"
+            Element upcomingHeader = doc.selectFirst("h3:contains(Upcoming Contests)");
+            if (upcomingHeader != null) {
+                upcomingTable = upcomingHeader.nextElementSibling();
+            }
+
+            // Second try: Look for h2 with "Upcoming Contests"
+            if (upcomingTable == null) {
+                upcomingHeader = doc.selectFirst("h2:contains(Upcoming Contests)");
+                if (upcomingHeader != null) {
+                    upcomingTable = upcomingHeader.nextElementSibling();
+                }
+            }
+
+            // Third try: Look for any header containing "Upcoming"
+            if (upcomingTable == null) {
+                upcomingHeader = doc.selectFirst("h2:contains(Upcoming), h3:contains(Upcoming)");
+                if (upcomingHeader != null) {
+                    upcomingTable = upcomingHeader.nextElementSibling();
+                }
+            }
+
+            // Fourth try: Look directly for tables and find one with contest data
+            if (upcomingTable == null) {
+                Elements tables = doc.select("table");
+                for (Element table : tables) {
+                    Elements rows = table.select("tr");
+                    if (rows.size() > 1) {
+                        Elements firstRowCols = rows.get(0).select("th, td");
+                        // Check if this looks like a contest table
+                        if (firstRowCols.size() >= 3) {
+                            String headerText = firstRowCols.text().toLowerCase();
+                            if (headerText.contains("contest") || headerText.contains("start")
+                                    || headerText.contains("duration")) {
+                                upcomingTable = table;
+                                break;
+                            }
+                        }
                     }
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("");
-            System.out.println("Error fetching Atcoder contests: " + e.getMessage());
-        }
-        // past contests
-        acurl = "https://atcoder.jp/contests/archive";
 
+            if (upcomingTable == null) {
+                return;
+            }
+
+            // Each row in that section corresponds to a contest (skip the header row)
+            Elements rows = upcomingTable.select("tr");
+            if (rows.size() <= 1) {
+                return;
+            }
+
+            // Loop through each contest entry (skip the first header row)
+            for (int i = 1; i < rows.size(); i++) {
+                try {
+                    Element row = rows.get(i);
+                    Elements cols = row.select("td");
+
+                    if (cols.size() >= 3) {
+                        String dateStr = cols.get(0).text();
+                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssZ");
+                        ZonedDateTime zonedDateTime = ZonedDateTime.parse(dateStr, formatter);
+                        final LocalDateTime startTime = zonedDateTime.withZoneSameInstant(IST_ZONE).toLocalDateTime();
+                        Element nameCol = cols.get(1).selectFirst("a");
+                        if (nameCol != null) {
+                            String contestName = nameCol.text();
+                            String contestUrl = "https://atcoder.jp" + nameCol.attr("href");
+                            String durationStr = cols.get(2).text();
+                            final String contestId = contestIdExtractorFromUrl(contestUrl);
+                            String[] parts = durationStr.split(":");
+                            final int hours = Integer.parseInt(parts[0]);
+                            final int minutes = Integer.parseInt(parts[1]);
+                            final long totalTimeMinutes = hours * 60 + minutes;
+                            final LocalDateTime endTime = startTime.plusMinutes(totalTimeMinutes);
+                            synchronized (allContests) {
+                                allContests.add(new ContestDTO(
+                                        contestId,
+                                        contestName,
+                                        contestUrl,
+                                        "atcoder",
+                                        startTime,
+                                        endTime,
+                                        totalTimeMinutes));
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error fetching AtCoder upcoming contests: " + e.getMessage());
+        }
+    }
+
+    private void fetchAtcoderPastContests(List<ContestDTO> allContests) {
+        String acurl = "https://atcoder.jp/contests/archive";
         try {
             Document doc = Jsoup.connect(acurl).get();
             Elements rows = doc.select("table tbody tr");
 
-            int count = 0;
+            int countPastContests = 0;
             for (Element row : rows) {
                 Elements cols = row.select("td");
                 if (cols.size() >= 3) {
@@ -598,18 +698,36 @@ public class UserService implements IUserService {
                                 endTime,
                                 totalTimeMinutes));
                     }
-                    if (++count == 5)
-                        break; // stop after 5 contests
+                    if (++countPastContests == 3)
+                        break; // stop after 3 contests
                 }
             }
-
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error fetching AtCoder past contests: " + e.getMessage());
         }
     }
 
     private void getLeetcodeContestList(List<ContestDTO> allContests) {
-        // future contests
+        // Start both API calls simultaneously
+        CompletableFuture<Void> futureFuture = CompletableFuture
+                .runAsync(() -> fetchLeetcodeFutureContests(allContests));
+        CompletableFuture<Void> pastFuture = CompletableFuture.runAsync(() -> fetchLeetcodePastContests(allContests));
+
+        // Wait for both to complete with timeout protection
+        try {
+            futureFuture.get(8, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            System.out.println("LeetCode future contests timeout or error: " + e.getMessage());
+        }
+
+        try {
+            pastFuture.get(8, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            System.out.println("LeetCode past contests timeout or error: " + e.getMessage());
+        }
+    }
+
+    private void fetchLeetcodeFutureContests(List<ContestDTO> allContests) {
         String lcurl = "https://contest-hive.vercel.app/api/leetcode";
 
         try {
@@ -634,13 +752,12 @@ public class UserService implements IUserService {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("");
-            System.out.println("Error fetching Leetcode contests: " + e.getMessage());
+            System.out.println("Error fetching LeetCode future contests: " + e.getMessage());
         }
+    }
 
-        // past contests
-        lcurl = "https://leetcode-stats.tashif.codes/Pritam1293/contests";
+    private void fetchLeetcodePastContests(List<ContestDTO> allContests) {
+        String lcurl = "https://leetcode-stats.tashif.codes/Pritam1293/contests";
         try {
             LC_ContestDTO response = restTemplate.getForObject(lcurl, LC_ContestDTO.class);
             if (response != null && response.getStatus().equals("success")) {
@@ -668,9 +785,7 @@ public class UserService implements IUserService {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("");
-            System.out.println("Error fetching Leetcode past contests: " + e.getMessage());
+            System.out.println("Error fetching LeetCode past contests: " + e.getMessage());
         }
     }
 

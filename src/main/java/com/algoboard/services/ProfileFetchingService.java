@@ -138,7 +138,7 @@ public class ProfileFetchingService {
                     contestHistory,
                     recentSubmissions);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch Codeforces profile for user: " + username);
+            return new Codeforces();
         }
     }
 
@@ -195,7 +195,7 @@ public class ProfileFetchingService {
                     contestParticipations,
                     history);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch AtCoder profile for user: " + username);
+            return new Atcoder();
         }
     }
 
@@ -294,7 +294,7 @@ public class ProfileFetchingService {
                 codechefProfile.setMaxRank(getCodechefRankByRating(maxRating));
             }
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch Codechef profile for user: " + username);
+            return new Codechef();
         }
         return codechefProfile;
     }
@@ -468,8 +468,7 @@ public class ProfileFetchingService {
             System.out.println("Error type: " + e.getClass().getSimpleName());
             System.out.println("Error message: " + e.getMessage());
             e.printStackTrace();
-            throw new RuntimeException("Failed to fetch LeetCode profile for user: " + username + " (LeetCode ID: "
-                    + lcid + "). Error: " + e.getMessage());
+            return new Leetcode();
         }
     }
 }
