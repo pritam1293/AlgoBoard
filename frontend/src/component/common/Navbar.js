@@ -1,10 +1,12 @@
 import React, { useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import userService from "../../services/userService";
 
 const Navbar = ({ user, onLogout }) => {
   const [userDropdownOpen, setUserDropdownOpen] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [searchUsername, setSearchUsername] = React.useState("");
+  const [searchLoading, setSearchLoading] = React.useState(false);
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
   const searchRef = useRef(null);
@@ -41,12 +43,40 @@ const Navbar = ({ user, onLogout }) => {
     setSearchUsername("");
   };
 
-  const handleSearchSubmit = (e) => {
+  const handleSearchSubmit = async (e) => {
     e.preventDefault();
-    if (searchUsername.trim()) {
-      navigate(`/search?username=${encodeURIComponent(searchUsername.trim())}`);
+    if (!searchUsername.trim()) {
+      // For empty search, just redirect to search page
+      navigate('/search');
+      setSearchOpen(false);
+      return;
+    }
+
+    setSearchLoading(true);
+
+    try {
+      // Check if user exists in our database
+      const response = await userService.getUserProfileByUsername(searchUsername.trim());
+
+      if (response && response.status === 'success') {
+        // User exists, redirect to their profile
+        navigate(`/profile/${encodeURIComponent(searchUsername.trim())}`);
+        setSearchOpen(false);
+        setSearchUsername("");
+      } else {
+        // User doesn't exist, redirect to search page with error
+        navigate(`/search?username=${encodeURIComponent(searchUsername.trim())}&error=not_found`);
+        setSearchOpen(false);
+        setSearchUsername("");
+      }
+    } catch (err) {
+      // User doesn't exist or other error occurred
+      console.error('User search error:', err);
+      navigate(`/search?username=${encodeURIComponent(searchUsername.trim())}&error=not_found`);
       setSearchOpen(false);
       setSearchUsername("");
+    } finally {
+      setSearchLoading(false);
     }
   };
 
@@ -105,36 +135,50 @@ const Navbar = ({ user, onLogout }) => {
                             onChange={(e) => setSearchUsername(e.target.value)}
                             className="flex-1 bg-neutral-700 text-white px-3 py-2 rounded-lg border border-neutral-600 focus:outline-none focus:border-blue-500 transition duration-200"
                             autoFocus
+                            disabled={searchLoading}
                           />
                           <button
                             type="submit"
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center"
+                            disabled={searchLoading}
+                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition duration-200 flex items-center"
                           >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                              />
-                            </svg>
+                            {searchLoading ? (
+                              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                />
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                />
+                              </svg>
+                            ) : (
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                />
+                              </svg>
+                            )}
                           </button>
                         </div>
                       </form>
                     </div>
                   )}
                 </div>
-                <button
-                  onClick={() => navigate("/cp-statistics")}
-                  className="hidden md:block text-neutral-300 hover:text-white transition duration-200 font-medium"
-                >
-                  CP Statistics
-                </button>
                 <button
                   onClick={() => navigate("/contests")}
                   className="hidden md:block text-neutral-300 hover:text-white transition duration-200 font-medium"
@@ -175,7 +219,7 @@ const Navbar = ({ user, onLogout }) => {
                       </div>
                       <button
                         onClick={() => {
-                          navigate("/profile");
+                          navigate(`/profile/${user.username}`);
                           setUserDropdownOpen(false);
                         }}
                         className="w-full text-left px-4 py-2 text-neutral-300 hover:bg-neutral-700 transition duration-200 flex items-center"
@@ -216,28 +260,6 @@ const Navbar = ({ user, onLogout }) => {
                           />
                         </svg>
                         Search
-                      </button>
-                      <button
-                        onClick={() => {
-                          navigate("/cp-statistics");
-                          setUserDropdownOpen(false);
-                        }}
-                        className="md:hidden w-full text-left px-4 py-2 text-neutral-300 hover:bg-neutral-700 transition duration-200 flex items-center"
-                      >
-                        <svg
-                          className="w-4 h-4 mr-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                          />
-                        </svg>
-                        CP Statistics
                       </button>
                       <button
                         onClick={() => {

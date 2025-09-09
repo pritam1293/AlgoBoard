@@ -419,10 +419,10 @@ const Home = () => {
               </p>
               <div className="flex justify-center">
                 <button
-                  onClick={() => navigate("/profile")}
+                  onClick={() => navigate("/account-settings")}
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
                 >
-                  <span className="mr-2">Go to Profile</span>
+                  <span className="mr-2">Go to Settings</span>
                   <svg
                     className="w-4 h-4"
                     fill="none"

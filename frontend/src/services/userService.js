@@ -60,6 +60,23 @@ const userService = {
       throw error;
     }
   },
+
+  // Get user profile by username (for viewing other users' profiles)
+  async getUserProfileByUsername(username) {
+    try {
+      if (!username) {
+        throw new Error("Username is required");
+      }
+
+      const response = await apiService.get(
+        `/users/profile?username=${username}`
+      );
+      return response;
+    } catch (error) {
+      console.error("Error fetching user profile by username:", error);
+      throw error;
+    }
+  },
 };
 
 export default userService;

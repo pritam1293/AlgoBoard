@@ -214,30 +214,37 @@ const CPStatistics = () => {
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                         Select Platform
                     </label>
-                    <select
-                        value={selectedPlatform?.id || ""}
-                        onChange={(e) => {
-                            if (e.target.value === 'all') {
-                                handlePlatformSelect({ id: 'all', name: 'All Platforms' });
-                            } else {
-                                const platform = connectedPlatforms.find(
-                                    (p) => p.id === e.target.value
-                                );
-                                if (platform) handlePlatformSelect(platform);
-                            }
-                        }}
-                        className="w-full max-w-xs px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="">Choose a platform...</option>
-                        {connectedPlatforms.length > 1 && (
-                            <option value="all">All Platforms</option>
-                        )}
-                        {connectedPlatforms.map((platform) => (
-                            <option key={platform.id} value={platform.id}>
-                                {platform.name}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="relative">
+                        <select
+                            value={selectedPlatform?.id || ""}
+                            onChange={(e) => {
+                                if (e.target.value === 'all') {
+                                    handlePlatformSelect({ id: 'all', name: 'All Platforms' });
+                                } else {
+                                    const platform = connectedPlatforms.find(
+                                        (p) => p.id === e.target.value
+                                    );
+                                    if (platform) handlePlatformSelect(platform);
+                                }
+                            }}
+                            className="w-full max-w-xs px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none pr-8"
+                        >
+                            <option value="">Choose a platform...</option>
+                            {connectedPlatforms.length > 1 && (
+                                <option value="all">All Platforms</option>
+                            )}
+                            {connectedPlatforms.map((platform) => (
+                                <option key={platform.id} value={platform.id}>
+                                    {platform.name}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Loading State */}

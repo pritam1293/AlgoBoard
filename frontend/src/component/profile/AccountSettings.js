@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { usePlatformConnection } from "../../hooks/usePlatformConnection";
 import apiService from "../../services/api";
 import Navbar from "../common/Navbar";
+import PlatformConnections from "./PlatformConnections";
 
 const AccountSettings = () => {
   const {
@@ -46,6 +48,17 @@ const AccountSettings = () => {
   const [deleteMessage, setDeleteMessage] = useState("");
   const [deletePassword, setDeletePassword] = useState("");
   const [showDeletePassword, setShowDeletePassword] = useState(false);
+
+  // Platform connection state
+  const {
+    platformStates,
+    globalMessages,
+    connectPlatform,
+    isPlatformConnected,
+    toggleDropdown,
+    updateInput,
+    cancelConnection,
+  } = usePlatformConnection();
 
   const handleInputChange = (e) => {
     const value =
@@ -251,6 +264,20 @@ const AccountSettings = () => {
             </svg>
             Back to Home
           </button>
+        </div>
+
+        {/* Platform Connections Section */}
+        <div className="max-w-2xl mx-auto">
+          <PlatformConnections
+            user={user}
+            platformStates={platformStates}
+            globalMessages={globalMessages}
+            onConnect={connectPlatform}
+            onToggleDropdown={toggleDropdown}
+            onUpdateInput={updateInput}
+            onCancel={cancelConnection}
+            isPlatformConnected={isPlatformConnected}
+          />
         </div>
 
         {/* Profile Settings Section */}

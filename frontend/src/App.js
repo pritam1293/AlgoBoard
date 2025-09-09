@@ -9,7 +9,6 @@ import Profile from "./component/profile/Profile";
 import TermsOfService from "./component/pages/TermsOfService";
 import PrivacyPolicy from "./component/pages/PrivacyPolicy";
 import AccountSettings from "./component/profile/AccountSettings";
-import CPStatistics from "./component/profile/CPStatistics";
 import ForgotPassword from "./component/pages/ForgotPassword";
 import {
   BrowserRouter as Router,
@@ -59,18 +58,18 @@ function App() {
             }
           />
           <Route
-            path="/account-settings"
+            path="/profile/:username"
             element={
               <ProtectedRoute>
-                <AccountSettings />
+                <Profile />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/cp-statistics"
+            path="/account-settings"
             element={
               <ProtectedRoute>
-                <CPStatistics />
+                <AccountSettings />
               </ProtectedRoute>
             }
           />

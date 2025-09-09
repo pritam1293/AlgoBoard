@@ -188,7 +188,9 @@ const PlatformStatistics = ({
                                 ? 'bg-green-600 text-white'
                                 : 'bg-red-600 text-white'
                                 }`}>
-                                {submission.status}
+                                {selectedPlatform?.id === 'codeforces' && submission.status === 'OK'
+                                    ? 'Accepted'
+                                    : submission.status}
                             </div>
                         </div>
                     ))}
@@ -461,37 +463,47 @@ const PlatformStatistics = ({
             }
         }
 
+        // Get platform colors for consistency
+        const platformColors = {
+            codeforces: "rgb(239, 68, 68)", // Red
+            leetcode: "rgb(59, 130, 246)", // Blue
+            atcoder: "rgb(34, 197, 94)", // Green
+            codechef: "rgb(234, 179, 8)", // Yellow
+        };
+
+        const platformColor = platformColors[selectedPlatform?.id] || "rgb(59, 130, 246)";
+
         const chartData = {
             labels: reversedContestHistory.map((_, index) => index + 1),
             datasets: [
                 {
                     label: "Rating",
                     data: reversedContestHistory.map((contest) => contest.newRating),
-                    borderColor: "rgb(59, 130, 246)", // Blue
-                    backgroundColor: "rgba(59, 130, 246, 0.05)",
+                    borderColor: platformColor,
+                    backgroundColor: `${platformColor.replace('rgb', 'rgba').replace(')', ', 0.05)')}`,
                     tension: 0.3,
                     pointBackgroundColor: reversedContestHistory.map(
                         (_, index) =>
                             index === highestRatingIndex
-                                ? "rgb(255, 215, 0)"
-                                : "transparent" // Hide normal points, only show golden point
+                                ? "rgb(255, 215, 0)" // Golden for highest rating
+                                : platformColor // Platform color for all other contests
                     ),
                     pointBorderColor: reversedContestHistory.map((_, index) =>
                         index === highestRatingIndex
-                            ? "rgba(255, 255, 255, 1)"
-                            : "transparent" // Hide normal point borders
+                            ? "rgba(255, 255, 255, 1)" // White border for highest
+                            : "rgba(255, 255, 255, 0.8)" // Semi-transparent white for others
                     ),
                     pointBorderWidth: reversedContestHistory.map((_, index) =>
-                        index === highestRatingIndex ? 2 : 0
+                        index === highestRatingIndex ? 1 : 0.5 // Slightly thicker border for highest
                     ),
                     pointRadius: reversedContestHistory.map(
-                        (_, index) => (index === highestRatingIndex ? 6 : 0) // Hide normal points, show golden point
+                        (_, index) => (index === highestRatingIndex ? 3 : 2.5) // Much smaller dots
                     ),
-                    pointHoverRadius: 5, // Show all points on hover
+                    pointHoverRadius: 4, // Small hover radius
                     pointHoverBackgroundColor: reversedContestHistory.map((_, index) =>
                         index === highestRatingIndex
                             ? "rgb(255, 215, 0)"
-                            : "rgb(59, 130, 246)"
+                            : platformColor
                     ),
                     pointHoverBorderColor: "#ffffff",
                     pointHoverBorderWidth: 2,
@@ -606,10 +618,10 @@ const PlatformStatistics = ({
         }
 
         const platformColors = {
-            codeforces: "rgb(59, 130, 246)", // Blue
-            leetcode: "rgb(255, 193, 7)", // Yellow
-            atcoder: "rgb(34, 197, 94)", // Green
-            codechef: "rgb(249, 115, 22)", // Orange
+            codeforces: "rgb(239, 68, 68)", // Red (matches from-red-500)
+            leetcode: "rgb(59, 130, 246)", // Blue (matches from-blue-500)
+            atcoder: "rgb(34, 197, 94)", // Green (matches from-green-500)
+            codechef: "rgb(234, 179, 8)", // Yellow (matches from-yellow-500)
         };
 
         const datasets = [];
@@ -638,21 +650,21 @@ const PlatformStatistics = ({
                     pointBackgroundColor: reversedHistory.map(
                         (_, index) =>
                             index === highestRatingIndex
-                                ? "rgb(255, 215, 0)"
-                                : "transparent" // Hide normal points, only show golden point
+                                ? "rgb(255, 215, 0)" // Golden for highest rating
+                                : color // Platform color for all other contests
                     ),
                     pointBorderColor: reversedHistory.map((_, index) =>
                         index === highestRatingIndex
-                            ? "rgba(255, 255, 255, 1)"
-                            : "transparent" // Hide normal point borders
+                            ? "rgba(255, 255, 255, 1)" // White border for highest
+                            : "rgba(255, 255, 255, 0.8)" // Semi-transparent white for others
                     ),
                     pointBorderWidth: reversedHistory.map((_, index) =>
-                        index === highestRatingIndex ? 2 : 0
+                        index === highestRatingIndex ? 1 : 0.5 // Slightly thicker border for highest
                     ),
                     pointRadius: reversedHistory.map(
-                        (_, index) => (index === highestRatingIndex ? 6 : 0) // Hide normal points, show golden point
+                        (_, index) => (index === highestRatingIndex ? 3 : 2.5) // Much smaller dots
                     ),
-                    pointHoverRadius: 5, // Show all points on hover
+                    pointHoverRadius: 4, // Small hover radius
                     pointHoverBackgroundColor: reversedHistory.map((_, index) =>
                         index === highestRatingIndex
                             ? "rgb(255, 215, 0)"
