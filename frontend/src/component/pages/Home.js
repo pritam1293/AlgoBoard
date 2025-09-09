@@ -449,7 +449,7 @@ const Home = () => {
               </p>
               <div className="flex justify-center">
                 <button
-                  onClick={() => navigate("/cp-statistics")}
+                  onClick={() => navigate(`/profile/${user?.username}`)}
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
                 >
                   <span className="mr-2">View Statistics</span>
