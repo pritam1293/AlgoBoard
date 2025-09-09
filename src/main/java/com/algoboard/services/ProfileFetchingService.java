@@ -51,7 +51,7 @@ public class ProfileFetchingService {
         }
         String cfid = userRepository.findByUsername(username).getCodeforcesUsername();
         if (cfid == null) {
-            throw new IllegalArgumentException("Codeforces ID not found for user: " + username);
+            return new Codeforces();
         }
         String profileUrl = "https://codeforces.com/api/user.info?handles=" + cfid;
         String contestUrl = "https://codeforces.com/api/user.rating?handle=" + cfid;
@@ -67,10 +67,10 @@ public class ProfileFetchingService {
             CF_ContestHistoryDTO contestResponse = contestFuture.get(10, TimeUnit.SECONDS);
 
             if (profileResponse == null || profileResponse.getStatus().equals("FAILED")) {
-                throw new RuntimeException("Failed to fetch Codeforces profile for user: " + cfid);
+                return new Codeforces();
             }
             if (contestResponse == null || contestResponse.getStatus().equals("FAILED")) {
-                throw new RuntimeException("Failed to fetch Codeforces contests for user: " + cfid);
+                return new Codeforces();
             }
             long from = 1;
             long count = 1000;
@@ -149,7 +149,7 @@ public class ProfileFetchingService {
         }
         String acid = userRepository.findByUsername(username).getAtcoderUsername();
         if (acid == null) {
-            throw new IllegalArgumentException("AtCoder ID not found for user: " + username);
+            return new Atcoder();
         }
         String url = "https://atcoder.jp/users/" + acid + "/history/json";
 
@@ -257,7 +257,7 @@ public class ProfileFetchingService {
         }
         String ccid = userRepository.findByUsername(username).getCodechefUsername();
         if (ccid == null || ccid.isEmpty()) {
-            throw new IllegalArgumentException("Codechef username not found of user: " + username);
+            return new Codechef();
         }
         String ccurl = "https://clist.by/account/" + ccid + "/resource/codechef.com/ratings/?resource=codechef.com";
         Codechef codechefProfile = new Codechef();
@@ -324,7 +324,7 @@ public class ProfileFetchingService {
         }
         String lcid = userRepository.findByUsername(username).getLeetcodeUsername();
         if (lcid == null || lcid.isEmpty()) {
-            throw new IllegalArgumentException("Leetcode username not found of user: " + username);
+            return new Leetcode();
         }
 
         String lcuserurl = "https://leetcode-stats.tashif.codes/" + lcid + "/profile";
@@ -370,7 +370,7 @@ public class ProfileFetchingService {
 
             // Check if we got valid responses
             if (userProfileResponse == null && contestResponse == null) {
-                throw new RuntimeException("failed to fetch leetcode profile data for user: " + lcid);
+                return new Leetcode();
             }
 
             Leetcode leetcodeProfile = new Leetcode();
