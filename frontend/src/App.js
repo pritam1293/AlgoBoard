@@ -10,6 +10,7 @@ import TermsOfService from "./component/pages/TermsOfService";
 import PrivacyPolicy from "./component/pages/PrivacyPolicy";
 import AccountSettings from "./component/profile/AccountSettings";
 import ForgotPassword from "./component/pages/ForgotPassword";
+import PlatformProfileSearch from "./component/pages/PlatformProfileSearch";
 import {
   BrowserRouter as Router,
   Routes,
@@ -86,6 +87,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <Search />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/platform-search"
+            element={
+              <ProtectedRoute>
+                <PlatformProfileSearch />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/platform-search/:platform/:username"
+            element={
+              <ProtectedRoute>
+                <PlatformProfileSearch />
               </ProtectedRoute>
             }
           />
