@@ -398,4 +398,71 @@ public class UserController {
                     .body(ResponseUtil.createErrorResponse("Error searching user profiles: " + e.getMessage()));
         }
     }
+    
+    @GetMapping("users/codeforces/profile")
+    public ResponseEntity<?> fetchCodeforcesProfile(@RequestParam String username) {
+        try {
+            Codeforces codeforcesProfile = userService.fetchCodeforcesProfile(username);
+            if (codeforcesProfile != null) {
+                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Codeforces profile fetched successfully",
+                        codeforcesProfile));
+            } else {
+                return ResponseEntity.status(404)
+                        .body(ResponseUtil.createErrorResponse("Codeforces profile not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Error fetching Codeforces profile: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("users/atcoder/profile")
+    public ResponseEntity<?> fetchAtcoderProfile(@RequestParam String username) {
+        try {
+            Atcoder atcoderProfile = userService.fetchAtcoderProfile(username);
+            if (atcoderProfile != null) {
+                return ResponseEntity.ok(
+                        ResponseUtil.createSuccessResponse("AtCoder profile fetched successfully", atcoderProfile));
+            } else {
+                return ResponseEntity.status(404).body(ResponseUtil.createErrorResponse("AtCoder profile not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Error fetching AtCoder profile: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("users/codechef/profile")
+    public ResponseEntity<?> fetchCodechefProfile(@RequestParam String username) {
+        try {
+            Codechef codechefProfile = userService.fetchCodechefProfile(username);
+            if (codechefProfile != null) {
+                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Codechef profile fetched successfully",
+                        codechefProfile));
+            } else {
+                return ResponseEntity.status(404)
+                        .body(ResponseUtil.createErrorResponse("Codechef profile not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Error fetching Codechef profile: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("users/leetcode/profile")
+    public ResponseEntity<?> fetchLeetcodeProfile(@RequestParam String username) {
+        try {
+            Leetcode leetcodeProfile = userService.fetchLeetcodeProfile(username);
+            if (leetcodeProfile != null) {
+                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("LeetCode profile fetched successfully",
+                        leetcodeProfile));
+            } else {
+                return ResponseEntity.status(404)
+                        .body(ResponseUtil.createErrorResponse("LeetCode profile not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Error fetching LeetCode profile: " + e.getMessage()));
+        }
+    }
 }

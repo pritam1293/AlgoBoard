@@ -43,4 +43,12 @@ public interface IUserService {
     public Codechef getCodechefProfile(String username);
 
     public Leetcode getLeetcodeProfile(String username);
+
+    public Codeforces fetchCodeforcesProfile(String cfusername);
+
+    public Atcoder fetchAtcoderProfile(String atcusername);
+
+    public Codechef fetchCodechefProfile(String ccusername);
+
+    public Leetcode fetchLeetcodeProfile(String lcusername);
 }

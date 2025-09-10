@@ -798,24 +798,72 @@ public class UserService implements IUserService {
     @Override
     @Cacheable(value = "codeforcesProfile", key = "#username")
     public Codeforces getCodeforcesProfile(String username) {
-        return profileFetchingService.fetchCodeforcesProfile(username);
+        if (userRepository.findByUsername(username) == null) {
+            throw new IllegalArgumentException("User not found with username: " + username);
+        }
+        String cfid = userRepository.findByUsername(username).getCodeforcesUsername();
+        if (cfid == null || cfid.isEmpty()) {
+            return new Codeforces();
+        }
+        return profileFetchingService.fetchCodeforcesProfile(cfid);
     }
 
     @Override
     @Cacheable(value = "atcoderProfile", key = "#username")
     public Atcoder getAtcoderProfile(String username) {
-        return profileFetchingService.fetchAtcoderProfile(username);
+        if (userRepository.findByUsername(username) == null) {
+            throw new IllegalArgumentException("User not found with username: " + username);
+        }
+        String acid = userRepository.findByUsername(username).getAtcoderUsername();
+        if (acid == null || acid.isEmpty()) {
+            return new Atcoder();
+        }
+        return profileFetchingService.fetchAtcoderProfile(acid);
     }
 
     @Override
     @Cacheable(value = "codechefProfile", key = "#username")
     public Codechef getCodechefProfile(String username) {
-        return profileFetchingService.fetchCodechefProfile(username);
+        if (userRepository.findByUsername(username) == null) {
+            throw new IllegalArgumentException("User not found with username: " + username);
+        }
+        String ccid = userRepository.findByUsername(username).getCodechefUsername();
+        if (ccid == null || ccid.isEmpty()) {
+            return new Codechef();
+        }
+        return profileFetchingService.fetchCodechefProfile(ccid);
     }
 
     @Override
     @Cacheable(value = "leetcodeProfile", key = "#username")
     public Leetcode getLeetcodeProfile(String username) {
-        return profileFetchingService.fetchLeetcodeProfile(username);
+        if (userRepository.findByUsername(username) == null) {
+            throw new IllegalArgumentException("User not found with username: " + username);
+        }
+        String lcid = userRepository.findByUsername(username).getLeetcodeUsername();
+        if (lcid == null || lcid.isEmpty()) {
+            return new Leetcode();
+        }
+        return profileFetchingService.fetchLeetcodeProfile(lcid);
+    }
+
+    @Override
+    public Codeforces fetchCodeforcesProfile(String cfusername) {
+        return profileFetchingService.fetchCodeforcesProfile(cfusername);
+    }
+
+    @Override
+    public Atcoder fetchAtcoderProfile(String atcusername) {
+        return profileFetchingService.fetchAtcoderProfile(atcusername);
+    }
+
+    @Override
+    public Codechef fetchCodechefProfile(String ccusername) {
+        return profileFetchingService.fetchCodechefProfile(ccusername);
+    }
+
+    @Override
+    public Leetcode fetchLeetcodeProfile(String lcusername) {
+        return profileFetchingService.fetchLeetcodeProfile(lcusername);
     }
 }

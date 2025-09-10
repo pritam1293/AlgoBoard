@@ -17,7 +17,6 @@ import com.algoboard.DTO.Leetcode.LC_UserDTO;
 import com.algoboard.DTO.Leetcode.LC_ContestDTO.ContestHistory;
 import com.algoboard.DTO.Leetcode.LC_UserDTO.RecentSubmission;
 import com.algoboard.DTO.Leetcode.LC_UserDTO.SubmissionStat;
-import com.algoboard.repository.UserRepository;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -36,25 +35,16 @@ import java.util.HashSet;
 @Service
 public class ProfileFetchingService {
 
-    private final UserRepository userRepository;
     private final RestTemplate restTemplate;
 
-    public ProfileFetchingService(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public ProfileFetchingService() {
         this.restTemplate = new RestTemplate();
     }
 
     // Fetch and aggregate Codeforces profile data
     public Codeforces fetchCodeforcesProfile(String username) {
-        if (userRepository.findByUsername(username) == null) {
-            throw new IllegalArgumentException("User not found with username: " + username);
-        }
-        String cfid = userRepository.findByUsername(username).getCodeforcesUsername();
-        if (cfid == null) {
-            return new Codeforces();
-        }
-        String profileUrl = "https://codeforces.com/api/user.info?handles=" + cfid;
-        String contestUrl = "https://codeforces.com/api/user.rating?handle=" + cfid;
+        String profileUrl = "https://codeforces.com/api/user.info?handles=" + username;
+        String contestUrl = "https://codeforces.com/api/user.rating?handle=" + username;
         try {
             // Execute API calls in parallel
             CompletableFuture<CF_UserDTO> profileFuture = CompletableFuture
@@ -80,7 +70,7 @@ public class ProfileFetchingService {
             List<Codeforces.Problem> recentSubmissions = new ArrayList<>();
 
             while (true) {
-                String submissionsUrl = "https://codeforces.com/api/user.status?handle=" + cfid + "&from=" + from
+                String submissionsUrl = "https://codeforces.com/api/user.status?handle=" + username + "&from=" + from
                         + "&count=" + count;
                 CF_SubmissionsDTO submissionsResponse = restTemplate.getForObject(submissionsUrl,
                         CF_SubmissionsDTO.class);
@@ -126,7 +116,7 @@ public class ProfileFetchingService {
                 java.util.Collections.reverse(contestHistory);
             }
             return new Codeforces(
-                    result.getHandle(),
+                    username,
                     result.getRank(),
                     result.getRating(),
                     result.getMaxRating(),
@@ -144,14 +134,7 @@ public class ProfileFetchingService {
 
     // Fetch and aggregate Atcoder profile data
     public Atcoder fetchAtcoderProfile(String username) {
-        if (userRepository.findByUsername(username) == null) {
-            throw new IllegalArgumentException("User not found with username: " + username);
-        }
-        String acid = userRepository.findByUsername(username).getAtcoderUsername();
-        if (acid == null) {
-            return new Atcoder();
-        }
-        String url = "https://atcoder.jp/users/" + acid + "/history/json";
+        String url = "https://atcoder.jp/users/" + username + "/history/json";
 
         try {
             AC_ContestDTO[] contestHistory = restTemplate.getForObject(url, AC_ContestDTO[].class);
@@ -187,7 +170,7 @@ public class ProfileFetchingService {
             java.util.Collections.reverse(history);
 
             return new Atcoder(
-                    acid,
+                    username,
                     currRank,
                     currRating,
                     maxRating,
@@ -252,19 +235,12 @@ public class ProfileFetchingService {
     
     // Fetch and aggregate Codechef profile data
     public Codechef fetchCodechefProfile(String username) {
-        if (userRepository.findByUsername(username) == null) {
-            throw new IllegalArgumentException("User not found with username: " + username);
-        }
-        String ccid = userRepository.findByUsername(username).getCodechefUsername();
-        if (ccid == null || ccid.isEmpty()) {
-            return new Codechef();
-        }
-        String ccurl = "https://clist.by/account/" + ccid + "/resource/codechef.com/ratings/?resource=codechef.com";
+        String ccurl = "https://clist.by/account/" + username + "/resource/codechef.com/ratings/?resource=codechef.com";
         Codechef codechefProfile = new Codechef();
         try {
             CC_ContestDTO codechefResponse = restTemplate.getForObject(ccurl, CC_ContestDTO.class);
             if (codechefResponse != null && codechefResponse.getStatus().equals("ok")) {
-                codechefProfile.setUsername(ccid);
+                codechefProfile.setUsername(username);
 
                 long maxRating = -1, currentRating = -1;
                 List<UserContestHistory> history = new ArrayList<>();
@@ -319,16 +295,8 @@ public class ProfileFetchingService {
     
     // Fetch and aggregate Leetcode profile data
     public Leetcode fetchLeetcodeProfile(String username) {
-        if (userRepository.findByUsername(username) == null) {
-            throw new IllegalArgumentException("User not found with username: " + username);
-        }
-        String lcid = userRepository.findByUsername(username).getLeetcodeUsername();
-        if (lcid == null || lcid.isEmpty()) {
-            return new Leetcode();
-        }
-
-        String lcuserurl = "https://leetcode-stats.tashif.codes/" + lcid + "/profile";
-        String lccontesturl = "https://leetcode-stats.tashif.codes/" + lcid + "/contests";
+        String lcuserurl = "https://leetcode-stats.tashif.codes/" + username + "/profile";
+        String lccontesturl = "https://leetcode-stats.tashif.codes/" + username + "/contests";
 
         try {
             // Start both API calls simultaneously
@@ -359,13 +327,13 @@ public class ProfileFetchingService {
             try {
                 userProfileResponse = userProfileFuture.get(10, TimeUnit.SECONDS);
             } catch (Exception e) {
-                System.out.println("LeetCode profile API timeout or error for " + lcid + ": " + e.getMessage());
+                System.out.println("LeetCode profile API timeout or error for " + username + ": " + e.getMessage());
             }
 
             try {
                 contestResponse = contestFuture.get(10, TimeUnit.SECONDS);
             } catch (Exception e) {
-                System.out.println("LeetCode contest API timeout or error for " + lcid + ": " + e.getMessage());
+                System.out.println("LeetCode contest API timeout or error for " + username + ": " + e.getMessage());
             }
 
             // Check if we got valid responses
@@ -423,7 +391,7 @@ public class ProfileFetchingService {
                                 "https://leetcode.com/problems/" + submission.getTitleSlug() + "/description"));
                     }
                 }
-                leetcodeProfile.setUsername(lcid);
+                leetcodeProfile.setUsername(username);
                 leetcodeProfile.setProblemsSolved(problemsSolved);
                 leetcodeProfile.setTotalSubmissions(totalSubmissions);
                 leetcodeProfile.setAcceptedSubmissions(acceptedSubmissions);
@@ -464,7 +432,7 @@ public class ProfileFetchingService {
         } catch (Exception e) {
             System.out.println("");
             System.out.println("DETAILED ERROR fetching LeetCode profile for user: " + username + " (LeetCode ID: "
-                    + lcid + ")");
+                    + username + ")");
             System.out.println("Error type: " + e.getClass().getSimpleName());
             System.out.println("Error message: " + e.getMessage());
             e.printStackTrace();
