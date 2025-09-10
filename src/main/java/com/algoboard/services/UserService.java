@@ -848,21 +848,25 @@ public class UserService implements IUserService {
     }
 
     @Override
+    @Cacheable(value = "codeforcesProfile", key = "#cfusername")
     public Codeforces fetchCodeforcesProfile(String cfusername) {
         return profileFetchingService.fetchCodeforcesProfile(cfusername);
     }
 
     @Override
+    @Cacheable(value = "atcoderProfile", key = "#atcusername")
     public Atcoder fetchAtcoderProfile(String atcusername) {
         return profileFetchingService.fetchAtcoderProfile(atcusername);
     }
 
     @Override
+    @Cacheable(value = "codechefProfile", key = "#ccusername")
     public Codechef fetchCodechefProfile(String ccusername) {
         return profileFetchingService.fetchCodechefProfile(ccusername);
     }
 
     @Override
+    @Cacheable(value = "leetcodeProfile", key = "#lcusername")
     public Leetcode fetchLeetcodeProfile(String lcusername) {
         return profileFetchingService.fetchLeetcodeProfile(lcusername);
     }
