@@ -21,6 +21,7 @@ const AccountSettings = () => {
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
     email: user?.email || "",
+    institutionName: user?.institutionName || "",
     student: user?.student || false,
   });
   const [validationErrors, setValidationErrors] = useState({});
@@ -96,6 +97,7 @@ const AccountSettings = () => {
       firstName: user?.firstName || "",
       lastName: user?.lastName || "",
       email: user?.email || "",
+      institutionName: user?.institutionName || "",
       student: user?.student || false,
     });
     setValidationErrors({});
@@ -404,6 +406,27 @@ const AccountSettings = () => {
                   {validationErrors.email && (
                     <p className="mt-1 text-sm text-red-400">
                       {validationErrors.email}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">
+                    Institute
+                  </label>
+                  <input
+                    type="text"
+                    name="institutionName"
+                    value={formData.institutionName}
+                    onChange={handleInputChange}
+                    placeholder="Enter your institute/organization name"
+                    className={`w-full px-3 py-2 bg-neutral-700 border rounded-lg text-white focus:outline-none focus:ring-2 ${validationErrors.institutionName
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-neutral-600 focus:ring-blue-500"
+                      }`}
+                  />
+                  {validationErrors.institutionName && (
+                    <p className="mt-1 text-sm text-red-400">
+                      {validationErrors.institutionName}
                     </p>
                   )}
                 </div>
