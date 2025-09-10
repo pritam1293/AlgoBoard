@@ -13,16 +13,18 @@ const PlatformProfileSearch = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [platformData, setPlatformData] = useState(null);
     const [error, setError] = useState('');
+    const [contestPage, setContestPage] = useState(0);
+    const [solutionsPage, setSolutionsPage] = useState(0);
 
     // Use the shared PlatformStatistics component when we have data
     const platformStats = platformData ? PlatformStatistics({
         platformData,
         selectedPlatform: { id: selectedPlatform, name: getPlatformDisplayName(selectedPlatform, PLATFORMS) },
         allPlatformsData: { [selectedPlatform]: platformData },
-        contestPage: 0,
-        setContestPage: () => { },
-        solutionsPage: 0,
-        setSolutionsPage: () => { }
+        contestPage,
+        setContestPage,
+        solutionsPage,
+        setSolutionsPage
     }) : null;
 
     const handleSearch = async (e) => {
@@ -31,6 +33,8 @@ const PlatformProfileSearch = () => {
         setIsLoading(true);
         setError('');
         setPlatformData(null);
+        setContestPage(0); // Reset pagination on new search
+        setSolutionsPage(0); // Reset pagination on new search
 
         try {
             console.log('Searching for:', { selectedPlatform, username });
