@@ -4,7 +4,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Set;
 
 @Document(collection = "users")
 public class User {
@@ -22,13 +22,13 @@ public class User {
     private String atcoderUsername;
     private String codechefUsername;
     private String leetcodeUsername;
-    private List<String> friends;
+    private Set<String> friends;
     private String resetOtp;
     private LocalDateTime resetOtpExpiry;
 
     public User(String username, String firstName, String lastName, String password, String email, boolean student,
             String institutionName, String codeforcesUsername, String atcoderUsername, String codechefUsername,
-            String leetcodeUsername, List<String> friends, String resetOtp, LocalDateTime resetOtpExpiry) {
+            String leetcodeUsername, Set<String> friends, String resetOtp, LocalDateTime resetOtpExpiry) {
         this.username = username;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -138,11 +138,11 @@ public class User {
         this.leetcodeUsername = leetcodeUsername;
     }
 
-    public List<String> getFriends() {
+    public Set<String> getFriends() {
         return friends;
     }
 
-    public void setFriends(List<String> friends) {
+    public void setFriends(Set<String> friends) {
         this.friends = friends;
     }
 

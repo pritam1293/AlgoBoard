@@ -1,6 +1,6 @@
 package com.algoboard.DTO.RequestDTO;
 
-import java.util.List;
+import java.util.Set;
 
 public class UserProfile {
     private String username;
@@ -13,11 +13,11 @@ public class UserProfile {
     private String atcoderUsername;
     private String codechefUsername;
     private String leetcodeUsername;
-    private List<String> friends;
+    private Set<String> friends;
 
     public UserProfile(String username, String firstName, String lastName, String email, boolean student,
                    String institutionName, String codeforcesUsername, String atcoderUsername,
-                   String codechefUsername, String leetcodeUsername, List<String> friends) {
+                   String codechefUsername, String leetcodeUsername, Set<String> friends) {
         this.username = username;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -111,11 +111,11 @@ public class UserProfile {
         this.leetcodeUsername = leetcodeUsername;
     }
 
-    public List<String> getFriends() {
+    public Set<String> getFriends() {
         return friends;
     }
 
-    public void setFriends(List<String> friends) {
+    public void setFriends(Set<String> friends) {
         this.friends = friends;
     }
 

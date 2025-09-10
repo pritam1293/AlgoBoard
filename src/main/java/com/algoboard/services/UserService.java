@@ -56,6 +56,7 @@ public class UserService implements IUserService {
                 throw new IllegalArgumentException("User with the same email already exists.");
             }
             user.setPassword(passwordEncoder.encode(user.getPassword()));
+            user.setFriends(new java.util.HashSet<>());// at the time of registration, friends list is empty
             userRepository.save(user);
             return createProfile(user);
         } catch (DuplicateKeyException e) {
@@ -119,13 +120,37 @@ public class UserService implements IUserService {
                     && !profile.getInstitutionName().equals(existingUser.getInstitutionName())) {
                 existingUser.setInstitutionName(profile.getInstitutionName());
             }
-            if (profile.getFriends() != null && !profile.getFriends().isEmpty()) {
-                existingUser.setFriends(profile.getFriends());
-            }
             userRepository.save(existingUser);
             return createProfile(existingUser);
         }
         throw new IllegalArgumentException("User does not exist with username: " + profile.getUsername());
+    }
+
+    @Override
+    public boolean updateFriendsList(Map<String, String> payload, String username) {
+        User user = userRepository.findByUsername(username);
+        if(user != null) {
+            payload.forEach((key, value) -> {
+                if(key.equals("add") && value != null && !value.isEmpty()) {
+                    user.getFriends().add(value);
+                }
+                else if(key.equals("remove") && value != null && !value.isEmpty()) {
+                    user.getFriends().remove(value);
+                }
+            });
+            userRepository.save(user);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean checkFriendship(String username, String friendUsername) {
+        User user = userRepository.findByUsername(username);
+        if (user != null) {
+            return user.getFriends().contains(friendUsername);
+        }
+        throw new IllegalArgumentException("User not found with username: " + username);
     }
 
     private UserProfile createProfile(User user) {

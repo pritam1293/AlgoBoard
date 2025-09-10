@@ -23,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -145,18 +146,39 @@ public class UserController {
     public ResponseEntity<?> updateUser(@RequestBody UserProfile profile) {
         try {
             UserProfile updatedProfile = userService.updateUserDetails(profile);
-            // send an email notification
-            try {
-                emailService.sendProfileUpdateNotification(updatedProfile.getEmail(), updatedProfile.getFirstName(),
-                        "profile");
-            } catch (Exception emailException) {
-                // Log email error but don't fail the update process
-                System.err.println("Failed to send profile update notification: " + emailException.getMessage());
-            }
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User updated successfully", updatedProfile));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400)
                     .body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/users/{username}/friends")
+    public ResponseEntity<?> updateFriends(@PathVariable String username, @RequestBody Map<String, String> payload) {
+        try {
+            boolean success = userService.updateFriendsList(payload, username);
+            if (success) {
+                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Friends list updated successfully", null));
+            } else {
+                return ResponseEntity.status(400)
+                        .body(ResponseUtil.createErrorResponse("Failed to update friends list"));
+            }
+        } catch(Exception e) {
+            return ResponseEntity.status(500)
+                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+        }
+    } 
+
+    @GetMapping("/users/{username}/friends/check/{friendUsername}")
+    public ResponseEntity<?> checkFriendship(@PathVariable String username, @PathVariable String friendUsername) {
+        try {
+            boolean isFriend = userService.checkFriendship(username, friendUsername);
+            Map<String, Boolean> response = new HashMap<>();
+            response.put("isFriend", isFriend);
+            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Friendship status retrieved successfully", response));
         } catch (Exception e) {
             return ResponseEntity.status(500)
                     .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
