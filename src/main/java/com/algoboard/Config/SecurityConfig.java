@@ -44,7 +44,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/platforms/**").permitAll()
                         .requestMatchers("/api/home").permitAll()
                         .requestMatchers("/api/users/**").permitAll()
-                        // Removed all admin security - no admin endpoints anymore
                         // .requestMatchers("/api/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

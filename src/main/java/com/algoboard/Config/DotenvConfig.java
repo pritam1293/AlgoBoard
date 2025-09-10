@@ -25,7 +25,6 @@ public class DotenvConfig implements EnvironmentPostProcessor {
             });
 
             environment.getPropertySources().addFirst(new MapPropertySource("dotenv", envVars));
-            System.out.println("✅ Environment variables loaded from .env file");
         } catch (Exception e) {
             System.err.println("⚠️ Warning: Could not load .env file: " + e.getMessage());
         }

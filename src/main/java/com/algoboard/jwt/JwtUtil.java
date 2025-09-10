@@ -9,9 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtUtil {
 
-    /**
-     * Validate JWT token and return appropriate error message
-     */
+    //Validate JWT token and return appropriate error message
     public String validateToken(String token, JwtService jwtService) {
         try {
             jwtService.extractUsername(token);
@@ -29,9 +27,7 @@ public class JwtUtil {
         }
     }
 
-    /**
-     * Extract token from Authorization header
-     */
+    //Extract token from Authorization header
     public String extractTokenFromHeader(String authHeader) {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             return authHeader.substring(7);
@@ -39,16 +35,12 @@ public class JwtUtil {
         return null;
     }
 
-    /**
-     * Check if token format is valid
-     */
+    //Check if token format is valid
     public boolean isValidTokenFormat(String authHeader) {
         return authHeader != null && authHeader.startsWith("Bearer ") && authHeader.length() > 7;
     }
 
-    /**
-     * Create Bearer token string
-     */
+    //Create Bearer token string
     public String createBearerToken(String token) {
         return "Bearer " + token;
     }
