@@ -77,6 +77,43 @@ const userService = {
       throw error;
     }
   },
+
+  // Add friend
+  async addFriend(currentUsername, friendUsername) {
+    try {
+      const response = await apiService.put(`/users/${currentUsername}/friends`, {
+        add: friendUsername
+      });
+      return response;
+    } catch (error) {
+      console.error("Error adding friend:", error);
+      throw error;
+    }
+  },
+
+  // Remove friend
+  async removeFriend(currentUsername, friendUsername) {
+    try {
+      const response = await apiService.put(`/users/${currentUsername}/friends`, {
+        remove: friendUsername
+      });
+      return response;
+    } catch (error) {
+      console.error("Error removing friend:", error);
+      throw error;
+    }
+  },
+
+  // Check friendship status
+  async checkFriendshipStatus(currentUsername, friendUsername) {
+    try {
+      const response = await apiService.get(`/users/${currentUsername}/friends/check/${friendUsername}`);
+      return response;
+    } catch (error) {
+      console.error("Error checking friendship status:", error);
+      throw error;
+    }
+  },
 };
 
 export default userService;

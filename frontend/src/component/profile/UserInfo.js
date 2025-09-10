@@ -1,20 +1,27 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import userService from "../../services/userService";
 
 const UserInfo = ({ user, isOwnProfile = true }) => {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showFriends, setShowFriends] = useState(false);
   const [error, setError] = useState(null);
+  const [friendActionLoading, setFriendActionLoading] = useState(false);
+  const [localIsFriend, setLocalIsFriend] = useState(false);
 
   useEffect(() => {
+    console.log('Profile data useEffect triggered:', { user: user?.username, isOwnProfile });
+
     const fetchProfileData = async () => {
       try {
         setLoading(true);
         if (isOwnProfile) {
           // For own profile, use the existing method
+          console.log('Fetching own profile data');
           const response = await userService.getUserProfile();
           if (response.status === 'success') {
             setProfileData(response.data);
@@ -23,6 +30,7 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
           }
         } else {
           // For other users, fetch their profile data by username
+          console.log('Fetching profile data for user:', user.username);
           const response = await userService.getUserProfileByUsername(user.username);
           if (response.status === 'success') {
             setProfileData(response.data);
@@ -43,7 +51,106 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
     } else {
       setLoading(false);
     }
-  }, [user, isOwnProfile]);
+  }, [user?.username, isOwnProfile]);
+
+  // Check friendship status using backend API
+  useEffect(() => {
+    const checkFriendshipStatus = async () => {
+      // Only use profileData if it's loaded, otherwise don't check
+      if (!profileData) return;
+
+      const userData = profileData;
+      if (currentUser?.username && userData?.username && !isOwnProfile && !loading) {
+        try {
+          console.log('Checking friendship status for:', userData.username);
+          const response = await userService.checkFriendshipStatus(currentUser.username, userData.username);
+          if (response.status === 'success') {
+            setLocalIsFriend(response.data.isFriend);
+            console.log('Friendship status from API:', response.data.isFriend);
+          }
+        } catch (error) {
+          console.error('Error checking friendship status:', error);
+          setLocalIsFriend(false);
+        }
+      }
+    };
+
+    // Only check friendship status after profile data is loaded and when viewing other's profile
+    if (!loading && !isOwnProfile && profileData) {
+      checkFriendshipStatus();
+    }
+  }, [currentUser?.username, isOwnProfile, loading, profileData]);
+
+  // Check if the viewed user is a friend of the current user
+  const isFriend = localIsFriend;
+
+  // Handle Add Friend
+  const handleAddFriend = async () => {
+    const userData = profileData || user;
+    try {
+      setFriendActionLoading(true);
+      console.log('Adding friend:', userData.username);
+      const response = await userService.addFriend(currentUser.username, userData.username);
+      console.log('Add friend response:', response);
+
+      if (response.status === 'success') {
+        // Verify friendship status with backend API
+        try {
+          const statusResponse = await userService.checkFriendshipStatus(currentUser.username, userData.username);
+          if (statusResponse.status === 'success') {
+            setLocalIsFriend(statusResponse.data.isFriend);
+            console.log('Friendship status verified:', statusResponse.data.isFriend);
+          }
+        } catch (statusError) {
+          console.error('Error verifying friendship status:', statusError);
+          // Fallback to optimistic update
+          setLocalIsFriend(true);
+        }
+      } else {
+        console.error('Failed to add friend:', response);
+        alert(`Failed to add friend: ${response.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error adding friend:', error);
+      alert('Failed to add friend. Please try again.');
+    } finally {
+      setFriendActionLoading(false);
+    }
+  };
+
+  // Handle Remove Friend
+  const handleRemoveFriend = async () => {
+    const userData = profileData || user;
+    try {
+      setFriendActionLoading(true);
+      console.log('Removing friend:', userData.username);
+      const response = await userService.removeFriend(currentUser.username, userData.username);
+      console.log('Remove friend response:', response);
+
+      if (response.status === 'success') {
+        // Verify friendship status with backend API
+        try {
+          const statusResponse = await userService.checkFriendshipStatus(currentUser.username, userData.username);
+          if (statusResponse.status === 'success') {
+            setLocalIsFriend(statusResponse.data.isFriend);
+            console.log('Friendship status verified:', statusResponse.data.isFriend);
+          }
+        } catch (statusError) {
+          console.error('Error verifying friendship status:', statusError);
+          // Fallback to optimistic update
+          setLocalIsFriend(false);
+        }
+      } else {
+        console.error('Failed to remove friend:', response);
+        alert(`Failed to remove friend: ${response.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error removing friend:', error);
+      alert('Failed to remove friend. Please try again.');
+    } finally {
+      setFriendActionLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -87,17 +194,80 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
 
         <div className="space-y-6">
           {/* Profile Header with Avatar */}
-          <div className="flex items-center mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-              <span className="text-white text-2xl font-bold">
-                {userData?.firstName?.[0]?.toUpperCase() || "?"}
-              </span>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                <span className="text-white text-2xl font-bold">
+                  {userData?.firstName?.[0]?.toUpperCase() || "?"}
+                </span>
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">
+                  {userData?.firstName} {userData?.lastName}
+                </h3>
+                <p className="text-neutral-400">{userData?.username}</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-xl font-semibold text-white">
-                {userData?.firstName} {userData?.lastName}
-              </h3>
-            </div>
+
+            {/* Add/Remove Friend Button - Only show for other users' profiles */}
+            {!isOwnProfile && currentUser && userData?.username && (
+              <div className="flex-shrink-0">
+                {isFriend ? (
+                  <button
+                    onClick={handleRemoveFriend}
+                    disabled={friendActionLoading}
+                    className={`px-4 py-2 rounded-lg font-medium transition duration-200 flex items-center ${friendActionLoading
+                      ? 'bg-red-400 text-white cursor-not-allowed'
+                      : 'bg-red-600 text-white hover:bg-red-700'
+                      }`}
+                  >
+                    {friendActionLoading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Removing...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Remove Friend
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleAddFriend}
+                    disabled={friendActionLoading}
+                    className={`px-4 py-2 rounded-lg font-medium transition duration-200 flex items-center ${friendActionLoading
+                      ? 'bg-blue-400 text-white cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                  >
+                    {friendActionLoading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Adding...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Add Friend
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Basic Information */}
