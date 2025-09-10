@@ -97,7 +97,6 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
               <h3 className="text-xl font-semibold text-white">
                 {userData?.firstName} {userData?.lastName}
               </h3>
-              <p className="text-neutral-400">@{userData?.username}</p>
             </div>
           </div>
 
@@ -111,7 +110,7 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-neutral-300 font-medium">Username:</span>
-                  <span className="text-white font-mono">@{userData?.username}</span>
+                  <span className="text-white font-mono">{userData?.username}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-neutral-300 font-medium">Full Name:</span>
