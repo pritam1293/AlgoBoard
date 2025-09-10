@@ -21,6 +21,7 @@ const Signup = () => {
     password: "",
     confirmPassword: "",
     student: false,
+    institutionName: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -36,10 +37,17 @@ const Signup = () => {
     const value =
       e.target.type === "checkbox" ? e.target.checked : e.target.value;
 
-    setFormData({
+    // If unchecking student checkbox, clear institution name
+    const updatedFormData = {
       ...formData,
       [e.target.name]: value,
-    });
+    };
+
+    if (e.target.name === "student" && !value) {
+      updatedFormData.institutionName = "";
+    }
+
+    setFormData(updatedFormData);
 
     // Update password strength when password changes
     if (e.target.name === "password") {
@@ -77,6 +85,7 @@ const Signup = () => {
         email: formData.email,
         password: formData.password,
         student: formData.student,
+        institutionName: formData.institutionName,
       });
       // Show success message and redirect to login after delay
       setErrors({});
@@ -376,6 +385,22 @@ const Signup = () => {
                       I am a student
                     </label>
                   </div>
+
+                  {/* Institute Name Field - Only show when student is checked */}
+                  {formData.student && (
+                    <div className="ml-6 mt-2">
+                      <FormInput
+                        label="Institute Name (Optional)"
+                        type="text"
+                        name="institutionName"
+                        value={formData.institutionName}
+                        onChange={handleChange}
+                        placeholder="Enter your institute or organization name"
+                        error={errors.institutionName}
+                        className="text-sm"
+                      />
+                    </div>
+                  )}
                   {/* Terms and Privacy */}
                   <div className="flex items-start">
                     <input
