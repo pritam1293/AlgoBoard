@@ -66,6 +66,46 @@ const PlatformProfileSearch = () => {
                         </p>
                     </div>
 
+                    {/* Supported Platforms Section */}
+                    <div className="bg-neutral-800 rounded-lg border border-neutral-700 p-6">
+                        <h2 className="text-xl font-semibold text-white mb-4 text-center">
+                            Supported Platforms
+                        </h2>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {PLATFORMS.map((platform) => {
+                                const platformUrls = {
+                                    'codeforces': 'https://codeforces.com/',
+                                    'atcoder': 'https://atcoder.jp/',
+                                    'codechef': 'https://www.codechef.com/',
+                                    'leetcode': 'https://leetcode.com/'
+                                };
+
+                                return (
+                                    <a
+                                        key={platform.id}
+                                        href={platformUrls[platform.id]}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-center p-4 bg-neutral-700/50 rounded-lg border border-neutral-600 hover:border-neutral-500 hover:bg-neutral-700/70 transition-all duration-200 cursor-pointer group"
+                                    >
+                                        <div className="text-center">
+                                            <div className="w-12 h-12 mx-auto mb-3 overflow-hidden rounded-lg bg-white/10 p-2 group-hover:bg-white/20 transition-colors">
+                                                <img
+                                                    src={platform.logo}
+                                                    alt={`${platform.name} logo`}
+                                                    className="w-full h-full object-contain"
+                                                />
+                                            </div>
+                                            <span className="text-sm font-medium text-white group-hover:text-gray-200 transition-colors">
+                                                {platform.name}
+                                            </span>
+                                        </div>
+                                    </a>
+                                );
+                            })}
+                        </div>
+                    </div>
+
                     {/* Search Form */}
                     <div className="bg-neutral-800 rounded-lg border border-neutral-700 p-6">
                         <form onSubmit={handleSearch} className="space-y-6">
