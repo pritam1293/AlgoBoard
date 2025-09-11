@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../common/Navbar';
 import PlatformStatistics from '../common/PlatformStatistics';
 import { useAuth } from '../../context/AuthContext';
@@ -8,13 +9,53 @@ import { getPlatformDisplayName, getPlatformColor, getRankColor } from '../../ut
 
 const PlatformProfileSearch = () => {
     const { user, logout } = useAuth();
-    const [selectedPlatform, setSelectedPlatform] = useState('');
-    const [username, setUsername] = useState('');
+    const { platform: urlPlatform, username: urlUsername } = useParams();
+    const navigate = useNavigate();
+
+    const [selectedPlatform, setSelectedPlatform] = useState(urlPlatform || '');
+    const [username, setUsername] = useState(urlUsername || '');
     const [isLoading, setIsLoading] = useState(false);
     const [platformData, setPlatformData] = useState(null);
     const [error, setError] = useState('');
     const [contestPage, setContestPage] = useState(0);
     const [solutionsPage, setSolutionsPage] = useState(0);
+
+    const performSearch = useCallback(async (platform, user) => {
+        setIsLoading(true);
+        setError('');
+        setPlatformData(null);
+        setContestPage(0);
+        setSolutionsPage(0);
+
+        try {
+            const response = await platformProfileService.fetchPlatformProfile(platform, user);
+
+            if (response.status === 'success' && response.data) {
+                setPlatformData(response.data);
+                // Update URL with success status
+                navigate(`/platform-search/${platform}/${user}?status=true`, { replace: true });
+            } else {
+                setError(response.message || 'Profile not found');
+                // Update URL with failure status
+                navigate(`/platform-search/${platform}/${user}?status=false`, { replace: true });
+            }
+        } catch (err) {
+            console.error('Search error:', err);
+            setError(err.message || 'Failed to fetch profile');
+            // Update URL with failure status
+            navigate(`/platform-search/${platform}/${user}?status=false`, { replace: true });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [navigate]);
+
+    // Check if we should auto-search based on URL parameters
+    useEffect(() => {
+        if (urlPlatform && urlUsername) {
+            // Auto-search if URL contains platform and username
+            performSearch(urlPlatform, urlUsername);
+        }
+    }, [urlPlatform, urlUsername, performSearch]);
 
     // Use the shared PlatformStatistics component when we have data
     const platformStats = platformData ? PlatformStatistics({
@@ -29,27 +70,7 @@ const PlatformProfileSearch = () => {
 
     const handleSearch = async (e) => {
         e.preventDefault();
-
-        setIsLoading(true);
-        setError('');
-        setPlatformData(null);
-        setContestPage(0); // Reset pagination on new search
-        setSolutionsPage(0); // Reset pagination on new search
-
-        try {
-            const response = await platformProfileService.fetchPlatformProfile(selectedPlatform, username);
-
-            if (response.status === 'success' && response.data) {
-                setPlatformData(response.data);
-            } else {
-                setError(response.message || 'Profile not found');
-            }
-        } catch (err) {
-            console.error('Search error:', err);
-            setError(err.message || 'Failed to fetch profile');
-        } finally {
-            setIsLoading(false);
-        }
+        await performSearch(selectedPlatform, username);
     };
 
     return (

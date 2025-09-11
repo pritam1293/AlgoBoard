@@ -99,6 +99,14 @@ function App() {
             }
           />
           <Route
+            path="/platform-search/:platform"
+            element={
+              <ProtectedRoute>
+                <PlatformProfileSearch />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/platform-search/:platform/:username"
             element={
               <ProtectedRoute>
