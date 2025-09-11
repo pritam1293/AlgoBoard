@@ -14,14 +14,11 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
   const [localIsFriend, setLocalIsFriend] = useState(false);
 
   useEffect(() => {
-    console.log('Profile data useEffect triggered:', { user: user?.username, isOwnProfile });
-
     const fetchProfileData = async () => {
       try {
         setLoading(true);
         if (isOwnProfile) {
           // For own profile, use the existing method
-          console.log('Fetching own profile data');
           const response = await userService.getUserProfile();
           if (response.status === 'success') {
             setProfileData(response.data);
@@ -30,7 +27,6 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
           }
         } else {
           // For other users, fetch their profile data by username
-          console.log('Fetching profile data for user:', user.username);
           const response = await userService.getUserProfileByUsername(user.username);
           if (response.status === 'success') {
             setProfileData(response.data);
@@ -62,11 +58,9 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
       const userData = profileData;
       if (currentUser?.username && userData?.username && !isOwnProfile && !loading) {
         try {
-          console.log('Checking friendship status for:', userData.username);
           const response = await userService.checkFriendshipStatus(currentUser.username, userData.username);
           if (response.status === 'success') {
             setLocalIsFriend(response.data.isFriend);
-            console.log('Friendship status from API:', response.data.isFriend);
           }
         } catch (error) {
           console.error('Error checking friendship status:', error);
@@ -89,9 +83,7 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
     const userData = profileData || user;
     try {
       setFriendActionLoading(true);
-      console.log('Adding friend:', userData.username);
       const response = await userService.addFriend(currentUser.username, userData.username);
-      console.log('Add friend response:', response);
 
       if (response.status === 'success') {
         // Verify friendship status with backend API
@@ -99,7 +91,6 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
           const statusResponse = await userService.checkFriendshipStatus(currentUser.username, userData.username);
           if (statusResponse.status === 'success') {
             setLocalIsFriend(statusResponse.data.isFriend);
-            console.log('Friendship status verified:', statusResponse.data.isFriend);
           }
         } catch (statusError) {
           console.error('Error verifying friendship status:', statusError);
@@ -123,9 +114,7 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
     const userData = profileData || user;
     try {
       setFriendActionLoading(true);
-      console.log('Removing friend:', userData.username);
       const response = await userService.removeFriend(currentUser.username, userData.username);
-      console.log('Remove friend response:', response);
 
       if (response.status === 'success') {
         // Verify friendship status with backend API
@@ -133,7 +122,6 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
           const statusResponse = await userService.checkFriendshipStatus(currentUser.username, userData.username);
           if (statusResponse.status === 'success') {
             setLocalIsFriend(statusResponse.data.isFriend);
-            console.log('Friendship status verified:', statusResponse.data.isFriend);
           }
         } catch (statusError) {
           console.error('Error verifying friendship status:', statusError);

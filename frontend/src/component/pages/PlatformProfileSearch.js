@@ -37,13 +37,10 @@ const PlatformProfileSearch = () => {
         setSolutionsPage(0); // Reset pagination on new search
 
         try {
-            console.log('Searching for:', { selectedPlatform, username });
             const response = await platformProfileService.fetchPlatformProfile(selectedPlatform, username);
-            console.log('API Response:', response);
 
             if (response.status === 'success' && response.data) {
                 setPlatformData(response.data);
-                console.log('Success! Data received:', response.data);
             } else {
                 setError(response.message || 'Profile not found');
             }

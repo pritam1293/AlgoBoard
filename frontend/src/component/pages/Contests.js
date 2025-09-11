@@ -27,12 +27,10 @@ const Contests = () => {
     const fetchContests = async () => {
         try {
             setLoading(true);
-            console.log("Fetching contest list...");
 
             const response = await contestService.getAllContests();
 
             if (response && response.data) {
-                console.log("Contest data received successfully");
                 // Backend now returns array directly, not grouped by platform
                 setContests(Array.isArray(response.data) ? response.data : []);
             } else {

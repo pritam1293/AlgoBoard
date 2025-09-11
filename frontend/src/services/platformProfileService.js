@@ -5,9 +5,7 @@ class PlatformProfileService {
     async fetchCodeforcesProfile(username) {
         try {
             const url = `/users/codeforces/profile?username=${username}`;
-            console.log('Platform Search - Backend URL:', `http://localhost:8080/api${url}`);
             const response = await apiService.get(url);
-            console.log('Platform Search - Response:', response);
             return response;
         } catch (error) {
             console.error('Platform Search - Error:', error);
@@ -19,9 +17,7 @@ class PlatformProfileService {
     async fetchAtcoderProfile(username) {
         try {
             const url = `/users/atcoder/profile?username=${username}`;
-            console.log('Platform Search - Backend URL:', `http://localhost:8080/api${url}`);
             const response = await apiService.get(url);
-            console.log('Platform Search - Response:', response);
             return response;
         } catch (error) {
             console.error('Platform Search - Error:', error);
@@ -33,9 +29,7 @@ class PlatformProfileService {
     async fetchCodechefProfile(username) {
         try {
             const url = `/users/codechef/profile?username=${username}`;
-            console.log('Platform Search - Backend URL:', `http://localhost:8080/api${url}`);
             const response = await apiService.get(url);
-            console.log('Platform Search - Response:', response);
             return response;
         } catch (error) {
             console.error('Platform Search - Error:', error);
@@ -47,9 +41,7 @@ class PlatformProfileService {
     async fetchLeetcodeProfile(username) {
         try {
             const url = `/users/leetcode/profile?username=${username}`;
-            console.log('Platform Search - Backend URL:', `http://localhost:8080/api${url}`);
             const response = await apiService.get(url);
-            console.log('Platform Search - Response:', response);
             return response;
         } catch (error) {
             console.error('Platform Search - Error:', error);
@@ -59,7 +51,6 @@ class PlatformProfileService {
 
     // Generic method to fetch profile based on platform
     async fetchPlatformProfile(platform, username) {
-        console.log('Platform Search - Called with:', { platform, username });
         switch (platform.toLowerCase()) {
             case 'codeforces':
                 return await this.fetchCodeforcesProfile(username);

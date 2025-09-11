@@ -198,13 +198,11 @@ export const validateFormData = (data, schema) => {
 
       if (error) {
         errors[field] = error;
-        console.log(`Error added for field ${field}:`, error);
         break; // Stop at first error for this field
       }
     }
   }
 
-  console.log("Final validation errors:", errors);
   return errors;
 };
 
