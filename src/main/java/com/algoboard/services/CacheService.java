@@ -1,9 +1,12 @@
 package com.algoboard.services;
 
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import java.util.Objects;
 
 @Service
 public class CacheService {
@@ -51,26 +54,30 @@ public class CacheService {
 
     // Selective cache eviction methods for individual users
     public void evictCodeforcesCache(String key) {
-        if (cacheManager.getCache("codeforcesProfile") != null) {
-            cacheManager.getCache("codeforcesProfile").evict(key);
+        Cache cache = cacheManager.getCache("codeforcesProfile");
+        if (cache != null) {
+            cache.evict(Objects.requireNonNull(key, "Cache key cannot be null"));
         }
     }
 
     public void evictAtcoderCache(String key) {
-        if (cacheManager.getCache("atcoderProfile") != null) {
-            cacheManager.getCache("atcoderProfile").evict(key);
+        Cache cache = cacheManager.getCache("atcoderProfile");
+        if (cache != null) {
+            cache.evict(Objects.requireNonNull(key, "Cache key cannot be null"));
         }
     }
 
     public void evictLeetcodeCache(String key) {
-        if (cacheManager.getCache("leetcodeProfile") != null) {
-            cacheManager.getCache("leetcodeProfile").evict(key);
+        Cache cache = cacheManager.getCache("leetcodeProfile");
+        if (cache != null) {
+            cache.evict(Objects.requireNonNull(key, "Cache key cannot be null"));
         }
     }
 
     public void evictCodechefCache(String key) {
-        if (cacheManager.getCache("codechefProfile") != null) {
-            cacheManager.getCache("codechefProfile").evict(key);
+        Cache cache = cacheManager.getCache("codechefProfile");
+        if (cache != null) {
+            cache.evict(Objects.requireNonNull(key, "Cache key cannot be null"));
         }
     }
 
@@ -84,20 +91,18 @@ public class CacheService {
 
     // Utility method to clear all caches
     public void evictAllCaches() {
-        if (cacheManager.getCache("contestList") != null) {
-            cacheManager.getCache("contestList").clear();
-        }
-        if (cacheManager.getCache("codeforcesProfile") != null) {
-            cacheManager.getCache("codeforcesProfile").clear();
-        }
-        if (cacheManager.getCache("atcoderProfile") != null) {
-            cacheManager.getCache("atcoderProfile").clear();
-        }
-        if (cacheManager.getCache("codechefProfile") != null) {
-            cacheManager.getCache("codechefProfile").clear();
-        }
-        if (cacheManager.getCache("leetcodeProfile") != null) {
-            cacheManager.getCache("leetcodeProfile").clear();
+        clearCache("contestList");
+        clearCache("codeforcesProfile");
+        clearCache("atcoderProfile");
+        clearCache("codechefProfile");
+        clearCache("leetcodeProfile");
+    }
+
+    private void clearCache(String name) {
+        String cacheName = Objects.requireNonNull(name, "Cache name cannot be null");
+        Cache cache = cacheManager.getCache(cacheName);
+        if (cache != null) {
+            cache.clear();
         }
     }
 }

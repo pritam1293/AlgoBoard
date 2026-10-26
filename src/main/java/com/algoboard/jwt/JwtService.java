@@ -33,7 +33,7 @@ public class JwtService {
 
     // Extract username from JWT token
     public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+        return extractAllClaims(token).getSubject();
     }
 
     // Extract specific claim from token
@@ -90,7 +90,7 @@ public class JwtService {
 
     // Extract expiration date from token
     private Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
+        return extractAllClaims(token).getExpiration();
     }
 
     // Extract all claims from token

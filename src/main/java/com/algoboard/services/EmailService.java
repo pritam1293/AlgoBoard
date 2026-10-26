@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import jakarta.mail.internet.MimeMessage;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
@@ -372,10 +373,16 @@ public class EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(fromEmail, fromName);
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(htmlContent, true); // true indicates HTML content
+            String sender = Objects.requireNonNull(fromEmail, "app.email.from must be configured");
+            String senderName = Objects.requireNonNull(fromName, "app.email.from-name must be configured");
+            String recipient = Objects.requireNonNull(to, "Recipient email cannot be null");
+            String emailSubject = Objects.requireNonNull(subject, "Email subject cannot be null");
+            String emailContent = Objects.requireNonNull(htmlContent, "Email content cannot be null");
+
+            helper.setFrom(sender, senderName);
+            helper.setTo(recipient);
+            helper.setSubject(emailSubject);
+            helper.setText(emailContent, true); // true indicates HTML content
 
             // Add headers to prevent bounce-back emails
             message.setHeader("Return-Path", "<>"); // Empty return path prevents bounces
