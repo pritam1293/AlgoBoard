@@ -1,7 +1,6 @@
 import React from "react";
 import "./App.css";
-import Login from "./component/pages/Login";
-import Signup from "./component/pages/Signup";
+import AuthSlider from "./component/auth/AuthSlider";
 import Dashboard from "./component/pages/Home";
 import Contests from "./component/pages/Contests";
 import Search from "./component/pages/Search";
@@ -27,21 +26,15 @@ function App() {
       <Router>
         <Routes>
           <Route
-            path="/login"
             element={
               <PublicRoute>
-                <Login />
+                <AuthSlider />
               </PublicRoute>
             }
-          />
-          <Route
-            path="/signup"
-            element={
-              <PublicRoute>
-                <Signup />
-              </PublicRoute>
-            }
-          />
+          >
+            <Route path="/login" />
+            <Route path="/signup" />
+          </Route>
           <Route
             path="/home"
             element={
