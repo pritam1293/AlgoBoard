@@ -17,15 +17,6 @@ export const validationRules = {
     return null;
   },
 
-  // Username validation
-  username: (value) => {
-    if (!value) return 'Username is required';
-    if (value.length < 5) return 'Username must be at least 5 characters';
-    if (value.length > 10) return 'Username must be less than 10 characters';
-    if (!/^[a-zA-Z0-9_]+$/.test(value)) return 'Username can only contain letters, numbers, and underscores';
-    return null;
-  },
-
   // Password validation
   password: (value) => {
     if (!value) return 'Password is required';
@@ -119,10 +110,10 @@ export const getPasswordStrength = (password) => {
 // Validation schemas for different forms
 export const validationSchemas = {
   login: {
-    username: [
+    email: [
       (value) => {
         if (!value || (typeof value === 'string' && !value.trim())) {
-          return 'Username or Email is required';
+          return 'Email is required';
         }
         return null;
       }
@@ -140,7 +131,6 @@ export const validationSchemas = {
   signup: {
     firstName: [(value) => validationRules.name(value, 'First name')],
     lastName: [(value) => validationRules.name(value, 'Last name')],
-    username: [validationRules.username],
     email: [
       (value) => {
         if (!value || (typeof value === 'string' && !value.trim())) {
@@ -174,7 +164,6 @@ export const validationSchemas = {
       },
       validationRules.email
     ]
-    // student field doesn't need validation as it's a boolean checkbox
   }
 };
 

@@ -13,11 +13,11 @@ import { getPlatformColor, getRankColor } from "../../utils/platformUtils";
 const Profile = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const { username } = useParams();
+  const { email } = useParams();
 
   // Check if this is the current user's profile or someone else's
-  const isOwnProfile = !username || username === user?.username;
-  const profileUsername = isOwnProfile ? user?.username : username;
+  const isOwnProfile = !email || (user?.email ? email.toLowerCase() === user.email.toLowerCase() : false);
+  const profileEmail = isOwnProfile ? user?.email : email;
 
   // CP Statistics State
   const [selectedPlatform, setSelectedPlatform] = useState({ id: 'all', name: 'All Platforms' });
@@ -40,7 +40,7 @@ const Profile = () => {
         if (isOwnProfile) {
           setProfileUserData(user);
         } else {
-          const response = await userService.getUserProfileByUsername(profileUsername);
+          const response = await userService.getUserProfileByEmail(profileEmail);
           if (response.status === 'success') {
             setProfileUserData(response.data);
           }
@@ -52,10 +52,10 @@ const Profile = () => {
       }
     };
 
-    if (profileUsername) {
+    if (profileEmail) {
       fetchProfileUserData();
     }
-  }, [profileUsername, isOwnProfile, user]);
+  }, [profileEmail, isOwnProfile, user]);
 
   // Get list of connected platforms based on profile user data
   const connectedPlatforms = PLATFORMS.filter((platform) => {
@@ -75,14 +75,14 @@ const Profile = () => {
 
   // Handle platform data loading
   const loadPlatformData = async (platform) => {
-    if (!platform || !profileUsername) return;
+    if (!platform || !profileEmail) return;
 
     setLoading(true);
     setError(null);
     setPlatformData(null);
 
     try {
-      const stats = await platformService.getProfileByPlatform(platform.id, profileUsername);
+      const stats = await platformService.getProfileByPlatform(platform.id, profileEmail);
 
       if (stats?.data) {
         setPlatformData(stats.data);
@@ -98,14 +98,14 @@ const Profile = () => {
 
   // Handle all platforms data loading
   const loadAllPlatformsData = async () => {
-    if (!profileUsername) return;
+    if (!profileEmail) return;
 
     setLoading(true);
     setError(null);
     setPlatformData(null);
 
     try {
-      const response = await platformService.getAllPlatformsData(profileUsername);
+      const response = await platformService.getAllPlatformsData(profileEmail);
 
       if (response?.data) {
         const allData = {};
@@ -132,14 +132,14 @@ const Profile = () => {
 
   // Auto-load all platforms data when component mounts
   useEffect(() => {
-    if (profileUsername && connectedPlatforms.length > 0 && !profileLoading) {
+    if (profileEmail && connectedPlatforms.length > 0 && !profileLoading) {
       // If we have connected platforms and selected platform is 'all', load the data
       if (selectedPlatform?.id === 'all') {
         loadAllPlatformsData();
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileUsername, connectedPlatforms.length, profileLoading, selectedPlatform?.id]);
+  }, [profileEmail, connectedPlatforms.length, profileLoading, selectedPlatform?.id]);
 
   // Handle platform selection
   const handlePlatformSelect = (platform) => {
@@ -253,7 +253,7 @@ const Profile = () => {
 
           {/* Profile Information - Full Width */}
           <div>
-            <UserInfo user={isOwnProfile ? user : { username: profileUsername }} isOwnProfile={isOwnProfile} />
+            <UserInfo user={isOwnProfile ? user : { email: profileEmail }} isOwnProfile={isOwnProfile} />
           </div>
 
           {/* CP Statistics Section - Full Width */}
@@ -276,7 +276,7 @@ const Profile = () => {
                     <svg className="w-8 h-8 mr-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
-                    {isOwnProfile ? 'Your' : `${profileUsername}'s`} Competitive Programming Statistics
+                    {isOwnProfile ? 'Your' : `${profileEmail}'s`} Competitive Programming Statistics
                   </h2>
                   <p className="text-gray-400 text-lg">
                     Track {isOwnProfile ? 'your' : 'their'} progress and performance across multiple platforms
@@ -568,7 +568,7 @@ const Profile = () => {
                   <p className="text-gray-400 text-lg mb-8 leading-relaxed">
                     {isOwnProfile
                       ? "Connect your competitive programming platforms to unlock detailed statistics, track your progress, and analyze your performance across contests."
-                      : `${profileUsername} hasn't connected any competitive programming platforms yet.`
+                      : `${profileEmail} hasn't connected any competitive programming platforms yet.`
                     }
                   </p>
 

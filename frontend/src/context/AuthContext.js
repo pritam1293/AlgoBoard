@@ -41,16 +41,15 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
-      // Accepts credentials with either username or email
+      // Email is the sole account identifier
       const sanitizedCredentials = sanitizeData(credentials);
-      let identifier =
-        sanitizedCredentials.username || sanitizedCredentials.email;
       let errors = {};
       if (
-        !identifier ||
-        (typeof identifier === "string" && !identifier.trim())
+        !sanitizedCredentials.email ||
+        (typeof sanitizedCredentials.email === "string" &&
+          !sanitizedCredentials.email.trim())
       ) {
-        errors.identifier = "Username or Email is required";
+        errors.email = "Email is required";
       }
       if (
         !sanitizedCredentials.password ||
@@ -63,7 +62,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error(Object.values(errors)[0]);
       }
       const response = await authService.login(sanitizedCredentials);
-      // response is AuthenticationResponse: { token, username, ...profile fields, expiresIn }
+      // response is AuthenticationResponse: { token, email, ...profile fields, expiresIn }
       setUser(response); // Store the whole profile/response object
       setIsAuthenticated(true);
       return response;

@@ -5,7 +5,7 @@ import userService from "../../services/userService";
 const Navbar = ({ user, onLogout }) => {
   const [userDropdownOpen, setUserDropdownOpen] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
-  const [searchUsername, setSearchUsername] = React.useState("");
+  const [searchEmail, setSearchEmail] = React.useState("");
   const [searchLoading, setSearchLoading] = React.useState(false);
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
@@ -40,12 +40,12 @@ const Navbar = ({ user, onLogout }) => {
 
   const handleSearchToggle = () => {
     setSearchOpen(!searchOpen);
-    setSearchUsername("");
+    setSearchEmail("");
   };
 
   const handleSearchSubmit = async (e) => {
     e.preventDefault();
-    if (!searchUsername.trim()) {
+    if (!searchEmail.trim()) {
       // For empty search, just redirect to search page
       navigate('/search');
       setSearchOpen(false);
@@ -56,25 +56,25 @@ const Navbar = ({ user, onLogout }) => {
 
     try {
       // Check if user exists in our database
-      const response = await userService.getUserProfileByUsername(searchUsername.trim());
+      const response = await userService.getUserProfileByEmail(searchEmail.trim());
 
       if (response && response.status === 'success') {
         // User exists, redirect to their profile
-        navigate(`/profile/${encodeURIComponent(searchUsername.trim())}`);
+        navigate(`/profile/${encodeURIComponent(searchEmail.trim())}`);
         setSearchOpen(false);
-        setSearchUsername("");
+        setSearchEmail("");
       } else {
         // User doesn't exist, redirect to search page with error
-        navigate(`/search?username=${encodeURIComponent(searchUsername.trim())}&error=not_found`);
+        navigate(`/search?email=${encodeURIComponent(searchEmail.trim())}&error=not_found`);
         setSearchOpen(false);
-        setSearchUsername("");
+        setSearchEmail("");
       }
     } catch (err) {
       // User doesn't exist or other error occurred
       console.error('User search error:', err);
-      navigate(`/search?username=${encodeURIComponent(searchUsername.trim())}&error=not_found`);
+      navigate(`/search?email=${encodeURIComponent(searchEmail.trim())}&error=not_found`);
       setSearchOpen(false);
-      setSearchUsername("");
+      setSearchEmail("");
     } finally {
       setSearchLoading(false);
     }
@@ -130,9 +130,9 @@ const Navbar = ({ user, onLogout }) => {
                         <div className="flex items-center space-x-2">
                           <input
                             type="text"
-                            placeholder="Enter username to search..."
-                            value={searchUsername}
-                            onChange={(e) => setSearchUsername(e.target.value)}
+                            placeholder="Enter email to search..."
+                            value={searchEmail}
+                            onChange={(e) => setSearchEmail(e.target.value)}
                             className="flex-1 bg-neutral-700 text-white px-3 py-2 rounded-lg border border-neutral-600 focus:outline-none focus:border-blue-500 transition duration-200"
                             autoFocus
                             disabled={searchLoading}
@@ -200,7 +200,7 @@ const Navbar = ({ user, onLogout }) => {
                   className="flex items-center text-white hover:text-gray-300 transition duration-200"
                 >
                   <span className="mr-2">👤</span>
-                  {user.username}
+                  {user.firstName || user.email}
                   <svg
                     className="w-4 h-4 ml-1"
                     fill="none"
@@ -220,12 +220,12 @@ const Navbar = ({ user, onLogout }) => {
                   <div className="absolute right-0 mt-2 w-48 bg-neutral-800 rounded-lg shadow-lg border border-neutral-700 z-50">
                     <div className="py-2">
                       <div className="px-4 py-2 text-neutral-300 border-b border-neutral-700">
-                        <p className="text-sm font-medium">{user.username}</p>
+                        <p className="text-sm font-medium">{user.firstName || user.email}</p>
                         <p className="text-xs text-neutral-400">{user.email}</p>
                       </div>
                       <button
                         onClick={() => {
-                          navigate(`/profile/${user.username}`);
+                          navigate(`/profile/${encodeURIComponent(user.email)}`);
                           setUserDropdownOpen(false);
                         }}
                         className="w-full text-left px-4 py-2 text-neutral-300 hover:bg-neutral-700 transition duration-200 flex items-center"

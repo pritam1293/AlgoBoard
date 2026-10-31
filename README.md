@@ -142,10 +142,10 @@ A comprehensive competitive programming statistics dashboard that aggregates and
 
 ### Database
 
-- **MongoDB**: NoSQL document database for flexible data storage
-- **Spring Data MongoDB**: MongoDB integration with Spring Boot
-- **Document-based Storage**: User profiles, platform connections, and cached statistics
-- **Flexible Schema**: Easy adaptation to different platform data structures
+- **Neon PostgreSQL**: Serverless PostgreSQL for persistent user data
+- **Spring Data JPA**: Repository-based persistence with Hibernate
+- **Relational Storage**: User accounts, friends, platform handles, and OTP state
+- **SSL Connections**: Neon connections use `sslmode=require`
 
 ## 📊 What This Project Accomplishes
 
@@ -217,7 +217,7 @@ Instead of checking multiple platforms separately, users can view all their comp
 
 ### Prerequisites
 
-- Java 11 or higher
+- Java 17 or higher
 - Node.js 14 or higher
 - Maven 3.6 or higher
 
@@ -228,8 +228,19 @@ Instead of checking multiple platforms separately, users can view all their comp
 git clone https://github.com/pritam1293/AlgoBoard.git
 cd AlgoBoard
 
+# Create .env from the template and add your Neon connection settings
+cp .env.example .env
+
 # Run the Spring Boot application
 ./mvnw spring-boot:run
+```
+
+Required Neon settings in `.env`:
+
+```bash
+DATABASE_URL=jdbc:postgresql://your-neon-host/neondb?sslmode=require
+DATABASE_USERNAME=your_neon_username
+DATABASE_PASSWORD=your_neon_password
 ```
 
 ### Frontend Setup

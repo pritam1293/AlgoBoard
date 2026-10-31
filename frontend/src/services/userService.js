@@ -1,19 +1,22 @@
 import apiService from "./api";
 
+const getCurrentUserEmail = () => {
+  const currentUser = JSON.parse(localStorage.getItem("userData") || "{}");
+  return currentUser.email;
+};
+
 const userService = {
-  // Get user profile
+  // Get the signed-in user's profile
   async getUserProfile() {
     try {
-      // Get current user from localStorage to get username
-      const currentUser = JSON.parse(localStorage.getItem("userData") || "{}");
-      const username = currentUser.username;
+      const email = getCurrentUserEmail();
 
-      if (!username) {
-        throw new Error("Username not found in local storage");
+      if (!email) {
+        throw new Error("Email not found in local storage");
       }
 
       const response = await apiService.get(
-        `/users/profile?username=${username}`
+        `/users/profile?email=${encodeURIComponent(email)}`
       );
       return response;
     } catch (error) {
@@ -34,9 +37,12 @@ const userService = {
   },
 
   // Delete user account
-  async deleteUserAccount() {
+  async deleteUserAccount(email, password) {
     try {
-      const response = await apiService.delete("/users/profile");
+      const response = await apiService.delete("/users/delete", {
+        email,
+        password,
+      });
       return response;
     } catch (error) {
       console.error("Error deleting user account:", error);
@@ -50,8 +56,8 @@ const userService = {
       const response = await apiService.post("/add/cp/profiles", payload);
       return response;
     } catch (error) {
-      console.error("❌ Error adding competitive programming platform:", error);
-      console.error("🔍 Error details:", {
+      console.error("Error adding competitive programming platform:", error);
+      console.error("Error details:", {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,
@@ -61,29 +67,30 @@ const userService = {
     }
   },
 
-  // Get user profile by username (for viewing other users' profiles)
-  async getUserProfileByUsername(username) {
+  // Get any user's profile by email
+  async getUserProfileByEmail(email) {
     try {
-      if (!username) {
-        throw new Error("Username is required");
+      if (!email) {
+        throw new Error("Email is required");
       }
 
       const response = await apiService.get(
-        `/users/profile?username=${username}`
+        `/users/profile?email=${encodeURIComponent(email)}`
       );
       return response;
     } catch (error) {
-      console.error("Error fetching user profile by username:", error);
+      console.error("Error fetching user profile by email:", error);
       throw error;
     }
   },
 
   // Add friend
-  async addFriend(currentUsername, friendUsername) {
+  async addFriend(currentEmail, friendEmail) {
     try {
-      const response = await apiService.put(`/users/${currentUsername}/friends`, {
-        add: friendUsername
-      });
+      const response = await apiService.put(
+        `/users/${encodeURIComponent(currentEmail)}/friends`,
+        { add: friendEmail }
+      );
       return response;
     } catch (error) {
       console.error("Error adding friend:", error);
@@ -92,11 +99,12 @@ const userService = {
   },
 
   // Remove friend
-  async removeFriend(currentUsername, friendUsername) {
+  async removeFriend(currentEmail, friendEmail) {
     try {
-      const response = await apiService.put(`/users/${currentUsername}/friends`, {
-        remove: friendUsername
-      });
+      const response = await apiService.put(
+        `/users/${encodeURIComponent(currentEmail)}/friends`,
+        { remove: friendEmail }
+      );
       return response;
     } catch (error) {
       console.error("Error removing friend:", error);
@@ -105,9 +113,11 @@ const userService = {
   },
 
   // Check friendship status
-  async checkFriendshipStatus(currentUsername, friendUsername) {
+  async checkFriendshipStatus(currentEmail, friendEmail) {
     try {
-      const response = await apiService.get(`/users/${currentUsername}/friends/check/${friendUsername}`);
+      const response = await apiService.get(
+        `/users/${encodeURIComponent(currentEmail)}/friends/check/${encodeURIComponent(friendEmail)}`
+      );
       return response;
     } catch (error) {
       console.error("Error checking friendship status:", error);

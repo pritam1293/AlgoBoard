@@ -1,61 +1,73 @@
 package com.algoboard.entities;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
-@Document(collection = "users")
+@Entity
+@Table(name = "users")
 public class User {
     @Id
-    @Indexed(unique = true)
-    private String username;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "first_name", nullable = false, length = 50)
     private String firstName;
+
+    @Column(name = "last_name", nullable = false, length = 50)
     private String lastName;
+
+    @Column(nullable = false, length = 255)
     private String password;
-    @Indexed(unique = true)
+
+    @Column(nullable = false, unique = true, length = 320)
     private String email;
-    boolean student;
-    private String institutionName;
+
+    @Column(name = "codeforces_username", length = 100)
     private String codeforcesUsername;
+
+    @Column(name = "atcoder_username", length = 100)
     private String atcoderUsername;
+
+    @Column(name = "codechef_username", length = 100)
     private String codechefUsername;
+
+    @Column(name = "leetcode_username", length = 100)
     private String leetcodeUsername;
-    private Set<String> friends;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_friends", joinColumns = @JoinColumn(name = "user_id"), uniqueConstraints = @UniqueConstraint(columnNames = { "user_id", "friend_email" }))
+    @Column(name = "friend_email", nullable = false, length = 320)
+    private Set<String> friends = new HashSet<>();
+
+    @Column(name = "reset_otp", length = 6)
     private String resetOtp;
+
+    @Column(name = "reset_otp_expiry")
     private LocalDateTime resetOtpExpiry;
 
-    public User(String username, String firstName, String lastName, String password, String email, boolean student,
-            String institutionName, String codeforcesUsername, String atcoderUsername, String codechefUsername,
-            String leetcodeUsername, Set<String> friends, String resetOtp, LocalDateTime resetOtpExpiry) {
-        this.username = username;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.password = password;
-        this.email = email;
-        this.student = student;
-        this.institutionName = institutionName;
-        this.codeforcesUsername = codeforcesUsername;
-        this.atcoderUsername = atcoderUsername;
-        this.codechefUsername = codechefUsername;
-        this.leetcodeUsername = leetcodeUsername;
-        this.friends = friends;
-        this.resetOtp = resetOtp;
-        this.resetOtpExpiry = resetOtpExpiry;
-    }
-
-    // Default constructor
     public User() {
-        
+
     }
 
-    public String getUsername() {
-        return username;
+    public Long getId() {
+        return id;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getFirstName() {
@@ -88,22 +100,6 @@ public class User {
 
     public void setEmail(String email) {
         this.email = email;
-    }
-
-    public boolean isStudent() {
-        return student;
-    }
-
-    public void setStudent(boolean student) {
-        this.student = student;
-    }
-
-    public String getInstitutionName() {
-        return institutionName;
-    }
-
-    public void setInstitutionName(String institutionName) {
-        this.institutionName = institutionName;
     }
 
     public String getCodeforcesUsername() {

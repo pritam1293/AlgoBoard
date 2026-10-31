@@ -7,12 +7,6 @@ public class Validation {
 
     }
 
-    public boolean isValidUsername(String username) {
-        // Username must be 3-20 characters long and can contain letters, numbers, underscores, and dots
-        String usernameRegex = "^[a-zA-Z0-9._]{3,20}$";
-        return username != null && username.matches(usernameRegex);
-    }
-
     public boolean isValidEmail(String email) {
         // Simple email validation regex
         String emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
@@ -27,14 +21,9 @@ public class Validation {
     }
 
     public boolean isValidName(String name) {
-        // Name must only contain letters and spaces, and be 1-50 characters long
-        String nameRegex = "^[a-zA-Z ]{1,50}$";
+        // Name must be 2-50 characters and may contain letters, spaces, hyphens, and apostrophes
+        String nameRegex = "^[a-zA-Z][a-zA-Z '\\-]{1,49}$";
         return name != null && name.matches(nameRegex);
     }
 
-    public boolean isValidInstitutionName(String institutionName) {
-        // Institution name must be 1-100 characters long and can contain letters, numbers, spaces, and common punctuation
-        String institutionNameRegex = "^[a-zA-Z0-9 .,'-]{1,100}$";
-        return institutionName != null && institutionName.matches(institutionNameRegex);
-    }
 }

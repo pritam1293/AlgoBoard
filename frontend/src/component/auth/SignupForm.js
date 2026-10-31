@@ -13,12 +13,9 @@ const SignupForm = ({ onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    username: "",
     email: "",
     password: "",
     confirmPassword: "",
-    student: false,
-    institutionName: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -38,10 +35,6 @@ const SignupForm = ({ onSwitchToLogin }) => {
       ...formData,
       [e.target.name]: value,
     };
-
-    if (e.target.name === "student" && !value) {
-      updatedFormData.institutionName = "";
-    }
 
     setFormData(updatedFormData);
 
@@ -74,11 +67,8 @@ const SignupForm = ({ onSwitchToLogin }) => {
       await signup({
         firstName: formData.firstName,
         lastName: formData.lastName,
-        username: formData.username,
         email: formData.email,
         password: formData.password,
-        student: formData.student,
-        institutionName: formData.institutionName,
       });
       setErrors({});
       setSuccessMessage(
@@ -132,6 +122,7 @@ const SignupForm = ({ onSwitchToLogin }) => {
             onChange={handleChange}
             placeholder="First name"
             error={errors.firstName}
+            autoComplete="given-name"
           />
           <FormInput
             id="lastName"
@@ -142,23 +133,8 @@ const SignupForm = ({ onSwitchToLogin }) => {
             onChange={handleChange}
             placeholder="Last name"
             error={errors.lastName}
+            autoComplete="family-name"
           />
-        </div>
-
-        <div>
-          <FormInput
-            id="username"
-            name="username"
-            type="text"
-            label="Username"
-            value={formData.username}
-            onChange={handleChange}
-            placeholder="Choose a username"
-            error={errors.username}
-          />
-          <p className="mt-1 text-xs text-yellow-400/90">
-            Your username cannot be changed after account creation.
-          </p>
         </div>
 
         <FormInput
@@ -170,6 +146,7 @@ const SignupForm = ({ onSwitchToLogin }) => {
           onChange={handleChange}
           placeholder="Enter your email"
           error={errors.email}
+          autoComplete="email"
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -326,36 +303,6 @@ const SignupForm = ({ onSwitchToLogin }) => {
             )}
           </div>
         </div>
-
-        <div className="flex items-center">
-          <input
-            id="student"
-            name="student"
-            type="checkbox"
-            checked={formData.student}
-            onChange={handleChange}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-800 rounded"
-          />
-          <label
-            htmlFor="student"
-            className="ml-2 block text-sm text-gray-300"
-          >
-            I am a student
-          </label>
-        </div>
-
-        {formData.student && (
-          <FormInput
-            id="institutionName"
-            name="institutionName"
-            type="text"
-            label="Institute Name (Optional)"
-            value={formData.institutionName}
-            onChange={handleChange}
-            placeholder="Enter your institute or organization name"
-            error={errors.institutionName}
-          />
-        )}
 
         <div className="flex items-start">
           <input

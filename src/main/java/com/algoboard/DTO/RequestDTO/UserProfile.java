@@ -3,40 +3,26 @@ package com.algoboard.DTO.RequestDTO;
 import java.util.Set;
 
 public class UserProfile {
-    private String username;
     private String firstName;
     private String lastName;
     private String email;
-    private boolean student;
-    private String institutionName;
     private String codeforcesUsername;
     private String atcoderUsername;
     private String codechefUsername;
     private String leetcodeUsername;
     private Set<String> friends;
 
-    public UserProfile(String username, String firstName, String lastName, String email, boolean student,
-                   String institutionName, String codeforcesUsername, String atcoderUsername,
+    public UserProfile(String firstName, String lastName, String email,
+                   String codeforcesUsername, String atcoderUsername,
                    String codechefUsername, String leetcodeUsername, Set<String> friends) {
-        this.username = username;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
-        this.student = student;
-        this.institutionName = institutionName;
         this.codeforcesUsername = codeforcesUsername;
         this.atcoderUsername = atcoderUsername;
         this.codechefUsername = codechefUsername;
         this.leetcodeUsername = leetcodeUsername;
         this.friends = friends;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 
     public String getFirstName() {
@@ -61,22 +47,6 @@ public class UserProfile {
 
     public void setEmail(String email) {
         this.email = email;
-    }
-
-    public boolean isStudent() {
-        return student;
-    }
-
-    public void setStudent(boolean student) {
-        this.student = student;
-    }
-
-    public String getInstitutionName() {
-        return institutionName;
-    }
-
-    public void setInstitutionName(String institutionName) {
-        this.institutionName = institutionName;
     }
 
     public String getCodeforcesUsername() {
@@ -122,12 +92,9 @@ public class UserProfile {
     @Override
     public String toString() {
         return "UserProfile{" +
-                "username='" + username + '\'' +
-                ", firstName='" + firstName + '\'' +
+                "firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 ", email='" + email + '\'' +
-                ", student=" + student +
-                ", institutionName='" + institutionName + '\'' +
                 ", codeforcesUsername='" + codeforcesUsername + '\'' +
                 ", atcoderUsername='" + atcoderUsername + '\'' +
                 ", codechefUsername='" + codechefUsername + '\'' +

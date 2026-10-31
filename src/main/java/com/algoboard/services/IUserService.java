@@ -15,17 +15,17 @@ import com.algoboard.DTO.RequestDTO.UserProfile;
 public interface IUserService {
     public UserProfile registerUser(User user);
 
-    public UserProfile authenticateUser(String username, String email, String password);
+    public UserProfile authenticateUser(String email, String password);
 
-    public UserProfile getUserProfile(String username);
+    public UserProfile getUserProfile(String email);
 
     public UserProfile updateUserDetails(UserProfile profile);
 
-    public boolean updateFriendsList(Map<String, String> payload, String username);
+    public boolean updateFriendsList(Map<String, String> payload, String email);
 
-    public boolean checkFriendship(String username, String friendUsername);
+    public boolean checkFriendship(String email, String friendEmail);
 
-    public Map<String, String> updatePassword(String username, String oldPassword, String newPassword);
+    public Map<String, String> updatePassword(String email, String oldPassword, String newPassword);
 
     public boolean generateAndSendOtp(String email);
 
@@ -33,20 +33,20 @@ public interface IUserService {
 
     public boolean resetPassword(String email, String newPassword);
 
-    public String deleteUser(String username, String password);
+    public String deleteUser(String email, String password);
 
-    public boolean addCPProfiles(String username, String codeforcesId, String atcoderId, String codechefId,
+    public boolean addCPProfiles(String email, String codeforcesId, String atcoderId, String codechefId,
             String leetcodeId);
 
     public List<ContestDTO> getContestList();
 
-    public Codeforces getCodeforcesProfile(String username);
+    public Codeforces getCodeforcesProfile(String email);
 
-    public Atcoder getAtcoderProfile(String username);
+    public Atcoder getAtcoderProfile(String email);
 
-    public Codechef getCodechefProfile(String username);
+    public Codechef getCodechefProfile(String email);
 
-    public Leetcode getLeetcodeProfile(String username);
+    public Leetcode getLeetcodeProfile(String email);
 
     public Codeforces fetchCodeforcesProfile(String cfusername);
 

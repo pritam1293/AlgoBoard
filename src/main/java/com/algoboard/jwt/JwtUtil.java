@@ -12,7 +12,7 @@ public class JwtUtil {
     //Validate JWT token and return appropriate error message
     public String validateToken(String token, JwtService jwtService) {
         try {
-            jwtService.extractUsername(token);
+            jwtService.extractEmail(token);
             return "valid";
         } catch (SignatureException e) {
             return "Invalid JWT signature";

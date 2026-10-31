@@ -13,7 +13,6 @@ import com.algoboard.DTO.RequestDTO.UserAuthenticationResponse;
 import com.algoboard.utils.ResponseUtil;
 import java.util.Map;
 import com.algoboard.DTO.RequestDTO.UserProfile;
-import org.springframework.dao.DuplicateKeyException;
 import com.algoboard.DTO.ContestDTO;
 import java.util.List;
 import java.util.HashMap;
@@ -68,9 +67,6 @@ public class UserController {
             // Remove password from response for security
             return ResponseEntity
                     .ok(ResponseUtil.createSuccessResponse("Signup successful. Welcome email sent!", newProfile));
-        } catch (DuplicateKeyException e) {
-            return ResponseEntity.status(400)
-                    .body(ResponseUtil.createErrorResponse("Signup failed: " + e.getMessage()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400)
                     .body(ResponseUtil.createErrorResponse("Signup failed: " + e.getMessage()));
@@ -83,22 +79,13 @@ public class UserController {
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
         try {
-            // Authenticate user
-            String username = "";
-            String email = "";
-            String password = "";
-            if(credentials.containsKey("username")) {
-                username = credentials.get("username");
-            } else if(credentials.containsKey("email")) {
-                email = credentials.get("email");
-            }
-            if(credentials.containsKey("password")) {
-                password = credentials.get("password");
-            }
-            UserProfile profile = userService.authenticateUser(username, email, password);
+            // Authenticate user with email and password
+            String email = credentials.get("email");
+            String password = credentials.get("password");
+            UserProfile profile = userService.authenticateUser(email, password);
 
             // Load UserDetails for JWT generation
-            UserDetails userDetails = customUserDetailsService.loadUserByUsername(profile.getUsername());
+            UserDetails userDetails = customUserDetailsService.loadUserByUsername(profile.getEmail());
 
             // Generate JWT token
             String jwtToken = jwtService.generateToken(userDetails);
@@ -127,9 +114,9 @@ public class UserController {
     }
 
     @GetMapping("/users/profile")
-    public ResponseEntity<?> getUserProfile(@RequestParam String username) {
+    public ResponseEntity<?> getUserProfile(@RequestParam String email) {
         try {
-            UserProfile profile = userService.getUserProfile(username);
+            UserProfile profile = userService.getUserProfile(email);
             if (profile != null) {
                 return ResponseEntity
                         .ok(ResponseUtil.createSuccessResponse("User profile retrieved successfully", profile));
@@ -156,10 +143,10 @@ public class UserController {
         }
     }
 
-    @PutMapping("/users/{username}/friends")
-    public ResponseEntity<?> updateFriends(@PathVariable String username, @RequestBody Map<String, String> payload) {
+    @PutMapping("/users/{email}/friends")
+    public ResponseEntity<?> updateFriends(@PathVariable String email, @RequestBody Map<String, String> payload) {
         try {
-            boolean success = userService.updateFriendsList(payload, username);
+            boolean success = userService.updateFriendsList(payload, email);
             if (success) {
                 return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Friends list updated successfully", null));
             } else {
@@ -172,10 +159,10 @@ public class UserController {
         }
     } 
 
-    @GetMapping("/users/{username}/friends/check/{friendUsername}")
-    public ResponseEntity<?> checkFriendship(@PathVariable String username, @PathVariable String friendUsername) {
+    @GetMapping("/users/{email}/friends/check/{friendEmail}")
+    public ResponseEntity<?> checkFriendship(@PathVariable String email, @PathVariable String friendEmail) {
         try {
-            boolean isFriend = userService.checkFriendship(username, friendUsername);
+            boolean isFriend = userService.checkFriendship(email, friendEmail);
             Map<String, Boolean> response = new HashMap<>();
             response.put("isFriend", isFriend);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Friendship status retrieved successfully", response));
@@ -187,11 +174,11 @@ public class UserController {
 
     @PutMapping("auth/change-password")
     public ResponseEntity<?> updatePassword(@RequestBody Map<String, String> payload) {
-        String username = payload.get("username");
+        String email = payload.get("email");
         String oldPassword = payload.get("oldPassword");
         String newPassword = payload.get("newPassword");
         try {
-            Map<String, String> user = userService.updatePassword(username, oldPassword, newPassword);
+            Map<String, String> user = userService.updatePassword(email, oldPassword, newPassword);
             emailService.sendProfileUpdateNotification(user.get("email"), user.get("firstName"), "password");
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Password updated successfully", null));
         } catch (IllegalArgumentException e) {
@@ -259,10 +246,10 @@ public class UserController {
 
     @DeleteMapping("/users/delete")
     public ResponseEntity<?> deleteUser(@RequestBody Map<String, String> payload) {
-        String username = payload.get("username");
+        String email = payload.get("email");
         String password = payload.get("password");
         try {
-            String response = userService.deleteUser(username, password);
+            String response = userService.deleteUser(email, password);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse(response, null));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400)
@@ -275,13 +262,13 @@ public class UserController {
 
     @PostMapping("/add/cp/profiles")
     public ResponseEntity<?> addCPProfile(@RequestBody Map<String, String> payload) {
-        String username = payload.get("username");
+        String email = payload.get("email");
         String codeforcesId = payload.get("codeforcesId");
         String codechefId = payload.get("codechefId");
         String atcoderId = payload.get("atcoderId");
         String leetcodeId = payload.get("leetcodeId");
         try {
-            boolean success = userService.addCPProfiles(username, codeforcesId, atcoderId, codechefId, leetcodeId);
+            boolean success = userService.addCPProfiles(email, codeforcesId, atcoderId, codechefId, leetcodeId);
             if (success) {
                 if (codeforcesId != null)
                     return ResponseEntity
@@ -321,9 +308,9 @@ public class UserController {
     }
 
     @GetMapping("/platforms/codeforces")
-    public ResponseEntity<?> getCodeforcesProfile(@RequestParam String username) {
+    public ResponseEntity<?> getCodeforcesProfile(@RequestParam String email) {
         try {
-            Codeforces codeforcesProfile = userService.getCodeforcesProfile(username);
+            Codeforces codeforcesProfile = userService.getCodeforcesProfile(email);
             if (codeforcesProfile != null) {
                 return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Codeforces profile retrieved successfully",
                         codeforcesProfile));
@@ -338,9 +325,9 @@ public class UserController {
     }
 
     @GetMapping("/platforms/atcoder")
-    public ResponseEntity<?> getAtcoderProfile(@RequestParam String username) {
+    public ResponseEntity<?> getAtcoderProfile(@RequestParam String email) {
         try {
-            Atcoder atcoderProfile = userService.getAtcoderProfile(username);
+            Atcoder atcoderProfile = userService.getAtcoderProfile(email);
             if (atcoderProfile != null) {
                 return ResponseEntity.ok(
                         ResponseUtil.createSuccessResponse("AtCoder profile retrieved successfully", atcoderProfile));
@@ -354,9 +341,9 @@ public class UserController {
     }
 
     @GetMapping("platforms/codechef")
-    public ResponseEntity<?> getCodechefProfile(@RequestParam String username) {
+    public ResponseEntity<?> getCodechefProfile(@RequestParam String email) {
         try {
-            Codechef codechefProfile = userService.getCodechefProfile(username);
+            Codechef codechefProfile = userService.getCodechefProfile(email);
             if (codechefProfile != null) {
                 return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Codechef profile retrieved successfully",
                         codechefProfile));
@@ -371,9 +358,9 @@ public class UserController {
     }
 
     @GetMapping("platforms/leetcode")
-    public ResponseEntity<?> getLeetcodeProfile(@RequestParam String username) {
+    public ResponseEntity<?> getLeetcodeProfile(@RequestParam String email) {
         try {
-            Leetcode leetcodeProfile = userService.getLeetcodeProfile(username);
+            Leetcode leetcodeProfile = userService.getLeetcodeProfile(email);
             if (leetcodeProfile != null) {
                 return ResponseEntity.ok(ResponseUtil.createSuccessResponse("LeetCode profile retrieved successfully",
                         leetcodeProfile));
@@ -388,20 +375,20 @@ public class UserController {
     }
 
     @GetMapping("users/search")
-    public ResponseEntity<?> searchUser(@RequestParam String username) {
+    public ResponseEntity<?> searchUser(@RequestParam String email) {
         try {
             // Create async tasks for each profile fetch
             CompletableFuture<Codeforces> codeforcesTask = CompletableFuture
-                    .supplyAsync(() -> userService.getCodeforcesProfile(username));
+                    .supplyAsync(() -> userService.getCodeforcesProfile(email));
 
             CompletableFuture<Atcoder> atcoderTask = CompletableFuture
-                    .supplyAsync(() -> userService.getAtcoderProfile(username));
+                    .supplyAsync(() -> userService.getAtcoderProfile(email));
 
             CompletableFuture<Codechef> codechefTask = CompletableFuture
-                    .supplyAsync(() -> userService.getCodechefProfile(username));
+                    .supplyAsync(() -> userService.getCodechefProfile(email));
 
             CompletableFuture<Leetcode> leetcodeTask = CompletableFuture
-                    .supplyAsync(() -> userService.getLeetcodeProfile(username));
+                    .supplyAsync(() -> userService.getLeetcodeProfile(email));
 
             // Wait for all tasks to complete
             CompletableFuture.allOf(codeforcesTask, atcoderTask, codechefTask, leetcodeTask).join();

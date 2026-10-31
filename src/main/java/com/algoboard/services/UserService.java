@@ -9,8 +9,10 @@ import com.algoboard.entities.User;
 import com.algoboard.repository.UserRepository;
 import com.algoboard.DTO.RequestDTO.UserProfile;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.time.LocalDateTime;
@@ -20,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.Cacheable;
-import com.mongodb.DuplicateKeyException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @Service
 public class UserService implements IUserService {
@@ -43,21 +45,14 @@ public class UserService implements IUserService {
         this.validation = validation;
         this.profileFetchingService = profileFetchingService;
         this.contestFetchingService = contestFetchingService;
-        System.out.println("");
-        System.out.println("MongoDB is connected.");
-        System.out.println("");
     }
 
     @Override
     public UserProfile registerUser(User user) {
         try {
-            // Trim all the leading and trailing spaces from the user fields
-            if(user.getUsername() != null) {
-                user.setUsername(user.getUsername().trim());
-            }
-            if(user.getEmail() != null) {
-                user.setEmail(user.getEmail().trim());
-            }
+            String email = normalizeEmail(user.getEmail());
+            user.setEmail(email);
+
             if(user.getPassword() != null) {
                 user.setPassword(user.getPassword().trim());
             }
@@ -66,9 +61,6 @@ public class UserService implements IUserService {
             }
             if(user.getLastName() != null) {
                 user.setLastName(user.getLastName().trim());
-            }
-            if(user.getInstitutionName() != null) {
-                user.setInstitutionName(user.getInstitutionName().trim());
             }
             if(user.getCodeforcesUsername() != null) {
                 user.setCodeforcesUsername(user.getCodeforcesUsername().trim());
@@ -82,232 +74,199 @@ public class UserService implements IUserService {
             if(user.getLeetcodeUsername() != null) {
                 user.setLeetcodeUsername(user.getLeetcodeUsername().trim());
             }
-            if (userRepository.existsByUsername(user.getUsername())) {
-                throw new IllegalArgumentException("User with the same username already exists.");
+            if (email == null || email.isEmpty()) {
+                throw new IllegalArgumentException("Email cannot be null or empty.");
             }
-            if (userRepository.existsByEmail(user.getEmail())) {
+            if (userRepository.existsByEmailIgnoreCase(email)) {
                 throw new IllegalArgumentException("User with the same email already exists.");
             }
-            if (!validation.isValidUsername(user.getUsername())) {
-                throw new IllegalArgumentException("Invalid username format.");
-            }
-            if (!validation.isValidEmail(user.getEmail())) {
+            if (!validation.isValidEmail(email)) {
                 throw new IllegalArgumentException("Invalid email format.");
             }
             if (!validation.isValidPassword(user.getPassword())) {
                 throw new IllegalArgumentException("Invalid password format.");
             }
-            if (user.getFirstName() != null && !validation.isValidName(user.getFirstName())) {
+            if (user.getFirstName() == null || user.getFirstName().isEmpty()) {
+                throw new IllegalArgumentException("First name is required.");
+            }
+            if (!validation.isValidName(user.getFirstName())) {
                 throw new IllegalArgumentException("Invalid first name format.");
             }
-            if (user.getLastName() != null && !validation.isValidName(user.getLastName())) {
+            if (user.getLastName() == null || user.getLastName().isEmpty()) {
+                throw new IllegalArgumentException("Last name is required.");
+            }
+            if (!validation.isValidName(user.getLastName())) {
                 throw new IllegalArgumentException("Invalid last name format.");
             }
-            if (user.getInstitutionName() != null && !validation.isValidInstitutionName(user.getInstitutionName())) {
-                throw new IllegalArgumentException("Invalid institution name format.");
-            }
-            if (user.getFirstName() == null || user.getFirstName().isEmpty()) {
-                // If first name is not provided, set it to email's local part
-                user.setFirstName(user.getEmail().split("@")[0]);
-            }
-            if (user.getLastName() == null) {
-                user.setLastName("");
-            }
-            if (user.getInstitutionName() == null) {
-                user.setInstitutionName("");
-            }
+
+            user.setId(null);
             user.setPassword(passwordEncoder.encode(user.getPassword()));
-            user.setFriends(new java.util.HashSet<>());// at the time of registration, friends list is empty
+            user.setFriends(new HashSet<>());
             userRepository.save(user);
             return createProfile(user);
-        } catch (DuplicateKeyException e) {
-            String message = e.getMessage().toLowerCase();
-            if (message.contains("username")) {
-                throw new IllegalArgumentException("User with the same username already exists.");
-            } else if (message.contains("email")) {
-                throw new IllegalArgumentException("User with the same email already exists.");
-            } else {
-                throw new IllegalArgumentException("User with the same username or email already exists.");
-            }
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalArgumentException("User with the same email already exists.");
         }
     }
 
     @Override
-    public UserProfile authenticateUser(String username, String email, String password) {
+    public UserProfile authenticateUser(String email, String password) {
         try {
-            if (username != null) {
-                username = username.trim();
-            }
-            if (email != null) {
-                email = email.trim();
-            }
+            email = normalizeEmail(email);
             if (password != null) {
                 password = password.trim();
             }
-            if (username != null && !username.isEmpty()) {
-                User user = userRepository.findByUsername(username);
-                if (user != null && passwordEncoder.matches(password, user.getPassword())) {
-                    return createProfile(user);
-                }
+            if (email == null || email.isEmpty() || password == null || password.isEmpty()) {
+                throw new IllegalArgumentException("Invalid email or password.");
             }
-            else if (email != null && !email.isEmpty()) {
-                User user = userRepository.findByEmail(email);
-                if (user != null && passwordEncoder.matches(password, user.getPassword())) {
-                    return createProfile(user);
-                }
-            } else {
-                throw new IllegalArgumentException("Invalid username or password.");
+            User user = userRepository.findByEmailIgnoreCase(email);
+            if (user != null && passwordEncoder.matches(password, user.getPassword())) {
+                return createProfile(user);
             }
-            throw new IllegalArgumentException("Invalid username or password.");
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid username or password.");
+            throw new IllegalArgumentException("Invalid email or password.");
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid email or password.");
         }
     }
 
     @Override
-    public UserProfile getUserProfile(String username) {
+    public UserProfile getUserProfile(String email) {
         try {
-            if(username != null) {
-                username = username.trim();
+            email = normalizeEmail(email);
+            if (email == null || email.isEmpty()) {
+                throw new IllegalArgumentException("Email cannot be null or empty.");
             }
-            if (username == null || username.isEmpty()) {
-                throw new IllegalArgumentException("Username cannot be null or empty.");
-            }
-            User user = userRepository.findByUsername(username);
+            User user = userRepository.findByEmailIgnoreCase(email);
             if (user != null) {
                 return createProfile(user);
             }
-            throw new IllegalArgumentException("User not found with username: " + username);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("User not found with username: " + username);
+            throw new IllegalArgumentException("User not found with email: " + email);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("User not found with email: " + email);
         }
     }
 
     @Override
     public UserProfile updateUserDetails(UserProfile profile) {
         try {
-            if(profile.getUsername() != null) {
-                profile.setUsername(profile.getUsername().trim());
+            String email = normalizeEmail(profile.getEmail());
+            if (email == null || email.isEmpty()) {
+                throw new IllegalArgumentException("Email cannot be null or empty.");
             }
-            if (profile.getUsername() == null || profile.getUsername().isEmpty()) {
-                throw new IllegalArgumentException("Username cannot be null or empty.");
+            User existingUser = userRepository.findByEmailIgnoreCase(email);
+            if (existingUser == null) {
+                throw new IllegalArgumentException("User does not exist with email: " + email);
             }
-            User existingUser = userRepository.findByUsername(profile.getUsername());
-            if (existingUser != null) {
-                if (profile.getFirstName() != null && !profile.getFirstName().isEmpty()
-                        && !profile.getFirstName().equals(existingUser.getFirstName())
-                        && validation.isValidName(profile.getFirstName())) {
-                    existingUser.setFirstName(profile.getFirstName());
-                }
-                if (profile.getLastName() != null && !profile.getLastName().isEmpty()
-                        && !profile.getLastName().equals(existingUser.getLastName())
-                        && validation.isValidName(profile.getLastName())) {
-                    existingUser.setLastName(profile.getLastName());
-                }
-                if (profile.getEmail() != null && !profile.getEmail().isEmpty()
-                        && !profile.getEmail().equals(existingUser.getEmail())
-                        && validation.isValidEmail(profile.getEmail())) {
-                    existingUser.setEmail(profile.getEmail());
-                }
-                if (profile.isStudent() != existingUser.isStudent()) {
-                    existingUser.setStudent(profile.isStudent());
-                }
-                if (profile.getInstitutionName() != null && !profile.getInstitutionName().isEmpty()
-                        && !profile.getInstitutionName().equals(existingUser.getInstitutionName())
-                        && validation.isValidInstitutionName(profile.getInstitutionName())) {
-                    existingUser.setInstitutionName(profile.getInstitutionName());
-                }
-                userRepository.save(existingUser);
-                return createProfile(existingUser);
+
+            String firstName = profile.getFirstName() == null ? null : profile.getFirstName().trim();
+            String lastName = profile.getLastName() == null ? null : profile.getLastName().trim();
+            if (firstName == null || firstName.isEmpty()) {
+                throw new IllegalArgumentException("First name is required.");
             }
-            throw new IllegalArgumentException("User does not exist with username: " + profile.getUsername());
+            if (!validation.isValidName(firstName)) {
+                throw new IllegalArgumentException("Invalid first name format.");
+            }
+            if (lastName == null || lastName.isEmpty()) {
+                throw new IllegalArgumentException("Last name is required.");
+            }
+            if (!validation.isValidName(lastName)) {
+                throw new IllegalArgumentException("Invalid last name format.");
+            }
+
+            existingUser.setFirstName(firstName);
+            existingUser.setLastName(lastName);
+            userRepository.save(existingUser);
+            return createProfile(existingUser);
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error updating user details." + e.getMessage());
+            throw new IllegalArgumentException("Error updating user details: " + e.getMessage());
         }
     }
 
     @Override
-    public boolean updateFriendsList(Map<String, String> payload, String username) {
+    public boolean updateFriendsList(Map<String, String> payload, String email) {
         try {
-            if(username != null) {
-                username = username.trim();
+            email = normalizeEmail(email);
+            if (email == null || email.isEmpty()) {
+                throw new IllegalArgumentException("Email cannot be null or empty.");
             }
-            if (username == null || username.isEmpty()) {
-                throw new IllegalArgumentException("Username cannot be null or empty.");
+            final String userEmail = email;
+            User user = userRepository.findByEmailIgnoreCase(userEmail);
+            if (user == null) {
+                return false;
             }
-            User user = userRepository.findByUsername(username);
-            if(user != null) {
-                payload.forEach((key, value) -> {
-                    if(key.equals("add") && value != null && !value.isEmpty()) {
-                        user.getFriends().add(value);
+            if (user.getFriends() == null) {
+                user.setFriends(new HashSet<>());
+            }
+            payload.forEach((key, value) -> {
+                String friendEmail = normalizeEmail(value);
+                if (friendEmail == null || friendEmail.isEmpty() || friendEmail.equals(userEmail)) {
+                    return;
+                }
+                if (key.equals("add")) {
+                    if (userRepository.existsByEmailIgnoreCase(friendEmail)) {
+                        user.getFriends().add(friendEmail);
                     }
-                    else if(key.equals("remove") && value != null && !value.isEmpty()) {
-                        user.getFriends().remove(value);
-                    }
-                });
-                userRepository.save(user);
-                return true;
-            }
-            return false;
+                } else if (key.equals("remove")) {
+                    user.getFriends().removeIf(existing -> existing != null
+                            && existing.equalsIgnoreCase(friendEmail));
+                }
+            });
+            userRepository.save(user);
+            return true;
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error updating friends list." + e.getMessage());
+            throw new IllegalArgumentException("Error updating friends list: " + e.getMessage());
         }
     }
 
     @Override
-    public boolean checkFriendship(String username, String friendUsername) {
+    public boolean checkFriendship(String email, String friendEmail) {
         try {
-            if(username != null) {
-                username = username.trim();
+            email = normalizeEmail(email);
+            final String normalizedFriendEmail = normalizeEmail(friendEmail);
+            if (email == null || email.isEmpty()) {
+                throw new IllegalArgumentException("Email cannot be null or empty.");
             }
-            if (username == null || username.isEmpty()) {
-                throw new IllegalArgumentException("Username cannot be null or empty.");
+            if (normalizedFriendEmail == null || normalizedFriendEmail.isEmpty()) {
+                throw new IllegalArgumentException("Friend email cannot be null or empty.");
             }
-            if (friendUsername != null) {
-                friendUsername = friendUsername.trim();
-            }
-            if (friendUsername == null || friendUsername.isEmpty()) {
-                throw new IllegalArgumentException("Friend username cannot be null or empty.");
-            }
-            User user = userRepository.findByUsername(username);
+            User user = userRepository.findByEmailIgnoreCase(email);
             if (user != null) {
-                return user.getFriends().contains(friendUsername);
+                return user.getFriends() != null && user.getFriends().stream()
+                        .anyMatch(existing -> existing != null
+                                && existing.equalsIgnoreCase(normalizedFriendEmail));
             }
-            throw new IllegalArgumentException("User not found with username: " + username);
+            throw new IllegalArgumentException("User not found with email: " + email);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error checking friendship." + e.getMessage());
+            throw new IllegalArgumentException("Error checking friendship: " + e.getMessage());
         }
     }
 
     private UserProfile createProfile(User user) {
         return new UserProfile(
-                user.getUsername(),
                 user.getFirstName(),
                 user.getLastName(),
                 user.getEmail(),
-                user.isStudent(),
-                user.getInstitutionName(),
                 user.getCodeforcesUsername(),
                 user.getAtcoderUsername(),
                 user.getCodechefUsername(),
                 user.getLeetcodeUsername(),
-                user.getFriends());
+                user.getFriends() == null ? new HashSet<>() : user.getFriends());
     }
 
     @Override
-    public Map<String, String> updatePassword(String username, String oldPassword, String newPassword) {
+    public Map<String, String> updatePassword(String email, String oldPassword, String newPassword) {
         try {
-            if(username != null) {
-                username = username.trim();
-            }
+            email = normalizeEmail(email);
             if(oldPassword != null) {
                 oldPassword = oldPassword.trim();
             }
             if(newPassword != null) {
                 newPassword = newPassword.trim();
             }
-            if (username == null || username.isEmpty()) {
-                throw new IllegalArgumentException("Username cannot be null or empty.");
+            if (email == null || email.isEmpty()) {
+                throw new IllegalArgumentException("Email cannot be null or empty.");
             }
             if (oldPassword == null || oldPassword.isEmpty()) {
                 throw new IllegalArgumentException("Old password cannot be null or empty.");
@@ -315,10 +274,10 @@ public class UserService implements IUserService {
             if (newPassword == null || newPassword.isEmpty()) {
                 throw new IllegalArgumentException("New password cannot be null or empty.");
             }
-            if(validation.isValidPassword(newPassword) == false) {
+            if(!validation.isValidPassword(newPassword)) {
                 throw new IllegalArgumentException("New password does not meet the required format.");
             }
-            User user = userRepository.findByUsername(username);
+            User user = userRepository.findByEmailIgnoreCase(email);
             if (user != null && passwordEncoder.matches(oldPassword, user.getPassword())) {
                 user.setPassword(passwordEncoder.encode(newPassword));
                 userRepository.save(user);
@@ -326,42 +285,40 @@ public class UserService implements IUserService {
                     "email", user.getEmail(),
                     "firstName", user.getFirstName());
             }
-            throw new IllegalArgumentException("Invalid username or old password.");
+            throw new IllegalArgumentException("Invalid email or old password.");
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error updating password." + e.getMessage());
+            throw new IllegalArgumentException("Error updating password: " + e.getMessage());
         }
     }
 
     @Override
     public boolean generateAndSendOtp(String email) {
         try {
-            if(email != null) {
-                email = email.trim();
-            }
+            email = normalizeEmail(email);
             if(email == null || email.isEmpty()) {
                 throw new IllegalArgumentException("Email cannot be null or empty.");
             }
-            if (userRepository.existsByEmail(email)) {
-                String otp = String.valueOf((int) (Math.random() * 900000) + 100000); // Generate a 6-digit OTP
-                User user = userRepository.findByEmail(email);
+            if (userRepository.existsByEmailIgnoreCase(email)) {
+                String otp = String.valueOf((int) (Math.random() * 900000) + 100000);
+                User user = userRepository.findByEmailIgnoreCase(email);
                 user.setResetOtp(otp);
-                user.setResetOtpExpiry(LocalDateTime.now().plusMinutes(15)); // Set OTP
+                user.setResetOtpExpiry(LocalDateTime.now().plusMinutes(15));
                 userRepository.save(user);
                 emailService.sendOtpForPasswordReset(email, otp);
                 return true;
             }
             return false;
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error generating OTP." + e.getMessage());
+            throw new IllegalArgumentException("Error generating OTP: " + e.getMessage());
         }
     }
 
     @Override
     public boolean verifyOtp(String email, String otp) {
         try {
-            if(email != null) {
-                email = email.trim();
-            }
+            email = normalizeEmail(email);
             if(otp != null) {
                 otp = otp.trim();
             }
@@ -371,8 +328,10 @@ public class UserService implements IUserService {
             if(otp == null || otp.isEmpty()) {
                 throw new IllegalArgumentException("OTP cannot be null or empty.");
             }
-            User user = userRepository.findByEmail(email);
-            if (user != null && user.getResetOtp().equals(otp) && user.getResetOtpExpiry().isAfter(LocalDateTime.now())) {
+            User user = userRepository.findByEmailIgnoreCase(email);
+            if (user != null && user.getResetOtp() != null && user.getResetOtpExpiry() != null
+                    && user.getResetOtp().equals(otp)
+                    && user.getResetOtpExpiry().isAfter(LocalDateTime.now())) {
                 user.setResetOtp(null);
                 user.setResetOtpExpiry(null);
                 userRepository.save(user);
@@ -380,16 +339,14 @@ public class UserService implements IUserService {
             }
             return false;
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error verifying OTP." + e.getMessage());
+            throw new IllegalArgumentException("Error verifying OTP: " + e.getMessage());
         }
     }
 
     @Override
     public boolean resetPassword(String email, String newPassword) {
         try {
-            if(email != null) {
-                email = email.trim();
-            }
+            email = normalizeEmail(email);
             if(newPassword != null) {
                 newPassword = newPassword.trim();
             }
@@ -399,10 +356,10 @@ public class UserService implements IUserService {
             if(newPassword == null || newPassword.isEmpty()) {
                 throw new IllegalArgumentException("New password cannot be null or empty.");
             }
-            if(validation.isValidPassword(newPassword) == false) {
+            if(!validation.isValidPassword(newPassword)) {
                 throw new IllegalArgumentException("New password does not meet the required format.");
             }
-            User user = userRepository.findByEmail(email);
+            User user = userRepository.findByEmailIgnoreCase(email);
             if (user != null) {
                 user.setPassword(passwordEncoder.encode(newPassword));
                 userRepository.save(user);
@@ -410,32 +367,31 @@ public class UserService implements IUserService {
             }
             return false;
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error resetting password." + e.getMessage());
+            throw new IllegalArgumentException("Error resetting password: " + e.getMessage());
         }
     }
 
     @Override
-    public String deleteUser(String username, String password) {
+    public String deleteUser(String email, String password) {
         try {
-            User user = userRepository.findByUsername(username);
+            email = normalizeEmail(email);
+            User user = userRepository.findByEmailIgnoreCase(email);
             if (user != null && passwordEncoder.matches(password, user.getPassword())) {
                 userRepository.delete(user);
                 return "User deleted successfully.";
             }
-            return "Invalid username or password.";
+            return "Invalid email or password.";
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error deleting user." + e.getMessage());
+            throw new IllegalArgumentException("Error deleting user: " + e.getMessage());
         }
     }
 
     @Override
-    public boolean addCPProfiles(String username, String codeforcesId, String atcoderId, String codechefId, String leetcodeId) {
+    public boolean addCPProfiles(String email, String codeforcesId, String atcoderId, String codechefId, String leetcodeId) {
         try {
-            if(username != null) {
-                username = username.trim();
-            }
-            if(username == null || username.isEmpty()) {
-                throw new IllegalArgumentException("Username cannot be null or empty.");
+            email = normalizeEmail(email);
+            if(email == null || email.isEmpty()) {
+                throw new IllegalArgumentException("Email cannot be null or empty.");
             }
             if(codeforcesId != null) {
                 codeforcesId = codeforcesId.trim();
@@ -449,32 +405,25 @@ public class UserService implements IUserService {
             if(leetcodeId != null) {
                 leetcodeId = leetcodeId.trim();
             }
-            User user = userRepository.findByUsername(username);
+            User user = userRepository.findByEmailIgnoreCase(email);
             if (user != null) {
                 boolean codeforcesChanged = false;
                 boolean atcoderChanged = false;
                 boolean codechefChanged = false;
                 boolean leetcodeChanged = false;
 
-                // Check Codeforces username change
                 if (codeforcesId != null && !Objects.equals(codeforcesId, user.getCodeforcesUsername())) {
                     user.setCodeforcesUsername(codeforcesId);
                     codeforcesChanged = true;
                 }
-
-                // Check AtCoder username change
                 if (atcoderId != null && !Objects.equals(atcoderId, user.getAtcoderUsername())) {
                     user.setAtcoderUsername(atcoderId);
                     atcoderChanged = true;
                 }
-
-                // Check CodeChef username change
                 if (codechefId != null && !Objects.equals(codechefId, user.getCodechefUsername())) {
                     user.setCodechefUsername(codechefId);
                     codechefChanged = true;
                 }
-
-                // Check LeetCode username change
                 if (leetcodeId != null && !Objects.equals(leetcodeId, user.getLeetcodeUsername())) {
                     user.setLeetcodeUsername(leetcodeId);
                     leetcodeChanged = true;
@@ -482,25 +431,31 @@ public class UserService implements IUserService {
 
                 userRepository.save(user);
 
-                // Clear cache only for platforms that were actually changed
                 if (codeforcesChanged) {
-                    cacheService.evictCodeforcesCache(username);
+                    cacheService.evictCodeforcesCache(email);
                 }
                 if (atcoderChanged) {
-                    cacheService.evictAtcoderCache(username);
+                    cacheService.evictAtcoderCache(email);
                 }
                 if (codechefChanged) {
-                    cacheService.evictCodechefCache(username);
+                    cacheService.evictCodechefCache(email);
                 }
                 if (leetcodeChanged) {
-                    cacheService.evictLeetcodeCache(username);
+                    cacheService.evictLeetcodeCache(email);
                 }
                 return true;
             }
             return false;
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error adding CP profiles." + e.getMessage());
+            throw new IllegalArgumentException("Error adding CP profiles: " + e.getMessage());
         }
+    }
+
+    private String normalizeEmail(String email) {
+        if (email == null) {
+            return null;
+        }
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 
     @Override
@@ -549,94 +504,90 @@ public class UserService implements IUserService {
     }
 
     @Override
-    @Cacheable(value = "codeforcesProfile", key = "#username")
-    public Codeforces getCodeforcesProfile(String username) {
+    @Cacheable(value = "codeforcesProfile", key = "#email")
+    public Codeforces getCodeforcesProfile(String email) {
         try {
-            if(username != null) {
-                username = username.trim();
+            email = normalizeEmail(email);
+            if(email == null || email.isEmpty()) {
+                throw new IllegalArgumentException("Email cannot be null or empty.");
             }
-            if(username == null || username.isEmpty()) {
-                throw new IllegalArgumentException("Username cannot be null or empty.");
+            User user = userRepository.findByEmailIgnoreCase(email);
+            if (user == null) {
+                throw new IllegalArgumentException("User not found with email: " + email);
             }
-            if (userRepository.findByUsername(username) == null) {
-                throw new IllegalArgumentException("User not found with username: " + username);
-            }
-            String cfid = userRepository.findByUsername(username).getCodeforcesUsername();
+            String cfid = user.getCodeforcesUsername();
             if (cfid == null || cfid.isEmpty()) {
                 return new Codeforces();
             }
             return profileFetchingService.fetchCodeforcesProfile(cfid);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error fetching Codeforces profile." + e.getMessage());
+            throw new IllegalArgumentException("Error fetching Codeforces profile: " + e.getMessage());
         }
     }
 
     @Override
-    @Cacheable(value = "atcoderProfile", key = "#username")
-    public Atcoder getAtcoderProfile(String username) {
+    @Cacheable(value = "atcoderProfile", key = "#email")
+    public Atcoder getAtcoderProfile(String email) {
         try {
-            if(username != null) {
-                username = username.trim();
+            email = normalizeEmail(email);
+            if(email == null || email.isEmpty()) {
+                throw new IllegalArgumentException("Email cannot be null or empty.");
             }
-            if(username == null || username.isEmpty()) {
-                throw new IllegalArgumentException("Username cannot be null or empty.");
+            User user = userRepository.findByEmailIgnoreCase(email);
+            if (user == null) {
+                throw new IllegalArgumentException("User not found with email: " + email);
             }
-            if (userRepository.findByUsername(username) == null) {
-                throw new IllegalArgumentException("User not found with username: " + username);
-            }
-            String acid = userRepository.findByUsername(username).getAtcoderUsername();
+            String acid = user.getAtcoderUsername();
             if (acid == null || acid.isEmpty()) {
                 return new Atcoder();
             }
             return profileFetchingService.fetchAtcoderProfile(acid);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error fetching Atcoder profile." + e.getMessage());
+            throw new IllegalArgumentException("Error fetching Atcoder profile: " + e.getMessage());
         }
     }
 
     @Override
-    @Cacheable(value = "codechefProfile", key = "#username")
-    public Codechef getCodechefProfile(String username) {
+    @Cacheable(value = "codechefProfile", key = "#email")
+    public Codechef getCodechefProfile(String email) {
         try {
-            if(username != null) {
-                username = username.trim();
+            email = normalizeEmail(email);
+            if(email == null || email.isEmpty()) {
+                throw new IllegalArgumentException("Email cannot be null or empty.");
             }
-            if(username == null || username.isEmpty()) {
-                throw new IllegalArgumentException("Username cannot be null or empty.");
+            User user = userRepository.findByEmailIgnoreCase(email);
+            if (user == null) {
+                throw new IllegalArgumentException("User not found with email: " + email);
             }
-            if (userRepository.findByUsername(username) == null) {
-                throw new IllegalArgumentException("User not found with username: " + username);
-            }
-            String ccid = userRepository.findByUsername(username).getCodechefUsername();
+            String ccid = user.getCodechefUsername();
             if (ccid == null || ccid.isEmpty()) {
                 return new Codechef();
             }
             return profileFetchingService.fetchCodechefProfile(ccid);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error fetching Codechef profile." + e.getMessage());
+            throw new IllegalArgumentException("Error fetching Codechef profile: " + e.getMessage());
         }
     }
 
     @Override
-    @Cacheable(value = "leetcodeProfile", key = "#username")
-    public Leetcode getLeetcodeProfile(String username) {
+    @Cacheable(value = "leetcodeProfile", key = "#email")
+    public Leetcode getLeetcodeProfile(String email) {
         try {
-            if(username != null) {
-                username = username.trim();
+            email = normalizeEmail(email);
+            if(email == null || email.isEmpty()) {
+                throw new IllegalArgumentException("Email cannot be null or empty.");
             }
-            if(username == null || username.isEmpty()) {
-                throw new IllegalArgumentException("Username cannot be null or empty.");
+            User user = userRepository.findByEmailIgnoreCase(email);
+            if (user == null) {
+                throw new IllegalArgumentException("User not found with email: " + email);
             }
-            if (userRepository.findByUsername(username) == null) {
-                throw new IllegalArgumentException("User not found with username: " + username);
-            }
-            String lcid = userRepository.findByUsername(username).getLeetcodeUsername();
+            String lcid = user.getLeetcodeUsername();
             if (lcid == null || lcid.isEmpty()) {
                 return new Leetcode();
             }
             return profileFetchingService.fetchLeetcodeProfile(lcid);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error fetching Leetcode profile." + e.getMessage());
+            throw new IllegalArgumentException("Error fetching Leetcode profile: " + e.getMessage());
         }
     }
 

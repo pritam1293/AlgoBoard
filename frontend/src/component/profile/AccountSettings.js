@@ -21,8 +21,6 @@ const AccountSettings = () => {
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
     email: user?.email || "",
-    institutionName: user?.institutionName || "",
-    student: user?.student || false,
   });
   const [validationErrors, setValidationErrors] = useState({});
   const [isEditing, setIsEditing] = useState(false);
@@ -71,9 +69,9 @@ const AccountSettings = () => {
   };
 
   const handleSaveProfile = async () => {
-    if (!user?.username) {
+    if (!user?.email) {
       setValidationErrors({
-        username: "Username is missing. Please re-login.",
+        email: "Email is missing. Please re-login.",
       });
       return;
     }
@@ -85,7 +83,7 @@ const AccountSettings = () => {
     setValidationErrors({});
     const result = await updateProfile({
       ...formData,
-      username: user.username,
+      email: user.email,
     });
     if (result.success) {
       setIsEditing(false);
@@ -97,8 +95,6 @@ const AccountSettings = () => {
       firstName: user?.firstName || "",
       lastName: user?.lastName || "",
       email: user?.email || "",
-      institutionName: user?.institutionName || "",
-      student: user?.student || false,
     });
     setValidationErrors({});
     setIsEditing(false);
@@ -149,7 +145,7 @@ const AccountSettings = () => {
 
     try {
       const response = await apiService.put("/auth/change-password", {
-        username: user?.username,
+        email: user?.email,
         oldPassword: passwordData.oldPassword,
         newPassword: passwordData.newPassword,
       });
@@ -199,8 +195,8 @@ const AccountSettings = () => {
 
   // Delete user handlers
   const handleDeleteUser = async () => {
-    if (!user?.username) {
-      setDeleteMessage("Username is missing. Please re-login.");
+    if (!user?.email) {
+      setDeleteMessage("Email is missing. Please re-login.");
       return;
     }
 
@@ -214,7 +210,7 @@ const AccountSettings = () => {
 
     try {
       const response = await apiService.delete("/users/delete", {
-        username: user.username,
+        email: user.email,
         password: deletePassword
       });
 
@@ -369,80 +365,23 @@ const AccountSettings = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-neutral-300 mb-2">
-                    Username
-                  </label>
-                  <div className="flex items-center justify-between">
-                    <p className="text-white py-2">@{user?.username}</p>
-                    <div className="flex items-center text-neutral-500">
-                      <svg
-                        className="w-4 h-4 mr-1"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <span className="text-xs">Cannot be changed</span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-300 mb-2">
                     Email
                   </label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 bg-neutral-700 border rounded-lg text-white focus:outline-none focus:ring-2 ${validationErrors.email
-                      ? "border-red-500 focus:ring-red-500"
-                      : "border-neutral-600 focus:ring-blue-500"
-                      }`}
+                    disabled
+                    className="w-full px-3 py-2 bg-neutral-700/60 border border-neutral-600 rounded-lg text-neutral-400 cursor-not-allowed"
                   />
                   {validationErrors.email && (
                     <p className="mt-1 text-sm text-red-400">
                       {validationErrors.email}
                     </p>
                   )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-300 mb-2">
-                    Institute
-                  </label>
-                  <input
-                    type="text"
-                    name="institutionName"
-                    value={formData.institutionName}
-                    onChange={handleInputChange}
-                    placeholder="Enter your institute/organization name"
-                    className={`w-full px-3 py-2 bg-neutral-700 border rounded-lg text-white focus:outline-none focus:ring-2 ${validationErrors.institutionName
-                      ? "border-red-500 focus:ring-red-500"
-                      : "border-neutral-600 focus:ring-blue-500"
-                      }`}
-                  />
-                  {validationErrors.institutionName && (
-                    <p className="mt-1 text-sm text-red-400">
-                      {validationErrors.institutionName}
-                    </p>
-                  )}
-                </div>
-                <div className="md:col-span-2">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="student"
-                      checked={formData.student}
-                      onChange={handleInputChange}
-                      className="mr-2 w-4 h-4 text-blue-600 bg-neutral-700 border-neutral-600 rounded focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-neutral-300">
-                      I am a student
-                    </span>
-                  </label>
+                  <p className="mt-1 text-xs text-neutral-500">
+                    Your email is your account identifier and cannot be changed.
+                  </p>
                 </div>
               </div>
               <div className="flex justify-end mt-6 space-x-4">
@@ -767,7 +706,7 @@ const AccountSettings = () => {
                 </h3>
                 <p className="text-red-200 text-sm mb-4">
                   This action <strong>cannot be undone</strong>. This will permanently delete your account{" "}
-                  <strong>@{user?.username}</strong> and remove all your data from our servers.
+                  <strong>{user?.email}</strong> and remove all your data from our servers.
                 </p>
                 <div className="space-y-2 text-red-200 text-sm">
                   <p>• All your competitive programming profiles and statistics will be lost</p>

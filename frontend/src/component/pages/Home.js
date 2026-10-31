@@ -156,7 +156,7 @@ const Home = () => {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
-            Welcome back, {user?.username || "User"}! 👋
+            Welcome back, {user?.firstName || "User"}! 👋
           </h1>
         </div>
 
@@ -449,7 +449,7 @@ const Home = () => {
               </p>
               <div className="flex justify-center">
                 <button
-                  onClick={() => navigate(`/profile/${user?.username}`)}
+                  onClick={() => navigate(`/profile/${encodeURIComponent(user?.email || "")}`)}
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
                 >
                   <span className="mr-2">View Statistics</span>

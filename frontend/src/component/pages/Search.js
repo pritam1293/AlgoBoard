@@ -8,21 +8,21 @@ const Search = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const [searchUsername, setSearchUsername] = useState('');
+    const [searchEmail, setSearchEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
     // Use ref to avoid dependency issues in useCallback
-    const searchUsernameRef = useRef(searchUsername);
-    searchUsernameRef.current = searchUsername;
+    const searchEmailRef = useRef(searchEmail);
+    searchEmailRef.current = searchEmail;
 
     // Handle search functionality - validate user exists before redirecting
-    const handleSearch = useCallback(async (username) => {
-        // If no username provided, use current searchUsername from ref
-        const usernameToSearch = username || searchUsernameRef.current;
+    const handleSearch = useCallback(async (email) => {
+        // If no email is passed, use the current input value
+        const emailToSearch = email || searchEmailRef.current;
 
-        if (!usernameToSearch.trim()) {
-            setError('Please enter a username to search');
+        if (!emailToSearch.trim()) {
+            setError('Please enter an email to search');
             return;
         }
 
@@ -31,53 +31,53 @@ const Search = () => {
 
         try {
             // Check if user exists in our database
-            const response = await userService.getUserProfileByUsername(usernameToSearch.trim());
+            const response = await userService.getUserProfileByEmail(emailToSearch.trim());
 
             if (response && response.status === 'success') {
                 // User exists, redirect to their profile
-                navigate(`/profile/${usernameToSearch.trim()}`);
+                navigate(`/profile/${encodeURIComponent(emailToSearch.trim())}`);
             } else {
                 // This shouldn't happen if API is working correctly, but handle it
-                setError('Profile not found. Please enter a correct username.');
+                setError('Profile not found. Please enter a correct email.');
             }
         } catch (err) {
             // User doesn't exist or other error occurred
             console.error('User search error:', err);
-            setError('Profile not found. Please enter a correct username.');
+            setError('Profile not found. Please enter a correct email.');
         } finally {
             setLoading(false);
         }
-    }, [navigate]); // No searchUsername dependency needed due to ref
+    }, [navigate]); // No searchEmail dependency needed due to ref
 
     // Handle URL parameters (when navigated from other parts of the app)
     useEffect(() => {
         const params = new URLSearchParams(location.search);
-        const usernameParam = params.get('username');
+        const emailParam = params.get('email');
         const errorParam = params.get('error');
 
-        if (usernameParam) {
-            setSearchUsername(usernameParam);
+        if (emailParam) {
+            setSearchEmail(emailParam);
 
             // If there's an error parameter (from navbar search), show the error directly
             if (errorParam === 'not_found') {
-                setError('Profile not found. Please enter a correct username.');
+                setError('Profile not found. Please enter a correct email.');
             } else {
-                // Otherwise, perform the search normally - pass username directly
+                // Otherwise, perform the search normally
                 const searchUser = async () => {
                     setLoading(true);
                     setError('');
 
                     try {
-                        const response = await userService.getUserProfileByUsername(usernameParam.trim());
+                        const response = await userService.getUserProfileByEmail(emailParam.trim());
 
                         if (response && response.status === 'success') {
-                            navigate(`/profile/${usernameParam.trim()}`);
+                            navigate(`/profile/${encodeURIComponent(emailParam.trim())}`);
                         } else {
-                            setError('Profile not found. Please enter a correct username.');
+                            setError('Profile not found. Please enter a correct email.');
                         }
                     } catch (err) {
                         console.error('User search error:', err);
-                        setError('Profile not found. Please enter a correct username.');
+                        setError('Profile not found. Please enter a correct email.');
                     } finally {
                         setLoading(false);
                     }
@@ -110,10 +110,10 @@ const Search = () => {
                         <div className="flex-1">
                             <input
                                 type="text"
-                                placeholder="Enter username to search..."
-                                value={searchUsername}
+                                placeholder="Enter email to search..."
+                                value={searchEmail}
                                 onChange={(e) => {
-                                    setSearchUsername(e.target.value);
+                                    setSearchEmail(e.target.value);
                                     if (error) setError(''); // Clear error when user types
                                 }}
                                 className="w-full bg-neutral-700 text-white px-4 py-3 rounded-lg border border-neutral-600 focus:outline-none focus:border-blue-500 transition duration-200"
@@ -152,7 +152,7 @@ const Search = () => {
                             <div>
                                 <p className="font-medium">{error}</p>
                                 <p className="text-sm text-red-300 mt-1">
-                                    Make sure the username is spelled correctly and the user has an account on AlgoBoard.
+                                    Make sure the email is spelled correctly and the user has an account on AlgoBoard.
                                 </p>
                             </div>
                         </div>
@@ -166,7 +166,7 @@ const Search = () => {
                     </svg>
                     <h3 className="text-xl text-neutral-300 mb-2">Search for Users</h3>
                     <p className="text-neutral-500">
-                        Enter a username above to view their profile and competitive programming statistics across all platforms.
+                        Enter an email above to view their profile and competitive programming statistics across all platforms.
                     </p>
                 </div>
             </div>

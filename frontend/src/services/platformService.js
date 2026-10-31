@@ -2,10 +2,10 @@ import apiService from "./api";
 
 class PlatformService {
   // Get Codeforces profile statistics
-  async getCodeforcesProfile(username) {
+  async getCodeforcesProfile(email) {
     try {
       const response = await apiService.get(
-        `/platforms/codeforces?username=${username}`
+        `/platforms/codeforces?email=${encodeURIComponent(email)}`
       );
 
       return response;
@@ -16,10 +16,10 @@ class PlatformService {
   }
 
   // Get LeetCode profile statistics
-  async getLeetcodeProfile(username) {
+  async getLeetcodeProfile(email) {
     try {
       const response = await apiService.get(
-        `/platforms/leetcode?username=${username}`
+        `/platforms/leetcode?email=${encodeURIComponent(email)}`
       );
 
       return response;
@@ -30,10 +30,10 @@ class PlatformService {
   }
 
   // Get AtCoder profile statistics
-  async getAtcoderProfile(username) {
+  async getAtcoderProfile(email) {
     try {
       const response = await apiService.get(
-        `/platforms/atcoder?username=${username}`
+        `/platforms/atcoder?email=${encodeURIComponent(email)}`
       );
 
       return response;
@@ -44,10 +44,10 @@ class PlatformService {
   }
 
   // Get CodeChef profile statistics
-  async getCodechefProfile(username) {
+  async getCodechefProfile(email) {
     try {
       const response = await apiService.get(
-        `/platforms/codechef?username=${username}`
+        `/platforms/codechef?email=${encodeURIComponent(email)}`
       );
 
       return response;
@@ -58,26 +58,26 @@ class PlatformService {
   }
 
   // Get profile data for specific platform
-  async getProfileByPlatform(platformId, username) {
+  async getProfileByPlatform(platformId, email) {
     switch (platformId) {
       case 'codeforces':
-        return await this.getCodeforcesProfile(username);
+        return await this.getCodeforcesProfile(email);
       case 'leetcode':
-        return await this.getLeetcodeProfile(username);
+        return await this.getLeetcodeProfile(email);
       case 'atcoder':
-        return await this.getAtcoderProfile(username);
+        return await this.getAtcoderProfile(email);
       case 'codechef':
-        return await this.getCodechefProfile(username);
+        return await this.getCodechefProfile(email);
       default:
         throw new Error(`Unsupported platform: ${platformId}`);
     }
   }
 
   // Get ALL platforms data in one optimized call (uses backend parallel processing)
-  async getAllPlatformsData(username) {
+  async getAllPlatformsData(email) {
     try {
       const response = await apiService.get(
-        `/users/search?username=${username}`
+        `/users/search?email=${encodeURIComponent(email)}`
       );
 
       return response;

@@ -50,7 +50,7 @@ export const usePlatformConnection = () => {
       try {
         // Create payload with only the relevant platform field
         const payload = {
-          username: user?.username ?? "",
+          email: user?.email ?? "",
           codeforcesId: platform.id === "codeforces" ? username : null,
           atcoderId: platform.id === "atcoder" ? username : null,
           codechefId: platform.id === "codechef" ? username : null,
@@ -59,7 +59,7 @@ export const usePlatformConnection = () => {
 
         await userService.addCPPlatform(payload);
 
-        // Update user context with new username
+        // Update the signed-in user with the connected platform handle
         updateUser({
           ...user,
           [platform.usernameField]: username,

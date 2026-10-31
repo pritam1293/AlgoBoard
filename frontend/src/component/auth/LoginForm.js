@@ -10,7 +10,7 @@ const LoginForm = ({ onSwitchToSignup }) => {
   const navigate = useNavigate();
   const { login, validateLoginForm } = useAuth();
   const [formData, setFormData] = useState({
-    identifier: "",
+    email: "",
     password: "",
   });
   const [errors, setErrors] = useState({});
@@ -35,10 +35,8 @@ const LoginForm = ({ onSwitchToSignup }) => {
     setIsLoading(true);
     setErrors({});
 
-    const isEmail = /\S+@\S+\.\S+/.test(formData.identifier);
     const loginPayload = {
-      username: isEmail ? null : formData.identifier,
-      email: isEmail ? formData.identifier : null,
+      email: formData.email,
       password: formData.password,
     };
 
@@ -76,14 +74,15 @@ const LoginForm = ({ onSwitchToSignup }) => {
         )}
 
         <FormInput
-          id="identifier"
-          name="identifier"
-          type="text"
-          value={formData.identifier}
+          id="email"
+          name="email"
+          type="email"
+          value={formData.email}
           onChange={handleChange}
-          placeholder="Enter your username or email"
-          label="Username or Email"
-          error={errors.identifier}
+          placeholder="Enter your email"
+          label="Email Address"
+          error={errors.email}
+          autoComplete="email"
         />
 
         <div>

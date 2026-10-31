@@ -52,7 +52,7 @@ function App() {
             }
           />
           <Route
-            path="/profile/:username"
+            path="/profile/:email"
             element={
               <ProtectedRoute>
                 <Profile />

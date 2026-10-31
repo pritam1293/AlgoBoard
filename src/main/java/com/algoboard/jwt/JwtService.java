@@ -31,8 +31,8 @@ public class JwtService {
         return extractClaim(token, claims -> (List<String>) claims.get("roles"));
     }
 
-    // Extract username from JWT token
-    public String extractUsername(String token) {
+    // Extract email from JWT token
+    public String extractEmail(String token) {
         return extractAllClaims(token).getSubject();
     }
 
@@ -79,8 +79,8 @@ public class JwtService {
 
     // Check if token is valid
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        final String email = extractEmail(token);
+        return (email.equals(userDetails.getUsername())) && !isTokenExpired(token);
     }
 
     // Check if token is expired

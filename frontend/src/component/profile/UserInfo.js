@@ -26,8 +26,8 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
             setError('Failed to load profile data');
           }
         } else {
-          // For other users, fetch their profile data by username
-          const response = await userService.getUserProfileByUsername(user.username);
+          // For other users, fetch their profile data by email
+          const response = await userService.getUserProfileByEmail(user.email);
           if (response.status === 'success') {
             setProfileData(response.data);
           } else {
@@ -42,12 +42,12 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
       }
     };
 
-    if (user?.username) {
+    if (user?.email) {
       fetchProfileData();
     } else {
       setLoading(false);
     }
-  }, [user?.username, isOwnProfile]);
+  }, [user?.email, isOwnProfile]);
 
   // Check friendship status using backend API
   useEffect(() => {
@@ -56,9 +56,9 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
       if (!profileData) return;
 
       const userData = profileData;
-      if (currentUser?.username && userData?.username && !isOwnProfile && !loading) {
+      if (currentUser?.email && userData?.email && !isOwnProfile && !loading) {
         try {
-          const response = await userService.checkFriendshipStatus(currentUser.username, userData.username);
+          const response = await userService.checkFriendshipStatus(currentUser.email, userData.email);
           if (response.status === 'success') {
             setLocalIsFriend(response.data.isFriend);
           }
@@ -73,7 +73,7 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
     if (!loading && !isOwnProfile && profileData) {
       checkFriendshipStatus();
     }
-  }, [currentUser?.username, isOwnProfile, loading, profileData]);
+  }, [currentUser?.email, isOwnProfile, loading, profileData]);
 
   // Check if the viewed user is a friend of the current user
   const isFriend = localIsFriend;
@@ -83,12 +83,12 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
     const userData = profileData || user;
     try {
       setFriendActionLoading(true);
-      const response = await userService.addFriend(currentUser.username, userData.username);
+      const response = await userService.addFriend(currentUser.email, userData.email);
 
       if (response.status === 'success') {
         // Verify friendship status with backend API
         try {
-          const statusResponse = await userService.checkFriendshipStatus(currentUser.username, userData.username);
+          const statusResponse = await userService.checkFriendshipStatus(currentUser.email, userData.email);
           if (statusResponse.status === 'success') {
             setLocalIsFriend(statusResponse.data.isFriend);
           }
@@ -114,12 +114,12 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
     const userData = profileData || user;
     try {
       setFriendActionLoading(true);
-      const response = await userService.removeFriend(currentUser.username, userData.username);
+      const response = await userService.removeFriend(currentUser.email, userData.email);
 
       if (response.status === 'success') {
         // Verify friendship status with backend API
         try {
-          const statusResponse = await userService.checkFriendshipStatus(currentUser.username, userData.username);
+          const statusResponse = await userService.checkFriendshipStatus(currentUser.email, userData.email);
           if (statusResponse.status === 'success') {
             setLocalIsFriend(statusResponse.data.isFriend);
           }
@@ -165,7 +165,9 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
     );
   }
 
-  const userData = profileData || user;
+  const userData = isOwnProfile
+    ? { ...(profileData || {}), ...(user || {}) }
+    : profileData || user;
   const allPlatforms = [
     { name: 'Codeforces', username: userData?.codeforcesUsername, color: 'text-blue-400' },
     { name: 'AtCoder', username: userData?.atcoderUsername, color: 'text-green-400' },
@@ -193,12 +195,12 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
                 <h3 className="text-xl font-semibold text-white">
                   {userData?.firstName} {userData?.lastName}
                 </h3>
-                <p className="text-neutral-400">{userData?.username}</p>
+                <p className="text-neutral-400 break-all">{userData?.email}</p>
               </div>
             </div>
 
             {/* Add/Remove Friend Button - Only show for other users' profiles */}
-            {!isOwnProfile && currentUser && userData?.username && (
+            {!isOwnProfile && currentUser && userData?.email && (
               <div className="flex-shrink-0">
                 {isFriend ? (
                   <button
@@ -267,35 +269,12 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
               </h4>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-neutral-300 font-medium">Username:</span>
-                  <span className="text-white font-mono">{userData?.username}</span>
+                  <span className="text-neutral-300 font-medium">Email:</span>
+                  <span className="text-white break-all">{userData?.email}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-neutral-300 font-medium">Full Name:</span>
                   <span className="text-white">{userData?.firstName && userData?.lastName ? `${userData.firstName} ${userData.lastName}` : 'Not provided'}</span>
-                </div>
-                {/* Only show email for own profile */}
-                {isOwnProfile && userData?.email && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-300 font-medium">Email:</span>
-                    <span className="text-white break-all">{userData?.email}</span>
-                  </div>
-                )}
-                {/* Show institution if it exists and has content */}
-                {userData?.institutionName && userData?.institutionName.trim() && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-300 font-medium">Institution:</span>
-                    <span className="text-white">{userData?.institutionName}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center">
-                  <span className="text-neutral-300 font-medium">Student:</span>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${userData?.student
-                    ? 'bg-green-600/20 text-green-400 border border-green-500/30'
-                    : 'bg-red-600/20 text-red-400 border border-red-500/30'
-                    }`}>
-                    {userData?.student ? 'Yes' : 'No'}
-                  </span>
                 </div>
               </div>
             </div>
@@ -371,10 +350,10 @@ const UserInfo = ({ user, isOwnProfile = true }) => {
                                   {friend[0]?.toUpperCase()}
                                 </span>
                               </div>
-                              <span className="text-white font-medium">@{friend}</span>
+                              <span className="text-white font-medium break-all">{friend}</span>
                             </div>
                             <button
-                              onClick={() => navigate(`/profile/${friend}`)}
+                              onClick={() => navigate(`/profile/${encodeURIComponent(friend)}`)}
                               className="text-blue-400 hover:text-blue-300 text-sm hover:underline transition-colors"
                             >
                               View Profile
