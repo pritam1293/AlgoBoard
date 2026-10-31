@@ -61,7 +61,7 @@ const PrivacyPolicy = () => {
             <ul className="list-disc space-y-2 pl-6 leading-7">
               <li><strong className="text-white">Account details:</strong> your email address, first name, last name, and password. Your email address is your primary account identifier, and your password is stored only as a cryptographic hash.</li>
               <li><strong className="text-white">Connected platform handles:</strong> the Codeforces, AtCoder, CodeChef, and LeetCode handles you choose to connect.</li>
-              <li><strong className="text-white">Account communications:</strong> information you provide when contacting support, requesting a password reset, or exercising your privacy rights.</li>
+              <li><strong className="text-white">Account communications:</strong> information you provide when contacting support or exercising your privacy rights.</li>
             </ul>
 
             <h3 className="mb-2 mt-5 text-lg font-medium text-blue-400">Information collected automatically</h3>
@@ -86,10 +86,9 @@ const PrivacyPolicy = () => {
             <h2 className="mb-3 text-2xl font-semibold text-white">3. How we use information</h2>
             <p className="leading-7">We use personal information to:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6 leading-7">
-              <li>Create and maintain your account, authenticate you, and provide sign-in, password reset, and security notices.</li>
+              <li>Create and maintain your account, authenticate you, and provide sign-in and account management.</li>
               <li>Retrieve and display your connected competitive programming profiles and statistics.</li>
               <li>Provide dashboards, analytics, progress tracking, and comparison features.</li>
-              <li>Send service-related emails, including welcome messages, login notifications, and account updates.</li>
               <li>Monitor, troubleshoot, secure, and improve the Service.</li>
               <li>Comply with legal obligations, enforce our Terms, and protect the rights and safety of AlgoBoard, users, and third parties.</li>
             </ul>

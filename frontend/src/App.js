@@ -8,7 +8,6 @@ import Profile from "./component/profile/Profile";
 import TermsOfService from "./component/pages/TermsOfService";
 import PrivacyPolicy from "./component/pages/PrivacyPolicy";
 import AccountSettings from "./component/profile/AccountSettings";
-import ForgotPassword from "./component/pages/ForgotPassword";
 import PlatformProfileSearch from "./component/pages/PlatformProfileSearch";
 import {
   BrowserRouter as Router,
@@ -107,7 +106,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/" element={<Navigate to="/login" replace />} />

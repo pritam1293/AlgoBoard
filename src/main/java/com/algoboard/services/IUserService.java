@@ -27,12 +27,6 @@ public interface IUserService {
 
     public Map<String, String> updatePassword(String email, String oldPassword, String newPassword);
 
-    public boolean generateAndSendOtp(String email);
-
-    public boolean verifyOtp(String email, String otp);
-
-    public boolean resetPassword(String email, String newPassword);
-
     public String deleteUser(String email, String password);
 
     public boolean addCPProfiles(String email, String codeforcesId, String atcoderId, String codechefId,

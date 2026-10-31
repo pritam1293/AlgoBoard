@@ -62,43 +62,6 @@ class AuthService {
   getToken() {
     return apiService.getAuthToken();
   }
-
-  // Request password reset OTP
-  async requestPasswordReset(email) {
-    try {
-      const response = await apiService.post("/auth/request-reset", { email });
-      return response;
-    } catch (error) {
-      throw new Error(error.message || "Failed to send OTP");
-    }
-  }
-
-  // Verify OTP
-  async verifyOtp(email, otp) {
-    try {
-      const response = await apiService.post("/auth/verify-otp", {
-        email,
-        otp,
-      });
-      return response;
-    } catch (error) {
-      throw new Error(error.message || "Failed to verify OTP");
-    }
-  }
-
-  // Reset password
-  async resetPassword(email, newPassword, otp) {
-    try {
-      const response = await apiService.post("/auth/reset-password", {
-        email,
-        newPassword,
-        otp,
-      });
-      return response;
-    } catch (error) {
-      throw new Error(error.message || "Failed to reset password");
-    }
-  }
 }
 
 const authService = new AuthService();

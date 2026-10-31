@@ -12,7 +12,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -51,12 +50,6 @@ public class User {
     @CollectionTable(name = "user_friends", joinColumns = @JoinColumn(name = "user_id"), uniqueConstraints = @UniqueConstraint(columnNames = { "user_id", "friend_email" }))
     @Column(name = "friend_email", nullable = false, length = 320)
     private Set<String> friends = new HashSet<>();
-
-    @Column(name = "reset_otp", length = 6)
-    private String resetOtp;
-
-    @Column(name = "reset_otp_expiry")
-    private LocalDateTime resetOtpExpiry;
 
     public User() {
 
@@ -142,19 +135,4 @@ public class User {
         this.friends = friends;
     }
 
-    public String getResetOtp() {
-        return resetOtp;
-    }
-
-    public void setResetOtp(String resetOtp) {
-        this.resetOtp = resetOtp;
-    }
-
-    public LocalDateTime getResetOtpExpiry() {
-        return resetOtpExpiry;
-    }
-
-    public void setResetOtpExpiry(LocalDateTime resetOtpExpiry) {
-        this.resetOtpExpiry = resetOtpExpiry;
-    }
 }

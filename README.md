@@ -144,7 +144,7 @@ A comprehensive competitive programming statistics dashboard that aggregates and
 
 - **Neon PostgreSQL**: Serverless PostgreSQL for persistent user data
 - **Spring Data JPA**: Repository-based persistence with Hibernate
-- **Relational Storage**: User accounts, friends, platform handles, and OTP state
+- **Relational Storage**: User accounts, friends, and platform handles
 - **SSL Connections**: Neon connections use `sslmode=require`
 
 ## 📊 What This Project Accomplishes

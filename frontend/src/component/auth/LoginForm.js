@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { MESSAGE_CLASSES, BUTTON_CLASSES } from "../../constants/styles";
 import FormInput from "../common/FormInput";
@@ -7,7 +6,6 @@ import LoadingSpinner from "../common/LoadingSpinner";
 import PlatformGrid from "../common/PlatformGrid";
 
 const LoginForm = ({ onSwitchToSignup }) => {
-  const navigate = useNavigate();
   const { login, validateLoginForm } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
@@ -154,28 +152,19 @@ const LoginForm = ({ onSwitchToSignup }) => {
           )}
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <input
-              id="remember-me"
-              name="remember-me"
-              type="checkbox"
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-800 rounded"
-            />
-            <label
-              htmlFor="remember-me"
-              className="ml-2 block text-sm text-gray-300"
-            >
-              Remember me
-            </label>
-          </div>
-          <button
-            type="button"
-            className="text-sm text-blue-400 hover:text-blue-300 transition duration-200 bg-transparent border-none cursor-pointer"
-            onClick={() => navigate("/forgot-password")}
+        <div className="flex items-center">
+          <input
+            id="remember-me"
+            name="remember-me"
+            type="checkbox"
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-800 rounded"
+          />
+          <label
+            htmlFor="remember-me"
+            className="ml-2 block text-sm text-gray-300"
           >
-            Forgot password?
-          </button>
+            Remember me
+          </label>
         </div>
 
         <button

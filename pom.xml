@@ -99,12 +99,6 @@
 			<version>3.0.0</version>
 		</dependency>
 
-		<!-- Spring Boot Mail - enables email sending functionality (SMTP support) -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-mail</artifactId>
-		</dependency>
-		
 		<!-- Configuration Processor - generates metadata for @ConfigurationProperties classes -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

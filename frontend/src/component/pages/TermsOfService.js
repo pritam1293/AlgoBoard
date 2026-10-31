@@ -233,8 +233,8 @@ const TermsOfService = () => {
             <p className="leading-7">
               We may modify, suspend, or discontinue any part of the Service. We
               may also update these Terms from time to time. If we make material
-              changes, we will provide reasonable notice, such as by email or a
-              prominent notice on the Service. Updated Terms become effective on
+              changes, we will provide reasonable notice through a prominent notice
+              on the Service. Updated Terms become effective on
               the date stated at the top of this page. Your continued use of the
               Service after that date constitutes acceptance of the updated
               Terms.

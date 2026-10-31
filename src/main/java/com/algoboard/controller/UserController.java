@@ -6,7 +6,6 @@ import com.algoboard.entities.Leetcode;
 import com.algoboard.entities.Codechef;
 import com.algoboard.entities.User;
 import com.algoboard.services.IUserService;
-import com.algoboard.services.EmailService;
 import com.algoboard.services.CustomUserDetailsService;
 import com.algoboard.jwt.JwtService;
 import com.algoboard.DTO.RequestDTO.UserAuthenticationResponse;
@@ -34,14 +33,12 @@ import org.springframework.web.bind.annotation.PutMapping;
 public class UserController {
 
     private final IUserService userService;
-    private final EmailService emailService;
     private final JwtService jwtService;
     private final CustomUserDetailsService customUserDetailsService;
 
-    public UserController(IUserService userService, EmailService emailService,
+    public UserController(IUserService userService,
             JwtService jwtService, CustomUserDetailsService customUserDetailsService) {
         this.userService = userService;
-        this.emailService = emailService;
         this.jwtService = jwtService;
         this.customUserDetailsService = customUserDetailsService;
     }
@@ -56,17 +53,9 @@ public class UserController {
         try {
             UserProfile newProfile = userService.registerUser(user);
 
-            // Send welcome email asynchronously (don't block the response)
-            try {
-                emailService.sendWelcomeEmail(newProfile.getEmail(), newProfile.getFirstName());
-            } catch (Exception emailException) {
-                // Log email error but don't fail the signup process
-                System.err.println("Failed to send welcome email: " + emailException.getMessage());
-            }
-
             // Remove password from response for security
             return ResponseEntity
-                    .ok(ResponseUtil.createSuccessResponse("Signup successful. Welcome email sent!", newProfile));
+                    .ok(ResponseUtil.createSuccessResponse("Signup successful.", newProfile));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400)
                     .body(ResponseUtil.createErrorResponse("Signup failed: " + e.getMessage()));
@@ -97,13 +86,6 @@ public class UserController {
                     jwtService.getExpirationTime() / 1000 // Convert to seconds
             );
 
-            // Send login notification email asynchronously (don't block the response)
-            try {
-                emailService.sendLoginNotification(profile.getEmail(), profile.getFirstName());
-            } catch (Exception emailException) {
-                // Log email error but don't fail the login process
-                System.err.println("Failed to send login notification: " + emailException.getMessage());
-            }
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Login successful", authResponse));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Login failed: " + e.getMessage()));
@@ -178,66 +160,11 @@ public class UserController {
         String oldPassword = payload.get("oldPassword");
         String newPassword = payload.get("newPassword");
         try {
-            Map<String, String> user = userService.updatePassword(email, oldPassword, newPassword);
-            emailService.sendProfileUpdateNotification(user.get("email"), user.get("firstName"), "password");
+            userService.updatePassword(email, oldPassword, newPassword);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Password updated successfully", null));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400)
                     .body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
-        }
-    }
-
-    @PostMapping("auth/request-reset") // forgot password - enter email
-    public ResponseEntity<?> requestPasswordReset(@RequestBody Map<String, String> payload) {
-        String email = payload.get("email");
-        try {
-            userService.generateAndSendOtp(email);
-            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("OTP sent to your email", null));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400).body(ResponseUtil
-                    .createErrorResponse("Invalid email or the email is not registered: " + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
-        }
-    }
-
-    @PostMapping("auth/verify-otp") // forgot password - enter otp
-    public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> payload) {
-        String email = payload.get("email");
-        String otp = payload.get("otp");
-        try {
-            boolean valid = userService.verifyOtp(email, otp);
-            if (valid) {
-                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("OTP verified successfully.", null));
-            }
-            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Invalid OTP or OTP expired"));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400)
-                    .body(ResponseUtil.createErrorResponse("Verification failed: " + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
-        }
-    }
-
-    @PostMapping("auth/reset-password") // forgot password enter new password
-    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> payload) {
-        String email = payload.get("email");
-        String newPassword = payload.get("newPassword");
-        try {
-            boolean success = userService.resetPassword(email, newPassword);
-            if (success) {
-                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Password reset successfully", null));
-            } else {
-                return ResponseEntity.status(400)
-                        .body(ResponseUtil.createErrorResponse("Invalid reset token or token expired"));
-            }
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Reset failed: " + e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(500)
                     .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
