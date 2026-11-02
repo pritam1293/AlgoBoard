@@ -5,12 +5,17 @@ const PrivacyPolicy = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-neutral-900 px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl">
+    <div className="relative min-h-screen overflow-hidden bg-neutral-950 px-4 py-10 sm:px-6 lg:px-8">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-32 -top-40 h-96 w-96 rounded-full bg-blue-600/20 blur-3xl" />
+        <div className="absolute right-0 top-1/4 h-96 w-96 rounded-full bg-violet-600/10 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-emerald-600/10 blur-3xl" />
+      </div>
+      <div className="relative mx-auto max-w-4xl">
         <div className="mb-8 flex items-center justify-between">
           <button
             onClick={() => navigate("/signup")}
-            className="flex items-center text-sm font-medium text-neutral-400 transition hover:text-white"
+            className="flex items-center text-sm font-medium text-white transition hover:text-white"
           >
             <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -25,15 +30,17 @@ const PrivacyPolicy = () => {
           </button>
         </div>
 
-        <header className="mb-8 border-b border-neutral-700 pb-8">
-          <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-blue-400">
+        <header className="mb-8 border-b border-white/10 pb-8">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-blue-400">
             Legal
           </p>
-          <h1 className="text-4xl font-bold text-white">Privacy Policy</h1>
-          <p className="mt-3 text-neutral-400">
+          <h1 className="text-4xl font-semibold tracking-tight text-white">
+            Privacy Policy
+          </h1>
+          <p className="mt-3 text-white">
             Effective date: October 31, 2026. Last updated: October 31, 2026.
           </p>
-          <p className="mt-4 max-w-3xl leading-7 text-neutral-300">
+          <p className="mt-4 max-w-3xl leading-7 text-white">
             This Privacy Policy explains how AlgoBoard ("AlgoBoard," "we," "us,"
             or "our") collects, uses, shares, and protects personal information
             when you use our website, dashboards, analytics, and related
@@ -42,9 +49,9 @@ const PrivacyPolicy = () => {
           </p>
         </header>
 
-        <div className="space-y-10 rounded-xl border border-neutral-700 bg-neutral-800 p-6 text-neutral-300 shadow-xl sm:p-9">
+        <div className="space-y-10 rounded-2xl border border-white/10 bg-neutral-900/60 p-6 text-white shadow-2xl backdrop-blur-sm sm:p-9">
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">1. Scope and controller</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">1. Scope and controller</h2>
             <p className="leading-7">
               This Policy applies to information processed through the Service.
               AlgoBoard is responsible for the personal information described
@@ -56,7 +63,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">2. Information we collect</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">2. Information we collect</h2>
             <h3 className="mb-2 mt-5 text-lg font-medium text-blue-400">Information you provide</h3>
             <ul className="list-disc space-y-2 pl-6 leading-7">
               <li><strong className="text-white">Account details:</strong> your email address, first name, last name, and password. Your email address is your primary account identifier, and your password is stored only as a cryptographic hash.</li>
@@ -83,7 +90,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">3. How we use information</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">3. How we use information</h2>
             <p className="leading-7">We use personal information to:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6 leading-7">
               <li>Create and maintain your account, authenticate you, and provide sign-in and account management.</li>
@@ -101,7 +108,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">4. Cookies and local storage</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">4. Cookies and local storage</h2>
             <p className="leading-7">
               We use cookies and browser local storage to operate the Service.
               These technologies may store your authentication token and basic
@@ -115,7 +122,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">5. Sharing and disclosure</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">5. Sharing and disclosure</h2>
             <p className="leading-7">
               We do not sell your personal information. We may share information
               in the following circumstances:
@@ -130,7 +137,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">6. Data retention</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">6. Data retention</h2>
             <p className="leading-7">
               We retain personal information for as long as your account remains
               active and as reasonably necessary to provide the Service, comply
@@ -148,7 +155,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">7. Security</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">7. Security</h2>
             <p className="leading-7">
               We use administrative, technical, and organizational safeguards
               designed to protect personal information, including password
@@ -161,7 +168,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">8. Your rights and choices</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">8. Your rights and choices</h2>
             <p className="leading-7">
               Depending on your location, you may have the right to access,
               correct, delete, or restrict the processing of your personal
@@ -185,7 +192,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">9. Children's privacy</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">9. Children's privacy</h2>
             <p className="leading-7">
               The Service is not directed to children under 13, and we do not
               knowingly collect personal information from children under 13. If
@@ -197,7 +204,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">10. International transfers</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">10. International transfers</h2>
             <p className="leading-7">
               AlgoBoard and its service providers may process information in
               countries other than the one where you live. Those countries may
@@ -209,7 +216,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">11. Third-party links and platforms</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">11. Third-party links and platforms</h2>
             <p className="leading-7">
               The Service links to and retrieves data from third-party
               competitive programming platforms. We are not responsible for their
@@ -220,7 +227,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">12. Changes to this Policy</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">12. Changes to this Policy</h2>
             <p className="leading-7">
               We may update this Privacy Policy from time to time. If we make
               material changes, we will provide reasonable notice, such as by
@@ -232,7 +239,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">13. Contact us</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">13. Contact us</h2>
             <p className="leading-7">
               For privacy questions, requests, or concerns, contact AlgoBoard at{" "}
               <a
@@ -252,16 +259,16 @@ const PrivacyPolicy = () => {
             </p>
           </section>
 
-          <div className="flex flex-col gap-3 border-t border-neutral-700 pt-6 sm:flex-row sm:justify-between">
+          <div className="flex flex-col gap-3 border-t border-white/10 pt-6 sm:flex-row sm:justify-between">
             <button
               onClick={() => navigate("/signup")}
-              className="rounded-lg bg-blue-600 px-5 py-3 font-medium text-white transition hover:bg-blue-700"
+              className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-medium text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500"
             >
               I Understand — Back to Sign Up
             </button>
             <button
               onClick={() => navigate("/terms")}
-              className="rounded-lg border border-neutral-600 px-5 py-3 font-medium text-neutral-300 transition hover:border-neutral-500 hover:text-white"
+              className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/10 hover:text-white"
             >
               Read Terms of Service
             </button>

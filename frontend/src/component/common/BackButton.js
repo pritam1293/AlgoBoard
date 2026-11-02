@@ -5,7 +5,7 @@ const BackButton = ({ onBack, label = "Back to Home" }) => {
     <div className="mb-6">
       <button
         onClick={onBack}
-        className="flex items-center text-neutral-400 hover:text-white transition duration-200"
+        className="flex items-center text-white hover:text-white transition duration-200"
       >
         <svg
           className="w-5 h-5 mr-2"

@@ -97,9 +97,9 @@ const SignupForm = ({ onSwitchToLogin }) => {
 
   return (
     <div className="w-full">
-      <div className="mb-5">
-        <h2 className="text-2xl font-bold text-white">Create your account</h2>
-        <p className="mt-2 text-sm text-neutral-400">
+      <div className="mb-6">
+        <h2 className="text-2xl font-semibold tracking-tight text-white">Create your account</h2>
+        <p className="mt-2 text-sm text-white">
           Join AlgoBoard and bring all your coding profiles together.
         </p>
       </div>
@@ -153,7 +153,7 @@ const SignupForm = ({ onSwitchToLogin }) => {
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-neutral-300 mb-2"
+              className="block text-sm font-medium text-white mb-2"
             >
               Password
             </label>
@@ -166,21 +166,21 @@ const SignupForm = ({ onSwitchToLogin }) => {
                 onChange={handleChange}
                 placeholder="Enter password"
                 title="Password must contain: 8-15 characters, one uppercase (A-Z), one lowercase (a-z), one number (0-9), and one special character (!@#$%^&*)"
-                className={`block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 bg-gray-800 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm pr-10 ${
+                className={`block w-full rounded-xl border bg-white/[0.03] px-3.5 py-2.5 pr-11 text-sm text-white placeholder-neutral-300 transition focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
                   errors.password
-                    ? "border-red-500 focus:ring-red-500 focus:border-red-500"
-                    : ""
+                    ? "border-red-500/50 focus:border-red-400"
+                    : "border-white/10 focus:border-blue-400/40"
                 }`}
               />
               <button
                 type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-white transition hover:text-white"
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? (
                   <svg
-                    className="h-5 w-5 text-gray-400 hover:text-gray-300"
+                    className="h-5 w-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -194,7 +194,7 @@ const SignupForm = ({ onSwitchToLogin }) => {
                   </svg>
                 ) : (
                   <svg
-                    className="h-5 w-5 text-gray-400 hover:text-gray-300"
+                    className="h-5 w-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -219,10 +219,10 @@ const SignupForm = ({ onSwitchToLogin }) => {
               <p className="mt-1 text-sm text-red-400">{errors.password}</p>
             )}
             {formData.password && (
-              <div className="mt-1 flex items-center">
-                <span className="text-xs text-gray-400">Strength:</span>
+              <div className="mt-2 flex items-center gap-1">
+                <span className="text-xs text-white">Strength:</span>
                 <span
-                  className={`ml-1 text-xs font-medium ${passwordStrengthClass}`}
+                  className={`text-xs font-medium ${passwordStrengthClass}`}
                 >
                   {passwordStrength.strength}
                 </span>
@@ -233,7 +233,7 @@ const SignupForm = ({ onSwitchToLogin }) => {
           <div>
             <label
               htmlFor="confirmPassword"
-              className="block text-sm font-medium text-neutral-300 mb-2"
+              className="block text-sm font-medium text-white mb-2"
             >
               Confirm Password
             </label>
@@ -245,15 +245,15 @@ const SignupForm = ({ onSwitchToLogin }) => {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 placeholder="Confirm password"
-                className={`block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 bg-gray-800 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm pr-10 ${
+                className={`block w-full rounded-xl border bg-white/[0.03] px-3.5 py-2.5 pr-11 text-sm text-white placeholder-neutral-300 transition focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
                   errors.confirmPassword
-                    ? "border-red-500 focus:ring-red-500 focus:border-red-500"
-                    : ""
+                    ? "border-red-500/50 focus:border-red-400"
+                    : "border-white/10 focus:border-blue-400/40"
                 }`}
               />
               <button
                 type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-white transition hover:text-white"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 aria-label={
                   showConfirmPassword ? "Hide password" : "Show password"
@@ -261,7 +261,7 @@ const SignupForm = ({ onSwitchToLogin }) => {
               >
                 {showConfirmPassword ? (
                   <svg
-                    className="h-5 w-5 text-gray-400 hover:text-gray-300"
+                    className="h-5 w-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -275,7 +275,7 @@ const SignupForm = ({ onSwitchToLogin }) => {
                   </svg>
                 ) : (
                   <svg
-                    className="h-5 w-5 text-gray-400 hover:text-gray-300"
+                    className="h-5 w-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -309,17 +309,17 @@ const SignupForm = ({ onSwitchToLogin }) => {
             id="terms"
             name="terms"
             type="checkbox"
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-800 rounded mt-0.5"
+            className="mt-0.5 h-4 w-4 rounded border-white/20 bg-white/5 text-blue-600 focus:ring-blue-500/40"
             required
           />
           <label
             htmlFor="terms"
-            className="ml-2 block text-sm text-gray-300"
+            className="ml-2 block text-sm text-white"
           >
             I agree to the{" "}
             <button
               type="button"
-              className="text-blue-400 hover:text-blue-300 underline"
+              className="font-medium text-blue-400 underline underline-offset-2 transition hover:text-blue-300"
               onClick={() => window.open("/terms", "_blank")}
             >
               Terms of Service
@@ -327,7 +327,7 @@ const SignupForm = ({ onSwitchToLogin }) => {
             and{" "}
             <button
               type="button"
-              className="text-blue-400 hover:text-blue-300 underline"
+              className="font-medium text-blue-400 underline underline-offset-2 transition hover:text-blue-300"
               onClick={() => window.open("/privacy", "_blank")}
             >
               Privacy Policy
@@ -354,7 +354,7 @@ const SignupForm = ({ onSwitchToLogin }) => {
           )}
         </button>
 
-        <p className="text-center text-sm text-gray-400">
+        <p className="text-center text-sm text-white">
           Already have an account?{" "}
           <button
             type="button"

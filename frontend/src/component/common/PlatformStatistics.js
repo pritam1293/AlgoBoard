@@ -42,36 +42,36 @@ const PlatformStatistics = ({
         const { problemsSolved, totalSubmissions, acceptedSubmissions } = platformData;
 
         return (
-            <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+            <div className="rounded-2xl border border-white/10 bg-neutral-900/60 p-6 backdrop-blur-sm">
                 <h4 className="text-lg font-semibold text-white mb-4">Problem Statistics</h4>
 
                 {/* Problems Solved Breakdown */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="text-center p-4 bg-neutral-700 rounded-lg">
+                    <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4 text-center">
                         <p className="text-2xl font-bold text-green-400">{problemsSolved.all}</p>
-                        <p className="text-sm text-gray-400">Total Solved</p>
+                        <p className="text-sm text-white">Total Solved</p>
                     </div>
-                    <div className="text-center p-4 bg-neutral-700 rounded-lg">
+                    <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4 text-center">
                         <p className="text-2xl font-bold text-green-500">{problemsSolved.easy}</p>
-                        <p className="text-sm text-gray-400">Easy</p>
+                        <p className="text-sm text-white">Easy</p>
                     </div>
-                    <div className="text-center p-4 bg-neutral-700 rounded-lg">
+                    <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4 text-center">
                         <p className="text-2xl font-bold text-yellow-500">{problemsSolved.medium}</p>
-                        <p className="text-sm text-gray-400">Medium</p>
+                        <p className="text-sm text-white">Medium</p>
                     </div>
-                    <div className="text-center p-4 bg-neutral-700 rounded-lg">
+                    <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4 text-center">
                         <p className="text-2xl font-bold text-red-500">{problemsSolved.hard}</p>
-                        <p className="text-sm text-gray-400">Hard</p>
+                        <p className="text-sm text-white">Hard</p>
                     </div>
                 </div>
 
                 {/* Submission Statistics */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-4 bg-neutral-700 rounded-lg">
+                    <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4">
                         <h5 className="text-white font-semibold mb-2">Total Submissions</h5>
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-gray-400">All:</span>
+                                <span className="text-white">All:</span>
                                 <span className="text-white">{totalSubmissions.all}</span>
                             </div>
                             <div className="flex justify-between">
@@ -89,11 +89,11 @@ const PlatformStatistics = ({
                         </div>
                     </div>
 
-                    <div className="p-4 bg-neutral-700 rounded-lg">
+                    <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4">
                         <h5 className="text-white font-semibold mb-2">Accepted Submissions</h5>
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-gray-400">All:</span>
+                                <span className="text-white">All:</span>
                                 <span className="text-white">{acceptedSubmissions.all}</span>
                             </div>
                             <div className="flex justify-between">
@@ -111,11 +111,11 @@ const PlatformStatistics = ({
                         </div>
                     </div>
 
-                    <div className="p-4 bg-neutral-700 rounded-lg">
+                    <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4">
                         <h5 className="text-white font-semibold mb-2">Acceptance Rate</h5>
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-gray-400">Overall:</span>
+                                <span className="text-white">Overall:</span>
                                 <span className="text-white">
                                     {((acceptedSubmissions.all / totalSubmissions.all) * 100).toFixed(1)}%
                                 </span>
@@ -154,9 +154,9 @@ const PlatformStatistics = ({
 
         if (platformData.recentSubmissions.length === 0) {
             return (
-                <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+                <div className="rounded-2xl border border-white/10 bg-neutral-900/60 p-6 backdrop-blur-sm">
                     <h4 className="text-lg font-semibold text-white mb-4">Recent Submissions</h4>
-                    <p className="text-gray-400">No recent submissions available</p>
+                    <p className="text-white">No recent submissions available</p>
                 </div>
             );
         }
@@ -164,11 +164,11 @@ const PlatformStatistics = ({
         const submissions = platformData.recentSubmissions.slice(0, 10); // Show latest 10
 
         return (
-            <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+            <div className="rounded-2xl border border-white/10 bg-neutral-900/60 p-6 backdrop-blur-sm">
                 <h4 className="text-lg font-semibold text-white mb-4">Recent Submissions</h4>
                 <div className="space-y-3">
                     {submissions.map((submission, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-neutral-700 rounded-lg hover:bg-neutral-600 transition-colors">
+                        <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.03] transition-colors hover:bg-white/[0.06]">
                             <div className="flex-1">
                                 <a
                                     href={
@@ -206,35 +206,35 @@ const PlatformStatistics = ({
         }
 
         return (
-            <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+            <div className="rounded-2xl border border-white/10 bg-neutral-900/60 p-6 backdrop-blur-sm">
                 <h4 className="text-lg font-semibold text-white mb-4">Rating Overview</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {platformData.currentRating !== undefined && (
-                        <div className="text-center p-4 bg-neutral-700 rounded-lg">
+                        <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4 text-center">
                             <p className="text-2xl font-bold text-blue-400">{platformData.currentRating}</p>
-                            <p className="text-sm text-gray-400">Current Rating</p>
+                            <p className="text-sm text-white">Current Rating</p>
                         </div>
                     )}
                     {platformData.maxRating !== undefined && (
-                        <div className="text-center p-4 bg-neutral-700 rounded-lg">
+                        <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4 text-center">
                             <p className="text-2xl font-bold text-yellow-400">{platformData.maxRating}</p>
-                            <p className="text-sm text-gray-400">Max Rating</p>
+                            <p className="text-sm text-white">Max Rating</p>
                         </div>
                     )}
                     {platformData.contestsParticipated !== undefined && (
-                        <div className="text-center p-4 bg-neutral-700 rounded-lg">
+                        <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4 text-center">
                             <p className="text-2xl font-bold text-green-400">{platformData.contestsParticipated}</p>
-                            <p className="text-sm text-gray-400">Contests</p>
+                            <p className="text-sm text-white">Contests</p>
                         </div>
                     )}
                     {platformData.problemsSolved !== undefined && (
-                        <div className="text-center p-4 bg-neutral-700 rounded-lg">
+                        <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4 text-center">
                             <p className="text-2xl font-bold text-purple-400">
                                 {typeof platformData.problemsSolved === 'object'
                                     ? platformData.problemsSolved.all
                                     : platformData.problemsSolved}
                             </p>
-                            <p className="text-sm text-gray-400">Problems Solved</p>
+                            <p className="text-sm text-white">Problems Solved</p>
                         </div>
                     )}
                 </div>
@@ -248,7 +248,7 @@ const PlatformStatistics = ({
             !platformData?.contestHistory ||
             platformData.contestHistory.length === 0
         ) {
-            return <p className="text-gray-400">No contest history available</p>;
+            return <p className="text-white">No contest history available</p>;
         }
 
         const startIndex = contestPage * CONTESTS_PER_PAGE;
@@ -266,7 +266,7 @@ const PlatformStatistics = ({
                 <h4 className="text-lg font-semibold text-white">Contest History</h4>
                 <div className="space-y-2">
                     {currentContests.map((contest, index) => (
-                        <div key={index} className="bg-neutral-700 rounded-lg p-4">
+                        <div key={index} className="rounded-xl border border-white/5 bg-white/[0.03] p-4">
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h5 className="text-white font-medium">
@@ -291,7 +291,7 @@ const PlatformStatistics = ({
                                             contest.contestName
                                         )}
                                     </h5>
-                                    <p className="text-gray-400 text-sm">
+                                    <p className="text-white text-sm">
                                         Standing: {contest.standing}
                                     </p>
                                 </div>
@@ -320,7 +320,7 @@ const PlatformStatistics = ({
                         <button
                             onClick={() => setContestPage(Math.max(0, contestPage - 1))}
                             disabled={contestPage === 0}
-                            className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            className="rounded-xl border border-blue-400/20 bg-blue-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-white"
                         >
                             Previous
                         </button>
@@ -332,7 +332,7 @@ const PlatformStatistics = ({
                                 setContestPage(Math.min(totalPages - 1, contestPage + 1))
                             }
                             disabled={contestPage === totalPages - 1}
-                            className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            className="rounded-xl border border-blue-400/20 bg-blue-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-white"
                         >
                             Next
                         </button>
@@ -345,7 +345,7 @@ const PlatformStatistics = ({
     // Accepted solutions with pagination
     const renderAcceptedSolutions = () => {
         if (!platformData?.problemSet || platformData.problemSet.length === 0) {
-            return <p className="text-gray-400">No accepted solutions available</p>;
+            return <p className="text-white">No accepted solutions available</p>;
         }
 
         const startIndex = solutionsPage * SOLUTIONS_PER_PAGE;
@@ -360,7 +360,7 @@ const PlatformStatistics = ({
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {currentSolutions.map((problem, index) => (
-                        <div key={index} className="bg-neutral-700 rounded-lg p-4 hover:bg-neutral-600 transition-colors">
+                        <div key={index} className="rounded-xl border border-white/5 bg-white/[0.03] p-4 transition-colors hover:bg-white/[0.06]">
                             <div className="flex justify-between items-start mb-2">
                                 <h5 className="text-white font-medium text-sm">
                                     {problem.contestId ? (
@@ -389,7 +389,7 @@ const PlatformStatistics = ({
                                             problem.rating >= 1600 ? 'bg-blue-600 text-white' :
                                                 problem.rating >= 1400 ? 'bg-cyan-600 text-white' :
                                                     problem.rating >= 1200 ? 'bg-green-600 text-white' :
-                                                        'bg-gray-600 text-white'
+                                                        'bg-neutral-600 text-white'
                                         }`}>
                                         {problem.rating}
                                     </span>
@@ -400,13 +400,13 @@ const PlatformStatistics = ({
                                     {problem.tags.slice(0, 3).map((tag, tagIndex) => (
                                         <span
                                             key={tagIndex}
-                                            className="text-xs bg-neutral-600 text-gray-300 px-2 py-1 rounded"
+                                            className="rounded-md border border-white/5 bg-white/5 px-2 py-1 text-xs text-white"
                                         >
                                             {tag}
                                         </span>
                                     ))}
                                     {problem.tags.length > 3 && (
-                                        <span className="text-xs text-gray-400">+{problem.tags.length - 3}</span>
+                                        <span className="text-xs text-white">+{problem.tags.length - 3}</span>
                                     )}
                                 </div>
                             )}
@@ -420,7 +420,7 @@ const PlatformStatistics = ({
                         <button
                             onClick={() => setSolutionsPage(Math.max(0, solutionsPage - 1))}
                             disabled={solutionsPage === 0}
-                            className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            className="rounded-xl border border-blue-400/20 bg-blue-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-white"
                         >
                             Previous
                         </button>
@@ -432,7 +432,7 @@ const PlatformStatistics = ({
                                 setSolutionsPage(Math.min(totalPages - 1, solutionsPage + 1))
                             }
                             disabled={solutionsPage === totalPages - 1}
-                            className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            className="rounded-xl border border-blue-400/20 bg-blue-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-white"
                         >
                             Next
                         </button>
@@ -446,9 +446,9 @@ const PlatformStatistics = ({
     const renderRatingChart = () => {
         if (!platformData?.contestHistory || platformData.contestHistory.length === 0) {
             return (
-                <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+                <div>
                     <h4 className="text-lg font-semibold text-white mb-4">Rating Progression</h4>
-                    <p className="text-gray-400">No contest history available for chart</p>
+                    <p className="text-white">No contest history available for chart</p>
                 </div>
             );
         }
@@ -599,10 +599,8 @@ const PlatformStatistics = ({
         };
 
         return (
-            <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
-                <div className="h-80">
-                    <Line data={chartData} options={options} />
-                </div>
+            <div className="h-80">
+                <Line data={chartData} options={options} />
             </div>
         );
     };
@@ -613,7 +611,7 @@ const PlatformStatistics = ({
 
         if (platformEntries.length === 0) {
             return (
-                <p className="text-gray-400">No contest history available from connected platforms</p>
+                <p className="text-white">No contest history available from connected platforms</p>
             );
         }
 
@@ -680,7 +678,7 @@ const PlatformStatistics = ({
 
         if (datasets.length === 0) {
             return (
-                <p className="text-gray-400">No contest history available from connected platforms</p>
+                <p className="text-white">No contest history available from connected platforms</p>
             );
         }
 
@@ -797,10 +795,8 @@ const PlatformStatistics = ({
         };
 
         return (
-            <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
-                <div className="h-80">
-                    <Line data={chartData} options={options} />
-                </div>
+            <div className="h-80">
+                <Line data={chartData} options={options} />
             </div>
         );
     };

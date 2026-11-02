@@ -6,7 +6,9 @@ import Contests from "./component/pages/Contests";
 import Profile from "./component/profile/Profile";
 import TermsOfService from "./component/pages/TermsOfService";
 import PrivacyPolicy from "./component/pages/PrivacyPolicy";
-import AccountSettings from "./component/profile/AccountSettings";
+import PlatformConnectionsPage from "./component/profile/PlatformConnectionsPage";
+import ChangePasswordPage from "./component/profile/ChangePasswordPage";
+import DeleteAccountPage from "./component/profile/DeleteAccountPage";
 import PlatformProfileSearch from "./component/pages/PlatformProfileSearch";
 import {
   BrowserRouter as Router,
@@ -58,10 +60,34 @@ function App() {
             }
           />
           <Route
-            path="/account-settings"
+            path="/profile/:email/platforms"
             element={
               <ProtectedRoute>
-                <AccountSettings />
+                <PlatformConnectionsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/:email/platforms/:platform"
+            element={
+              <ProtectedRoute>
+                <PlatformConnectionsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/:email/change-password"
+            element={
+              <ProtectedRoute>
+                <ChangePasswordPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/:email/delete-account"
+            element={
+              <ProtectedRoute>
+                <DeleteAccountPage />
               </ProtectedRoute>
             }
           />

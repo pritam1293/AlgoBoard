@@ -25,7 +25,7 @@ export const getRankColor = (platform, value) => {
         if (value >= 1600) return 'text-blue-400';
         if (value >= 1400) return 'text-cyan-400';
         if (value >= 1200) return 'text-green-400';
-        return 'text-gray-400';
+        return 'text-white';
     }
     return 'text-blue-400';
 };

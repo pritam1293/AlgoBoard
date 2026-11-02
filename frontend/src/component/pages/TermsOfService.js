@@ -5,12 +5,17 @@ const TermsOfService = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-neutral-900 px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl">
+    <div className="relative min-h-screen overflow-hidden bg-neutral-950 px-4 py-10 sm:px-6 lg:px-8">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-32 -top-40 h-96 w-96 rounded-full bg-blue-600/20 blur-3xl" />
+        <div className="absolute right-0 top-1/4 h-96 w-96 rounded-full bg-violet-600/10 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-emerald-600/10 blur-3xl" />
+      </div>
+      <div className="relative mx-auto max-w-4xl">
         <div className="mb-8 flex items-center justify-between">
           <button
             onClick={() => navigate("/signup")}
-            className="flex items-center text-sm font-medium text-neutral-400 transition hover:text-white"
+            className="flex items-center text-sm font-medium text-white transition hover:text-white"
           >
             <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -25,15 +30,17 @@ const TermsOfService = () => {
           </button>
         </div>
 
-        <header className="mb-8 border-b border-neutral-700 pb-8">
-          <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-blue-400">
+        <header className="mb-8 border-b border-white/10 pb-8">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-blue-400">
             Legal
           </p>
-          <h1 className="text-4xl font-bold text-white">Terms of Service</h1>
-          <p className="mt-3 text-neutral-400">
+          <h1 className="text-4xl font-semibold tracking-tight text-white">
+            Terms of Service
+          </h1>
+          <p className="mt-3 text-white">
             Effective date: October 31, 2026. Last updated: October 31, 2026.
           </p>
-          <p className="mt-4 max-w-3xl leading-7 text-neutral-300">
+          <p className="mt-4 max-w-3xl leading-7 text-white">
             These Terms of Service ("Terms") govern your access to and use of
             AlgoBoard, including its website, dashboards, analytics, and related
             services (collectively, the "Service"). By creating an account or
@@ -42,9 +49,9 @@ const TermsOfService = () => {
           </p>
         </header>
 
-        <div className="space-y-10 rounded-xl border border-neutral-700 bg-neutral-800 p-6 text-neutral-300 shadow-xl sm:p-9">
+        <div className="space-y-10 rounded-2xl border border-white/10 bg-neutral-900/60 p-6 text-white shadow-2xl backdrop-blur-sm sm:p-9">
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">1. Eligibility and accounts</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">1. Eligibility and accounts</h2>
             <p className="leading-7">
               You must be at least 13 years old to use AlgoBoard. If you are
               under the age of majority where you live, you may use the Service
@@ -63,7 +70,7 @@ const TermsOfService = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">2. The AlgoBoard service</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">2. The AlgoBoard service</h2>
             <p className="leading-7">
               AlgoBoard aggregates publicly available competitive programming
               information from third-party platforms such as Codeforces, AtCoder,
@@ -82,7 +89,7 @@ const TermsOfService = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">3. Connected platform accounts</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">3. Connected platform accounts</h2>
             <p className="leading-7">
               When you connect a competitive programming account, you authorize
               AlgoBoard to retrieve and display publicly available information
@@ -99,7 +106,7 @@ const TermsOfService = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">4. Acceptable use</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">4. Acceptable use</h2>
             <p className="leading-7">You agree not to:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6 leading-7">
               <li>Provide false information or connect a handle you are not authorized to use.</li>
@@ -118,7 +125,7 @@ const TermsOfService = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">5. Your content and profile information</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">5. Your content and profile information</h2>
             <p className="leading-7">
               You retain ownership of the information you submit to AlgoBoard.
               You grant us a limited, non-exclusive license to host, process,
@@ -135,7 +142,7 @@ const TermsOfService = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">6. Privacy</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">6. Privacy</h2>
             <p className="leading-7">
               Our collection and use of personal information is described in our{" "}
               <button
@@ -150,7 +157,7 @@ const TermsOfService = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">7. Termination and account deletion</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">7. Termination and account deletion</h2>
             <p className="leading-7">
               You may stop using the Service at any time and may delete your
               account from Account Settings. Upon deletion, we will remove your
@@ -168,7 +175,7 @@ const TermsOfService = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">8. Intellectual property</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">8. Intellectual property</h2>
             <p className="leading-7">
               The Service, including its software, design, text, graphics, logos,
               and analytics, is owned by AlgoBoard or its licensors and is
@@ -180,7 +187,7 @@ const TermsOfService = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">9. Disclaimers</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">9. Disclaimers</h2>
             <p className="leading-7">
               The Service is provided on an "as is" and "as available" basis. To
               the maximum extent permitted by law, AlgoBoard disclaims all
@@ -199,7 +206,7 @@ const TermsOfService = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">10. Limitation of liability</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">10. Limitation of liability</h2>
             <p className="leading-7">
               To the maximum extent permitted by law, AlgoBoard and its
               officers, directors, employees, and agents will not be liable for
@@ -218,7 +225,7 @@ const TermsOfService = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">11. Indemnification</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">11. Indemnification</h2>
             <p className="leading-7">
               You agree to indemnify and hold harmless AlgoBoard and its
               officers, directors, employees, and agents from any claims,
@@ -229,7 +236,7 @@ const TermsOfService = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">12. Changes to the Service and Terms</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">12. Changes to the Service and Terms</h2>
             <p className="leading-7">
               We may modify, suspend, or discontinue any part of the Service. We
               may also update these Terms from time to time. If we make material
@@ -242,7 +249,7 @@ const TermsOfService = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">13. Governing law and disputes</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">13. Governing law and disputes</h2>
             <p className="leading-7">
               These Terms are governed by the laws of the jurisdiction in which
               AlgoBoard operates, without regard to conflict-of-law principles.
@@ -255,7 +262,7 @@ const TermsOfService = () => {
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold text-white">14. Contact</h2>
+            <h2 className="mb-3 text-xl font-semibold text-white">14. Contact</h2>
             <p className="leading-7">
               Questions about these Terms should be sent to{" "}
               <a
@@ -269,16 +276,16 @@ const TermsOfService = () => {
             </p>
           </section>
 
-          <div className="flex flex-col gap-3 border-t border-neutral-700 pt-6 sm:flex-row sm:justify-between">
+          <div className="flex flex-col gap-3 border-t border-white/10 pt-6 sm:flex-row sm:justify-between">
             <button
               onClick={() => navigate("/signup")}
-              className="rounded-lg bg-blue-600 px-5 py-3 font-medium text-white transition hover:bg-blue-700"
+              className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-medium text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500"
             >
               I Accept — Back to Sign Up
             </button>
             <button
               onClick={() => navigate("/privacy")}
-              className="rounded-lg border border-neutral-600 px-5 py-3 font-medium text-neutral-300 transition hover:border-neutral-500 hover:text-white"
+              className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/10 hover:text-white"
             >
               Read Privacy Policy
             </button>

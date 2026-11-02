@@ -58,10 +58,12 @@ const LoginForm = ({ onSwitchToSignup }) => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto lg:mx-0">
+    <div className="mx-auto w-full max-w-md lg:mx-0">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white">Welcome back</h2>
-        <p className="mt-2 text-sm text-neutral-400">
+        <h2 className="text-2xl font-semibold tracking-tight text-white">
+          Welcome back
+        </h2>
+        <p className="mt-2 text-sm text-white">
           Sign in to continue tracking your competitive programming journey.
         </p>
       </div>
@@ -78,7 +80,7 @@ const LoginForm = ({ onSwitchToSignup }) => {
           value={formData.email}
           onChange={handleChange}
           placeholder="Enter your email"
-          label="Email Address"
+          label="Email address"
           error={errors.email}
           autoComplete="email"
         />
@@ -86,7 +88,7 @@ const LoginForm = ({ onSwitchToSignup }) => {
         <div>
           <label
             htmlFor="password"
-            className="block text-sm font-medium text-neutral-300 mb-2"
+            className="mb-2 block text-sm font-medium text-white"
           >
             Password
           </label>
@@ -98,21 +100,21 @@ const LoginForm = ({ onSwitchToSignup }) => {
               value={formData.password}
               onChange={handleChange}
               placeholder="Enter your password"
-              className={`block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 bg-gray-800 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm pr-10 ${
+              className={`block w-full rounded-xl border bg-white/[0.03] px-3.5 py-2.5 pr-11 text-sm text-white placeholder-neutral-300 transition focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
                 errors.password
-                  ? "border-red-500 focus:ring-red-500 focus:border-red-500"
-                  : ""
+                  ? "border-red-500/50 focus:border-red-400"
+                  : "border-white/10 focus:border-blue-400/40"
               }`}
             />
             <button
               type="button"
-              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-white transition hover:text-white"
               onClick={() => setShowPassword(!showPassword)}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
                 <svg
-                  className="h-5 w-5 text-gray-400 hover:text-gray-300"
+                  className="h-5 w-5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -126,7 +128,7 @@ const LoginForm = ({ onSwitchToSignup }) => {
                 </svg>
               ) : (
                 <svg
-                  className="h-5 w-5 text-gray-400 hover:text-gray-300"
+                  className="h-5 w-5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -152,16 +154,16 @@ const LoginForm = ({ onSwitchToSignup }) => {
           )}
         </div>
 
-        <div className="flex items-center">
+        <div className="flex items-center gap-2">
           <input
             id="remember-me"
             name="remember-me"
             type="checkbox"
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-800 rounded"
+            className="h-4 w-4 rounded border-white/20 bg-white/5 text-blue-600 focus:ring-blue-500/40"
           />
           <label
             htmlFor="remember-me"
-            className="ml-2 block text-sm text-gray-300"
+            className="block text-sm text-white"
           >
             Remember me
           </label>
@@ -175,16 +177,16 @@ const LoginForm = ({ onSwitchToSignup }) => {
           }
         >
           {isLoading ? (
-            <div className="flex items-center">
+            <span className="flex items-center">
               <LoadingSpinner size="sm" className="mr-2" />
               Signing in...
-            </div>
+            </span>
           ) : (
             "Sign in"
           )}
         </button>
 
-        <p className="text-center text-sm text-gray-400">
+        <p className="text-center text-sm text-white">
           Don't have an account?{" "}
           <button
             type="button"
@@ -196,9 +198,9 @@ const LoginForm = ({ onSwitchToSignup }) => {
         </p>
       </form>
 
-      <div className="mt-8 pt-6 border-t border-neutral-700 lg:hidden">
-        <p className="text-center text-sm text-gray-400 mb-4">
-          Supported Platforms
+      <div className="mt-8 border-t border-white/10 pt-6 lg:hidden">
+        <p className="mb-4 text-center text-xs font-medium uppercase tracking-widest text-white">
+          Supported platforms
         </p>
         <PlatformGrid />
       </div>

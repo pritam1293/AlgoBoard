@@ -39,96 +39,91 @@ const PlatformConnection = ({
   };
 
   return (
-    <div className="relative">
-      {/* Platform Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-neutral-700 rounded-lg w-full gap-3">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <img
-            src={platform.logo}
-            alt={platform.name}
-            className={`w-8 h-8 flex-shrink-0 ${
-              platform.id === "codechef" ? "rounded" : ""
-            }`}
-          />
-          <span className="text-white font-medium truncate">
-            {platform.name}
+    <div className="relative rounded-xl border border-white/5 bg-white/[0.02]">
+      <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <span className="flex h-9 w-9 flex-none items-center justify-center rounded-lg border border-white/10 bg-white/95 p-1.5">
+            <img
+              src={platform.logo}
+              alt={platform.name}
+              className={`h-full w-full object-contain ${
+                platform.id === "codechef" ? "rounded" : ""
+              }`}
+            />
           </span>
-          {isConnected && (
-            <span className="px-2 py-1 bg-green-600 text-green-200 font-semibold text-xs rounded whitespace-nowrap">
-              Connected
-            </span>
-          )}
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-white">
+              {platform.name}
+            </p>
+            <div className="mt-0.5 text-[11px] text-white">
+              {isConnected ? (
+                <span className="inline-flex items-center gap-1 text-emerald-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  Connected
+                </span>
+              ) : (
+                "Not connected"
+              )}
+            </div>
+          </div>
         </div>
 
         <button
           onClick={handleConnectClick}
-          className={`px-4 py-2 text-white text-sm rounded transition duration-200 whitespace-nowrap flex-shrink-0 ${colorClasses.bg} ${colorClasses.hoverBg}`}
           disabled={loading}
+          className={`inline-flex flex-none items-center justify-center rounded-xl border px-4 py-2 text-xs font-medium transition disabled:opacity-50 ${
+            isConnected
+              ? "border-white/10 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+              : `${colorClasses.bg} ${colorClasses.hoverBg} border-transparent text-white`
+          }`}
         >
-          {isConnected ? "Change Username?" : "Connect"}
+          {isConnected ? "Change username" : "Connect"}
         </button>
       </div>
 
-      {/* Dropdown Form */}
       {dropdownOpen && (
-        <div className="mt-2 bg-neutral-700 rounded-lg border border-neutral-600 p-4 shadow-lg">
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-neutral-300 mb-2">
-              {platform.name} Username
-            </label>
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => onUpdateInput(platform.id, e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={`Enter your ${platform.name} username`}
-              className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              autoFocus
-              disabled={loading}
-            />
-          </div>
+        <div className="border-t border-white/5 p-3 sm:p-4">
+          <label className="mb-2 block text-xs font-medium text-white">
+            {platform.name} username
+          </label>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => onUpdateInput(platform.id, e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={`Enter your ${platform.name} username`}
+            className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder-neutral-300 transition focus:border-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            autoFocus
+            disabled={loading}
+          />
 
-          {/* Error/Success Message */}
           {message && (
-            <div
-              className={`mb-2 text-sm ${
-                messageType === "success" ? "text-green-400" : "text-red-400"
+            <p
+              className={`mt-2 text-xs ${
+                messageType === "success" ? "text-emerald-400" : "text-red-400"
               }`}
             >
               {message}
-            </div>
+            </p>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-end">
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
             <button
               onClick={() => onCancel(platform.id)}
-              className="px-4 py-2 text-neutral-400 hover:text-white transition duration-200 rounded border border-neutral-600 hover:border-neutral-500"
               disabled={loading}
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/10 hover:text-white disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={!input.trim() || loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-200 disabled:bg-neutral-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? (
                 <>
-                  <svg
-                    className="w-4 h-4 animate-spin"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                  Saving...
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                  Saving
                 </>
               ) : (
                 "Save"

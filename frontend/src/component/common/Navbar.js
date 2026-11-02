@@ -13,7 +13,7 @@ const Navbar = ({ user }) => {
           <div className="flex items-center">
             <button
               onClick={() => navigate("/home")}
-              className="text-white text-xl font-bold flex items-center hover:text-gray-300 transition duration-200"
+              className="text-white text-xl font-bold flex items-center hover:text-white transition duration-200"
             >
               <img
                 src="/images/algoboard_logo.png"
@@ -30,13 +30,13 @@ const Navbar = ({ user }) => {
               <>
                 <button
                   onClick={() => navigate("/contests")}
-                  className="hidden md:block text-neutral-300 hover:text-white transition duration-200 font-medium"
+                  className="hidden md:block text-white hover:text-white transition duration-200 font-medium"
                 >
                   Contests
                 </button>
                 <button
                   onClick={() => navigate("/platform-search")}
-                  className="hidden md:block text-neutral-300 hover:text-white transition duration-200 font-medium"
+                  className="hidden md:block text-white hover:text-white transition duration-200 font-medium"
                 >
                   Platform Search
                 </button>
@@ -44,7 +44,7 @@ const Navbar = ({ user }) => {
                   onClick={() =>
                     navigate(`/profile/${encodeURIComponent(user.email)}`)
                   }
-                  className="flex items-center text-neutral-300 hover:text-white transition duration-200 font-medium whitespace-nowrap"
+                  className="flex items-center text-white hover:text-white transition duration-200 font-medium whitespace-nowrap"
                 >
                   Profile
                   <svg
@@ -67,7 +67,7 @@ const Navbar = ({ user }) => {
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => navigate("/login")}
-                  className="text-gray-300 hover:text-white px-3 py-2 transition duration-200"
+                  className="text-white hover:text-white px-3 py-2 transition duration-200"
                 >
                   Login
                 </button>

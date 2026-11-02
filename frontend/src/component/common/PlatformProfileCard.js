@@ -42,19 +42,19 @@ const PlatformProfileCard = ({ platform, profileData, isLoading, error }) => {
         <div className="space-y-3">
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <span className="text-neutral-400 text-sm">Handle:</span>
+                    <span className="text-white text-sm">Handle:</span>
                     <p className="font-medium text-white">{data.handle}</p>
                 </div>
                 <div>
-                    <span className="text-neutral-400 text-sm">Rating:</span>
+                    <span className="text-white text-sm">Rating:</span>
                     <p className="font-medium text-blue-400">{data.rating || 'Unrated'}</p>
                 </div>
                 <div>
-                    <span className="text-neutral-400 text-sm">Max Rating:</span>
+                    <span className="text-white text-sm">Max Rating:</span>
                     <p className="font-medium text-white">{data.maxRating || 'N/A'}</p>
                 </div>
                 <div>
-                    <span className="text-neutral-400 text-sm">Rank:</span>
+                    <span className="text-white text-sm">Rank:</span>
                     <p className="font-medium text-white">{data.rank || 'Unranked'}</p>
                 </div>
             </div>
@@ -68,19 +68,19 @@ const PlatformProfileCard = ({ platform, profileData, isLoading, error }) => {
         <div className="space-y-3">
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <span className="text-neutral-400 text-sm">Username:</span>
+                    <span className="text-white text-sm">Username:</span>
                     <p className="font-medium text-white">{data.username}</p>
                 </div>
                 <div>
-                    <span className="text-neutral-400 text-sm">Rating:</span>
+                    <span className="text-white text-sm">Rating:</span>
                     <p className="font-medium text-green-400">{data.rating || 'Unrated'}</p>
                 </div>
                 <div>
-                    <span className="text-neutral-400 text-sm">Highest Rating:</span>
+                    <span className="text-white text-sm">Highest Rating:</span>
                     <p className="font-medium text-white">{data.highestRating || 'N/A'}</p>
                 </div>
                 <div>
-                    <span className="text-neutral-400 text-sm">Rank:</span>
+                    <span className="text-white text-sm">Rank:</span>
                     <p className="font-medium text-white">{data.rank || 'Unranked'}</p>
                 </div>
             </div>
@@ -91,19 +91,19 @@ const PlatformProfileCard = ({ platform, profileData, isLoading, error }) => {
         <div className="space-y-3">
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <span className="text-neutral-400 text-sm">Username:</span>
+                    <span className="text-white text-sm">Username:</span>
                     <p className="font-medium text-white">{data.username}</p>
                 </div>
                 <div>
-                    <span className="text-neutral-400 text-sm">Rating:</span>
+                    <span className="text-white text-sm">Rating:</span>
                     <p className="font-medium text-orange-400">{data.currentRating || 'Unrated'}</p>
                 </div>
                 <div>
-                    <span className="text-neutral-400 text-sm">Highest Rating:</span>
+                    <span className="text-white text-sm">Highest Rating:</span>
                     <p className="font-medium text-white">{data.highestRating || 'N/A'}</p>
                 </div>
                 <div>
-                    <span className="text-neutral-400 text-sm">Stars:</span>
+                    <span className="text-white text-sm">Stars:</span>
                     <p className="font-medium text-white">{data.stars || 0} ⭐</p>
                 </div>
             </div>
@@ -114,19 +114,19 @@ const PlatformProfileCard = ({ platform, profileData, isLoading, error }) => {
         <div className="space-y-3">
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <span className="text-neutral-400 text-sm">Username:</span>
+                    <span className="text-white text-sm">Username:</span>
                     <p className="font-medium text-white">{data.username}</p>
                 </div>
                 <div>
-                    <span className="text-neutral-400 text-sm">Ranking:</span>
+                    <span className="text-white text-sm">Ranking:</span>
                     <p className="font-medium text-yellow-400">{data.ranking || 'N/A'}</p>
                 </div>
                 <div>
-                    <span className="text-neutral-400 text-sm">Problems Solved:</span>
+                    <span className="text-white text-sm">Problems Solved:</span>
                     <p className="font-medium text-white">{data.totalSolved || 0}</p>
                 </div>
                 <div>
-                    <span className="text-neutral-400 text-sm">Acceptance Rate:</span>
+                    <span className="text-white text-sm">Acceptance Rate:</span>
                     <p className="font-medium text-white">{data.acceptanceRate || 'N/A'}%</p>
                 </div>
             </div>

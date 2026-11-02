@@ -10,31 +10,30 @@ const PlatformGrid = ({ showLabels = true, className = "" }) => {
   };
 
   return (
-    <div className={`flex justify-center space-x-4 ${className}`}>
+    <div className={`grid grid-cols-2 gap-2 sm:grid-cols-4 ${className}`}>
       {PLATFORMS.map((platform) => (
-        <div key={platform.id} className="text-center group">
-          <a
-            href={platformUrls[platform.id]}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block"
-          >
-            <div className="w-12 h-12 mx-auto mb-2 bg-white rounded-lg flex items-center justify-center hover:bg-gray-100 transition duration-200 cursor-pointer">
-              <img
-                src={platform.logo}
-                alt={platform.name}
-                className={`w-8 h-8 object-contain ${
-                  platform.id === "codechef" ? "rounded" : ""
-                }`}
-              />
-            </div>
-            {showLabels && (
-              <div className="text-xs text-neutral-400 group-hover:text-white transition duration-200">
-                {platform.name}
-              </div>
-            )}
-          </a>
-        </div>
+        <a
+          key={platform.id}
+          href={platformUrls[platform.id]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 transition hover:border-white/20 hover:bg-white/[0.06]"
+        >
+          <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-white/95 p-1.5">
+            <img
+              src={platform.logo}
+              alt={platform.name}
+              className={`h-full w-full object-contain ${
+                platform.id === "codechef" ? "rounded" : ""
+              }`}
+            />
+          </span>
+          {showLabels && (
+            <span className="truncate text-xs font-medium text-white transition group-hover:text-white">
+              {platform.name}
+            </span>
+          )}
+        </a>
       ))}
     </div>
   );
