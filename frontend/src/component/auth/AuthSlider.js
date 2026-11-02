@@ -40,7 +40,7 @@ const AuthSlider = () => {
               <ul className="mt-8 space-y-4">
                 {[
                   "Track progress across all supported platforms",
-                  "Compare your performance with friends",
+                  "Track your performance across platforms",
                   "Get insights and analytics on your coding journey",
                   "Never miss a contest with notifications",
                 ].map((feature) => (

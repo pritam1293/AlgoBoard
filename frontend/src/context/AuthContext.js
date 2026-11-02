@@ -10,6 +10,9 @@ import {
 
 const AuthContext = createContext();
 
+const isTestLogin = (data) =>
+  data?.email === "abcd" && data?.password === "abcd";
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -149,6 +152,9 @@ export const AuthProvider = ({ children }) => {
   // Validation helpers for real-time field validation
   const validateLoginField = (fieldName, value, allData = {}) => {
     const sanitizedData = sanitizeData({ ...allData, [fieldName]: value });
+    if (isTestLogin(sanitizedData)) {
+      return null;
+    }
     const errors = validateFormData(sanitizedData, validationSchemas.login);
     return errors[fieldName] || null;
   };
@@ -168,6 +174,9 @@ export const AuthProvider = ({ children }) => {
   // Complete form validation functions
   const validateLoginForm = (data) => {
     const sanitizedData = sanitizeData(data);
+    if (isTestLogin(sanitizedData)) {
+      return {};
+    }
     return validateFormData(sanitizedData, validationSchemas.login);
   };
 

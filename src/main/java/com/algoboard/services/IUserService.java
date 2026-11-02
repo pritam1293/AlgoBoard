@@ -21,10 +21,6 @@ public interface IUserService {
 
     public UserProfile updateUserDetails(UserProfile profile);
 
-    public boolean updateFriendsList(Map<String, String> payload, String email);
-
-    public boolean checkFriendship(String email, String friendEmail);
-
     public Map<String, String> updatePassword(String email, String oldPassword, String newPassword);
 
     public String deleteUser(String email, String password);

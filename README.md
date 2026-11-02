@@ -243,6 +243,13 @@ DATABASE_USERNAME=your_neon_username
 DATABASE_PASSWORD=your_neon_password
 ```
 
+Optional local test login (enabled with `APP_TEST_ACCOUNT_ENABLED=true`):
+
+```text
+Email: abcd
+Password: abcd
+```
+
 ### Frontend Setup
 
 ```bash

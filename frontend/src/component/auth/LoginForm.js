@@ -66,7 +66,7 @@ const LoginForm = ({ onSwitchToSignup }) => {
         </p>
       </div>
 
-      <form className="space-y-5" onSubmit={handleSubmit}>
+      <form className="space-y-5" onSubmit={handleSubmit} noValidate>
         {errors.general && (
           <div className={MESSAGE_CLASSES.error}>{errors.general}</div>
         )}

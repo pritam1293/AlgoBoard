@@ -1,19 +1,11 @@
 package com.algoboard.entities;
 
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-
-import java.util.HashSet;
-import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -45,11 +37,6 @@ public class User {
 
     @Column(name = "leetcode_username", length = 100)
     private String leetcodeUsername;
-
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "user_friends", joinColumns = @JoinColumn(name = "user_id"), uniqueConstraints = @UniqueConstraint(columnNames = { "user_id", "friend_email" }))
-    @Column(name = "friend_email", nullable = false, length = 320)
-    private Set<String> friends = new HashSet<>();
 
     public User() {
 
@@ -125,14 +112,6 @@ public class User {
 
     public void setLeetcodeUsername(String leetcodeUsername) {
         this.leetcodeUsername = leetcodeUsername;
-    }
-
-    public Set<String> getFriends() {
-        return friends;
-    }
-
-    public void setFriends(Set<String> friends) {
-        this.friends = friends;
     }
 
 }

@@ -3,7 +3,6 @@ import "./App.css";
 import AuthSlider from "./component/auth/AuthSlider";
 import Dashboard from "./component/pages/Home";
 import Contests from "./component/pages/Contests";
-import Search from "./component/pages/Search";
 import Profile from "./component/profile/Profile";
 import TermsOfService from "./component/pages/TermsOfService";
 import PrivacyPolicy from "./component/pages/PrivacyPolicy";
@@ -71,14 +70,6 @@ function App() {
             element={
               <ProtectedRoute>
                 <Contests />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/search"
-            element={
-              <ProtectedRoute>
-                <Search />
               </ProtectedRoute>
             }
           />

@@ -76,11 +76,17 @@ class PlatformService {
   // Get ALL platforms data in one optimized call (uses backend parallel processing)
   async getAllPlatformsData(email) {
     try {
-      const response = await apiService.get(
-        `/users/search?email=${encodeURIComponent(email)}`
-      );
+      const [codeforces, leetcode, atcoder, codechef] = await Promise.all([
+        this.getCodeforcesProfile(email),
+        this.getLeetcodeProfile(email),
+        this.getAtcoderProfile(email),
+        this.getCodechefProfile(email),
+      ]);
 
-      return response;
+      return {
+        status: "success",
+        data: { codeforces, leetcode, atcoder, codechef },
+      };
     } catch (error) {
       console.error("Error fetching all platforms data:", error);
       throw new Error(`Failed to fetch all platforms data: ${error.message}`);

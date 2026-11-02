@@ -41,3 +41,4 @@ set-env.sh
 
 ###custom
 
+src/main/java/com/algoboard/config/TestAccountInitializer.java

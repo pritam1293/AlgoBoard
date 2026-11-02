@@ -9,7 +9,6 @@ import com.algoboard.entities.User;
 import com.algoboard.repository.UserRepository;
 import com.algoboard.DTO.RequestDTO.UserProfile;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -98,7 +97,6 @@ public class UserService implements IUserService {
 
             user.setId(null);
             user.setPassword(passwordEncoder.encode(user.getPassword()));
-            user.setFriends(new HashSet<>());
             userRepository.save(user);
             return createProfile(user);
         } catch (DataIntegrityViolationException e) {
@@ -115,20 +113,6 @@ public class UserService implements IUserService {
             }
             if (email == null || email.isEmpty() || password == null || password.isEmpty()) {
                 throw new IllegalArgumentException("Invalid email or password.");
-            }
-
-            // Dummy for testing purposes
-            if (email.equals("abcd") && password.equals("abcd")) {
-                User dummyUser = new User();
-                dummyUser.setFirstName("Dummy");
-                dummyUser.setLastName("User");
-                dummyUser.setEmail("abcd");
-                dummyUser.setCodeforcesUsername("");
-                dummyUser.setAtcoderUsername("");
-                dummyUser.setCodechefUsername("");
-                dummyUser.setLeetcodeUsername("");
-                dummyUser.setFriends(new HashSet<>());
-                return createProfile(dummyUser);
             }
 
             User user = userRepository.findByEmailIgnoreCase(email);
@@ -196,65 +180,6 @@ public class UserService implements IUserService {
         }
     }
 
-    @Override
-    public boolean updateFriendsList(Map<String, String> payload, String email) {
-        try {
-            email = normalizeEmail(email);
-            if (email == null || email.isEmpty()) {
-                throw new IllegalArgumentException("Email cannot be null or empty.");
-            }
-            final String userEmail = email;
-            User user = userRepository.findByEmailIgnoreCase(userEmail);
-            if (user == null) {
-                return false;
-            }
-            if (user.getFriends() == null) {
-                user.setFriends(new HashSet<>());
-            }
-            payload.forEach((key, value) -> {
-                String friendEmail = normalizeEmail(value);
-                if (friendEmail == null || friendEmail.isEmpty() || friendEmail.equals(userEmail)) {
-                    return;
-                }
-                if (key.equals("add")) {
-                    if (userRepository.existsByEmailIgnoreCase(friendEmail)) {
-                        user.getFriends().add(friendEmail);
-                    }
-                } else if (key.equals("remove")) {
-                    user.getFriends().removeIf(existing -> existing != null
-                            && existing.equalsIgnoreCase(friendEmail));
-                }
-            });
-            userRepository.save(user);
-            return true;
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Error updating friends list: " + e.getMessage());
-        }
-    }
-
-    @Override
-    public boolean checkFriendship(String email, String friendEmail) {
-        try {
-            email = normalizeEmail(email);
-            final String normalizedFriendEmail = normalizeEmail(friendEmail);
-            if (email == null || email.isEmpty()) {
-                throw new IllegalArgumentException("Email cannot be null or empty.");
-            }
-            if (normalizedFriendEmail == null || normalizedFriendEmail.isEmpty()) {
-                throw new IllegalArgumentException("Friend email cannot be null or empty.");
-            }
-            User user = userRepository.findByEmailIgnoreCase(email);
-            if (user != null) {
-                return user.getFriends() != null && user.getFriends().stream()
-                        .anyMatch(existing -> existing != null
-                                && existing.equalsIgnoreCase(normalizedFriendEmail));
-            }
-            throw new IllegalArgumentException("User not found with email: " + email);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Error checking friendship: " + e.getMessage());
-        }
-    }
-
     private UserProfile createProfile(User user) {
         return new UserProfile(
                 user.getFirstName(),
@@ -263,8 +188,7 @@ public class UserService implements IUserService {
                 user.getCodeforcesUsername(),
                 user.getAtcoderUsername(),
                 user.getCodechefUsername(),
-                user.getLeetcodeUsername(),
-                user.getFriends() == null ? new HashSet<>() : user.getFriends());
+                user.getLeetcodeUsername());
     }
 
     @Override

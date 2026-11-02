@@ -14,8 +14,6 @@ import java.util.Map;
 import com.algoboard.DTO.RequestDTO.UserProfile;
 import com.algoboard.DTO.ContestDTO;
 import java.util.List;
-import java.util.HashMap;
-import java.util.concurrent.CompletableFuture;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -119,35 +117,6 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400)
                     .body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
-        }
-    }
-
-    @PutMapping("/users/{email}/friends")
-    public ResponseEntity<?> updateFriends(@PathVariable String email, @RequestBody Map<String, String> payload) {
-        try {
-            boolean success = userService.updateFriendsList(payload, email);
-            if (success) {
-                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Friends list updated successfully", null));
-            } else {
-                return ResponseEntity.status(400)
-                        .body(ResponseUtil.createErrorResponse("Failed to update friends list"));
-            }
-        } catch(Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
-        }
-    } 
-
-    @GetMapping("/users/{email}/friends/check/{friendEmail}")
-    public ResponseEntity<?> checkFriendship(@PathVariable String email, @PathVariable String friendEmail) {
-        try {
-            boolean isFriend = userService.checkFriendship(email, friendEmail);
-            Map<String, Boolean> response = new HashMap<>();
-            response.put("isFriend", isFriend);
-            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Friendship status retrieved successfully", response));
         } catch (Exception e) {
             return ResponseEntity.status(500)
                     .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
@@ -301,40 +270,6 @@ public class UserController {
         }
     }
 
-    @GetMapping("users/search")
-    public ResponseEntity<?> searchUser(@RequestParam String email) {
-        try {
-            // Create async tasks for each profile fetch
-            CompletableFuture<Codeforces> codeforcesTask = CompletableFuture
-                    .supplyAsync(() -> userService.getCodeforcesProfile(email));
-
-            CompletableFuture<Atcoder> atcoderTask = CompletableFuture
-                    .supplyAsync(() -> userService.getAtcoderProfile(email));
-
-            CompletableFuture<Codechef> codechefTask = CompletableFuture
-                    .supplyAsync(() -> userService.getCodechefProfile(email));
-
-            CompletableFuture<Leetcode> leetcodeTask = CompletableFuture
-                    .supplyAsync(() -> userService.getLeetcodeProfile(email));
-
-            // Wait for all tasks to complete
-            CompletableFuture.allOf(codeforcesTask, atcoderTask, codechefTask, leetcodeTask).join();
-
-            // Collect results
-            Map<String, Object> profiles = new HashMap<>();
-            profiles.put("codeforces", codeforcesTask.get());
-            profiles.put("atcoder", atcoderTask.get());
-            profiles.put("codechef", codechefTask.get());
-            profiles.put("leetcode", leetcodeTask.get());
-
-            return ResponseEntity
-                    .ok(ResponseUtil.createSuccessResponse("User profiles retrieved successfully", profiles));
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Error searching user profiles: " + e.getMessage()));
-        }
-    }
-    
     @GetMapping("users/codeforces/profile")
     public ResponseEntity<?> fetchCodeforcesProfile(@RequestParam String username) {
         try {

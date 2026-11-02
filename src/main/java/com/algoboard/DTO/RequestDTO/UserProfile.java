@@ -1,7 +1,5 @@
 package com.algoboard.DTO.RequestDTO;
 
-import java.util.Set;
-
 public class UserProfile {
     private String firstName;
     private String lastName;
@@ -10,11 +8,10 @@ public class UserProfile {
     private String atcoderUsername;
     private String codechefUsername;
     private String leetcodeUsername;
-    private Set<String> friends;
 
     public UserProfile(String firstName, String lastName, String email,
                    String codeforcesUsername, String atcoderUsername,
-                   String codechefUsername, String leetcodeUsername, Set<String> friends) {
+                   String codechefUsername, String leetcodeUsername) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -22,7 +19,6 @@ public class UserProfile {
         this.atcoderUsername = atcoderUsername;
         this.codechefUsername = codechefUsername;
         this.leetcodeUsername = leetcodeUsername;
-        this.friends = friends;
     }
 
     public String getFirstName() {
@@ -81,14 +77,6 @@ public class UserProfile {
         this.leetcodeUsername = leetcodeUsername;
     }
 
-    public Set<String> getFriends() {
-        return friends;
-    }
-
-    public void setFriends(Set<String> friends) {
-        this.friends = friends;
-    }
-
     @Override
     public String toString() {
         return "UserProfile{" +
@@ -99,7 +87,6 @@ public class UserProfile {
                 ", atcoderUsername='" + atcoderUsername + '\'' +
                 ", codechefUsername='" + codechefUsername + '\'' +
                 ", leetcodeUsername='" + leetcodeUsername + '\'' +
-                ", friends=" + friends +
                 '}';
     }
 }
