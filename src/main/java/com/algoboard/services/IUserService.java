@@ -10,6 +10,7 @@ import com.algoboard.DTO.ContestDTO;
 import java.util.Map;
 import java.util.List;
 
+import com.algoboard.DTO.RequestDTO.PublicUserProfile;
 import com.algoboard.DTO.RequestDTO.UserProfile;
 
 public interface IUserService {
@@ -19,11 +20,15 @@ public interface IUserService {
 
     public UserProfile getUserProfile(String email);
 
+    public PublicUserProfile getPublicProfile(String email);
+
     public UserProfile updateUserDetails(UserProfile profile);
 
     public Map<String, String> updatePassword(String email, String oldPassword, String newPassword);
 
     public String deleteUser(String email, String password);
+
+    public void revokeUserTokens(String email);
 
     public boolean addCPProfiles(String email, String codeforcesId, String atcoderId, String codechefId,
             String leetcodeId);

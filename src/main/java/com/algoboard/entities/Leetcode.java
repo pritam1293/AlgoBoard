@@ -15,6 +15,9 @@ public class Leetcode extends Platforms {
         private long medium;
         private long hard;
 
+        public Level() {
+        }
+
         public Level(long all, long easy, long medium, long hard) {
             this.all = all;
             this.easy = easy;
@@ -59,6 +62,9 @@ public class Leetcode extends Platforms {
         private String status;
         private String problemTitle;
         private String problemUrl;
+
+        public Problem() {
+        }
 
         public Problem(String status, String problemTitle, String problemUrl) {
             this.status = status;

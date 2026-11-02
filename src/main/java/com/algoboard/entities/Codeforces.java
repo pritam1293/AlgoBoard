@@ -16,6 +16,9 @@ public class Codeforces extends Platforms {
         private String name;
         private String status;
 
+        public Problem() {
+        }
+
         public Problem(long id, String index, String name, String status) {
             this.id = id;
             this.index = index;

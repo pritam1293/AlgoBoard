@@ -1,6 +1,7 @@
 package com.algoboard.services;
 
 import com.algoboard.entities.User;
+import com.algoboard.jwt.UserPrincipal;
 import com.algoboard.repository.UserRepository;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -30,14 +31,10 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("User not found with email: " + email);
         }
 
-        // Convert User entity to Spring Security's UserDetails
-        return new org.springframework.security.core.userdetails.User(
+        return new UserPrincipal(
                 user.getEmail(),
                 user.getPassword(),
-                true, // enabled
-                true, // accountNonExpired
-                true, // credentialsNonExpired
-                true, // accountNonLocked
+                user.getTokenVersion(),
                 getAuthorities(user));
     }
 

@@ -151,16 +151,18 @@ const AccountSettings = () => {
       });
 
       if (response.status === "success") {
-        setPasswordMessage("Password changed successfully!");
+        setPasswordMessage("Password changed successfully! Please log in again.");
         setPasswordData({
           oldPassword: "",
           newPassword: "",
           confirmPassword: "",
         });
-        // Hide form after successful change
+        // Changing the password revokes existing tokens, so sign out after showing the message
         setTimeout(() => {
           setShowPasswordForm(false);
           setPasswordMessage("");
+          logout();
+          navigate("/login");
         }, 2000);
       } else {
         setPasswordMessage(response.message || "Failed to change password");

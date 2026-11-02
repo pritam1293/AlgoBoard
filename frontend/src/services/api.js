@@ -34,6 +34,14 @@ class ApiService {
       (error) => {
         // Handle different types of errors
         if (error.response) {
+          // Clear stale credentials and return to login when the token is rejected
+          if (error.response.status === 401) {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userData');
+            if (!['/login', '/signup'].includes(window.location.pathname)) {
+              window.location.assign('/login');
+            }
+          }
           // Server responded with error status
           const message = error.response.data?.message || error.response.data || 'Request failed';
           throw new Error(message);
@@ -66,8 +74,8 @@ class ApiService {
     return await this.axiosInstance.get(endpoint);
   }
 
-  async post(endpoint, data) {
-    return await this.axiosInstance.post(endpoint, data);
+  async post(endpoint, data, config) {
+    return await this.axiosInstance.post(endpoint, data, config);
   }
 
   async put(endpoint, data) {

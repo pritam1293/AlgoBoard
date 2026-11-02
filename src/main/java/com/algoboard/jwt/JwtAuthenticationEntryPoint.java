@@ -27,8 +27,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
         final Map<String, Object> body = new HashMap<>();
         body.put("status", "error");
-        body.put("message", "Unauthorized access - Invalid or missing token");
-        body.put("error", authException.getMessage());
+        body.put("message", "Unauthorized access - invalid or missing token");
         body.put("path", request.getServletPath());
         body.put("timestamp", System.currentTimeMillis());
 

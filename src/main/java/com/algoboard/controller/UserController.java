@@ -1,44 +1,59 @@
 package com.algoboard.controller;
 
+import com.algoboard.DTO.ContestDTO;
+import com.algoboard.DTO.RequestDTO.UserAuthenticationResponse;
+import com.algoboard.DTO.RequestDTO.UserProfile;
 import com.algoboard.entities.Atcoder;
+import com.algoboard.entities.Codechef;
 import com.algoboard.entities.Codeforces;
 import com.algoboard.entities.Leetcode;
-import com.algoboard.entities.Codechef;
 import com.algoboard.entities.User;
-import com.algoboard.services.IUserService;
-import com.algoboard.services.CustomUserDetailsService;
 import com.algoboard.jwt.JwtService;
-import com.algoboard.DTO.RequestDTO.UserAuthenticationResponse;
+import com.algoboard.services.CustomUserDetailsService;
+import com.algoboard.services.IUserService;
+import com.algoboard.services.LoginAttemptService;
 import com.algoboard.utils.ResponseUtil;
-import java.util.Map;
-import com.algoboard.DTO.RequestDTO.UserProfile;
-import com.algoboard.DTO.ContestDTO;
-import java.util.List;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
 public class UserController {
 
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+    private static final String LOGIN_SCOPE = "login";
+    private static final String PASSWORD_SCOPE = "password";
+    private static final String DELETE_SCOPE = "delete";
+
     private final IUserService userService;
     private final JwtService jwtService;
     private final CustomUserDetailsService customUserDetailsService;
+    private final LoginAttemptService loginAttemptService;
 
     public UserController(IUserService userService,
-            JwtService jwtService, CustomUserDetailsService customUserDetailsService) {
+            JwtService jwtService,
+            CustomUserDetailsService customUserDetailsService,
+            LoginAttemptService loginAttemptService) {
         this.userService = userService;
         this.jwtService = jwtService;
         this.customUserDetailsService = customUserDetailsService;
+        this.loginAttemptService = loginAttemptService;
     }
 
     @GetMapping("/home")
@@ -50,290 +65,201 @@ public class UserController {
     public ResponseEntity<?> signup(@RequestBody User user) {
         try {
             UserProfile newProfile = userService.registerUser(user);
-
-            // Remove password from response for security
-            return ResponseEntity
-                    .ok(ResponseUtil.createSuccessResponse("Signup successful.", newProfile));
+            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Signup successful.", newProfile));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400)
-                    .body(ResponseUtil.createErrorResponse("Signup failed: " + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            logger.warn("Signup rejected: {}", e.getMessage());
+            throw new IllegalArgumentException("Signup failed. Please check your details.");
         }
     }
 
     @PostMapping("/auth/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
+    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials, HttpServletRequest request) {
+        String email = credentials.get("email");
+        String password = credentials.get("password");
+        String ip = clientIp(request);
+
+        if (loginAttemptService.isBlocked(LOGIN_SCOPE, email, ip)) {
+            return tooManyRequests(loginAttemptService.retryAfterSeconds(LOGIN_SCOPE, email, ip));
+        }
+
         try {
-            // Authenticate user with email and password
-            String email = credentials.get("email");
-            String password = credentials.get("password");
             UserProfile profile = userService.authenticateUser(email, password);
+            loginAttemptService.recordSuccess(LOGIN_SCOPE, email, ip);
 
-            // Load UserDetails for JWT generation
             UserDetails userDetails = customUserDetailsService.loadUserByUsername(profile.getEmail());
-
-            // Generate JWT token
             String jwtToken = jwtService.generateToken(userDetails);
-
-            // Create authentication response
             UserAuthenticationResponse authResponse = new UserAuthenticationResponse(
                     jwtToken,
                     profile,
-                    jwtService.getExpirationTime() / 1000 // Convert to seconds
-            );
+                    jwtService.getExpirationTime() / 1000);
 
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Login successful", authResponse));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400).body(ResponseUtil.createErrorResponse("Login failed: " + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            loginAttemptService.recordFailure(LOGIN_SCOPE, email, ip);
+            throw e;
         }
+    }
+
+    @PostMapping("/auth/logout")
+    public ResponseEntity<?> logout(Authentication authentication) {
+        userService.revokeUserTokens(currentEmail(authentication));
+        return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Logout successful", null));
     }
 
     @GetMapping("/users/profile")
-    public ResponseEntity<?> getUserProfile(@RequestParam String email) {
-        try {
-            UserProfile profile = userService.getUserProfile(email);
-            if (profile != null) {
-                return ResponseEntity
-                        .ok(ResponseUtil.createSuccessResponse("User profile retrieved successfully", profile));
-            } else {
-                return ResponseEntity.status(404).body(ResponseUtil.createErrorResponse("User profile not found"));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Error fetching user profile: " + e.getMessage()));
+    public ResponseEntity<?> getUserProfile(@RequestParam(required = false) String email,
+            Authentication authentication) {
+        String authenticatedEmail = currentEmail(authentication);
+        if (email == null || email.isBlank() || email.equalsIgnoreCase(authenticatedEmail)) {
+            return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
+                    "User profile retrieved successfully", userService.getUserProfile(authenticatedEmail)));
         }
+        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
+                "User profile retrieved successfully", userService.getPublicProfile(email)));
     }
 
     @PutMapping("/users/profile")
-    public ResponseEntity<?> updateUser(@RequestBody UserProfile profile) {
-        try {
-            UserProfile updatedProfile = userService.updateUserDetails(profile);
-            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User updated successfully", updatedProfile));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400)
-                    .body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
-        }
+    public ResponseEntity<?> updateUser(@RequestBody UserProfile profile, Authentication authentication) {
+        profile.setEmail(currentEmail(authentication));
+        UserProfile updatedProfile = userService.updateUserDetails(profile);
+        return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User updated successfully", updatedProfile));
     }
 
-    @PutMapping("auth/change-password")
-    public ResponseEntity<?> updatePassword(@RequestBody Map<String, String> payload) {
-        String email = payload.get("email");
-        String oldPassword = payload.get("oldPassword");
-        String newPassword = payload.get("newPassword");
+    @PutMapping("/auth/change-password")
+    public ResponseEntity<?> updatePassword(@RequestBody Map<String, String> payload,
+            Authentication authentication, HttpServletRequest request) {
+        String email = currentEmail(authentication);
+        String ip = clientIp(request);
+        if (loginAttemptService.isBlocked(PASSWORD_SCOPE, email, ip)) {
+            return tooManyRequests(loginAttemptService.retryAfterSeconds(PASSWORD_SCOPE, email, ip));
+        }
+
         try {
-            userService.updatePassword(email, oldPassword, newPassword);
+            userService.updatePassword(email, payload.get("oldPassword"), payload.get("newPassword"));
+            loginAttemptService.recordSuccess(PASSWORD_SCOPE, email, ip);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Password updated successfully", null));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400)
-                    .body(ResponseUtil.createErrorResponse("Update failed: " + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            loginAttemptService.recordFailure(PASSWORD_SCOPE, email, ip);
+            throw e;
         }
     }
 
     @DeleteMapping("/users/delete")
-    public ResponseEntity<?> deleteUser(@RequestBody Map<String, String> payload) {
-        String email = payload.get("email");
-        String password = payload.get("password");
+    public ResponseEntity<?> deleteUser(@RequestBody Map<String, String> payload,
+            Authentication authentication, HttpServletRequest request) {
+        String email = currentEmail(authentication);
+        String ip = clientIp(request);
+        if (loginAttemptService.isBlocked(DELETE_SCOPE, email, ip)) {
+            return tooManyRequests(loginAttemptService.retryAfterSeconds(DELETE_SCOPE, email, ip));
+        }
+
         try {
-            String response = userService.deleteUser(email, password);
+            String response = userService.deleteUser(email, payload.get("password"));
+            loginAttemptService.recordSuccess(DELETE_SCOPE, email, ip);
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse(response, null));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400)
-                    .body(ResponseUtil.createErrorResponse("Delete failed: " + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+            loginAttemptService.recordFailure(DELETE_SCOPE, email, ip);
+            throw e;
         }
     }
 
     @PostMapping("/add/cp/profiles")
-    public ResponseEntity<?> addCPProfile(@RequestBody Map<String, String> payload) {
-        String email = payload.get("email");
-        String codeforcesId = payload.get("codeforcesId");
-        String codechefId = payload.get("codechefId");
-        String atcoderId = payload.get("atcoderId");
-        String leetcodeId = payload.get("leetcodeId");
-        try {
-            boolean success = userService.addCPProfiles(email, codeforcesId, atcoderId, codechefId, leetcodeId);
-            if (success) {
-                if (codeforcesId != null)
-                    return ResponseEntity
-                            .ok(ResponseUtil.createSuccessResponse("Codeforces profile added successfully", null));
-                if (atcoderId != null)
-                    return ResponseEntity
-                            .ok(ResponseUtil.createSuccessResponse("AtCoder profile added successfully", null));
-                if (codechefId != null)
-                    return ResponseEntity
-                            .ok(ResponseUtil.createSuccessResponse("CodeChef profile added successfully", null));
-                if (leetcodeId != null)
-                    return ResponseEntity
-                            .ok(ResponseUtil.createSuccessResponse("LeetCode profile added successfully", null));
-                else {
-                    return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Error in updating the profile", null));
-                }
-            } else {
-                return ResponseEntity.status(400)
-                        .body(ResponseUtil.createErrorResponse("Failed to add Codeforces profile"));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Internal Server Error: " + e.getMessage()));
+    public ResponseEntity<?> addCPProfile(@RequestBody Map<String, String> payload, Authentication authentication) {
+        String email = currentEmail(authentication);
+        boolean success = userService.addCPProfiles(
+                email,
+                payload.get("codeforcesId"),
+                payload.get("atcoderId"),
+                payload.get("codechefId"),
+                payload.get("leetcodeId"));
+        if (!success) {
+            throw new IllegalArgumentException("Unable to update platform profiles.");
         }
+        return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Platform profiles updated successfully", null));
     }
 
     @GetMapping("/contest/list")
     public ResponseEntity<?> getContestList() {
-        try {
-            List<ContestDTO> contestList = userService.getContestList();
-            return ResponseEntity
-                    .ok(ResponseUtil.createSuccessResponse("Contest list retrieved successfully", contestList));
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Error fetching contest list: " + e.getMessage()));
-        }
+        List<ContestDTO> contestList = userService.getContestList();
+        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
+                "Contest list retrieved successfully", contestList));
     }
 
     @GetMapping("/platforms/codeforces")
     public ResponseEntity<?> getCodeforcesProfile(@RequestParam String email) {
-        try {
-            Codeforces codeforcesProfile = userService.getCodeforcesProfile(email);
-            if (codeforcesProfile != null) {
-                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Codeforces profile retrieved successfully",
-                        codeforcesProfile));
-            } else {
-                return ResponseEntity.status(404)
-                        .body(ResponseUtil.createErrorResponse("Codeforces profile not found"));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Error fetching Codeforces profile: " + e.getMessage()));
-        }
+        Codeforces codeforcesProfile = userService.getCodeforcesProfile(email);
+        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
+                "Codeforces profile retrieved successfully", codeforcesProfile));
     }
 
     @GetMapping("/platforms/atcoder")
     public ResponseEntity<?> getAtcoderProfile(@RequestParam String email) {
-        try {
-            Atcoder atcoderProfile = userService.getAtcoderProfile(email);
-            if (atcoderProfile != null) {
-                return ResponseEntity.ok(
-                        ResponseUtil.createSuccessResponse("AtCoder profile retrieved successfully", atcoderProfile));
-            } else {
-                return ResponseEntity.status(404).body(ResponseUtil.createErrorResponse("AtCoder profile not found"));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Error fetching AtCoder profile: " + e.getMessage()));
-        }
+        Atcoder atcoderProfile = userService.getAtcoderProfile(email);
+        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
+                "AtCoder profile retrieved successfully", atcoderProfile));
     }
 
-    @GetMapping("platforms/codechef")
+    @GetMapping("/platforms/codechef")
     public ResponseEntity<?> getCodechefProfile(@RequestParam String email) {
-        try {
-            Codechef codechefProfile = userService.getCodechefProfile(email);
-            if (codechefProfile != null) {
-                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Codechef profile retrieved successfully",
-                        codechefProfile));
-            } else {
-                return ResponseEntity.status(404)
-                        .body(ResponseUtil.createErrorResponse("Codechef profile not found"));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Error fetching Codechef profile: " + e.getMessage()));
-        }
+        Codechef codechefProfile = userService.getCodechefProfile(email);
+        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
+                "CodeChef profile retrieved successfully", codechefProfile));
     }
 
-    @GetMapping("platforms/leetcode")
+    @GetMapping("/platforms/leetcode")
     public ResponseEntity<?> getLeetcodeProfile(@RequestParam String email) {
-        try {
-            Leetcode leetcodeProfile = userService.getLeetcodeProfile(email);
-            if (leetcodeProfile != null) {
-                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("LeetCode profile retrieved successfully",
-                        leetcodeProfile));
-            } else {
-                return ResponseEntity.status(404)
-                        .body(ResponseUtil.createErrorResponse("LeetCode profile not found"));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Error fetching LeetCode profile: " + e.getMessage()));
-        }
+        Leetcode leetcodeProfile = userService.getLeetcodeProfile(email);
+        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
+                "LeetCode profile retrieved successfully", leetcodeProfile));
     }
 
-    @GetMapping("users/codeforces/profile")
+    @GetMapping("/users/codeforces/profile")
     public ResponseEntity<?> fetchCodeforcesProfile(@RequestParam String username) {
-        try {
-            Codeforces codeforcesProfile = userService.fetchCodeforcesProfile(username);
-            if (codeforcesProfile != null) {
-                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Codeforces profile fetched successfully",
-                        codeforcesProfile));
-            } else {
-                return ResponseEntity.status(404)
-                        .body(ResponseUtil.createErrorResponse("Codeforces profile not found"));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Error fetching Codeforces profile: " + e.getMessage()));
-        }
+        Codeforces codeforcesProfile = userService.fetchCodeforcesProfile(username);
+        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
+                "Codeforces profile fetched successfully", codeforcesProfile));
     }
 
-    @GetMapping("users/atcoder/profile")
+    @GetMapping("/users/atcoder/profile")
     public ResponseEntity<?> fetchAtcoderProfile(@RequestParam String username) {
-        try {
-            Atcoder atcoderProfile = userService.fetchAtcoderProfile(username);
-            if (atcoderProfile != null) {
-                return ResponseEntity.ok(
-                        ResponseUtil.createSuccessResponse("AtCoder profile fetched successfully", atcoderProfile));
-            } else {
-                return ResponseEntity.status(404).body(ResponseUtil.createErrorResponse("AtCoder profile not found"));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Error fetching AtCoder profile: " + e.getMessage()));
-        }
+        Atcoder atcoderProfile = userService.fetchAtcoderProfile(username);
+        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
+                "AtCoder profile fetched successfully", atcoderProfile));
     }
 
-    @GetMapping("users/codechef/profile")
+    @GetMapping("/users/codechef/profile")
     public ResponseEntity<?> fetchCodechefProfile(@RequestParam String username) {
-        try {
-            Codechef codechefProfile = userService.fetchCodechefProfile(username);
-            if (codechefProfile != null) {
-                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Codechef profile fetched successfully",
-                        codechefProfile));
-            } else {
-                return ResponseEntity.status(404)
-                        .body(ResponseUtil.createErrorResponse("Codechef profile not found"));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Error fetching Codechef profile: " + e.getMessage()));
-        }
+        Codechef codechefProfile = userService.fetchCodechefProfile(username);
+        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
+                "CodeChef profile fetched successfully", codechefProfile));
     }
 
-    @GetMapping("users/leetcode/profile")
+    @GetMapping("/users/leetcode/profile")
     public ResponseEntity<?> fetchLeetcodeProfile(@RequestParam String username) {
-        try {
-            Leetcode leetcodeProfile = userService.fetchLeetcodeProfile(username);
-            if (leetcodeProfile != null) {
-                return ResponseEntity.ok(ResponseUtil.createSuccessResponse("LeetCode profile fetched successfully",
-                        leetcodeProfile));
-            } else {
-                return ResponseEntity.status(404)
-                        .body(ResponseUtil.createErrorResponse("LeetCode profile not found"));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(ResponseUtil.createErrorResponse("Error fetching LeetCode profile: " + e.getMessage()));
+        Leetcode leetcodeProfile = userService.fetchLeetcodeProfile(username);
+        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
+                "LeetCode profile fetched successfully", leetcodeProfile));
+    }
+
+    private String currentEmail(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalArgumentException("Authentication required.");
         }
+        String email = authentication.getName();
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Authentication required.");
+        }
+        return email;
+    }
+
+    private String clientIp(HttpServletRequest request) {
+        return request.getRemoteAddr();
+    }
+
+    private ResponseEntity<?> tooManyRequests(long retryAfterSeconds) {
+        long retryAfter = Math.max(1L, retryAfterSeconds);
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(retryAfter))
+                .body(ResponseUtil.createErrorResponse("Too many failed attempts. Try again later."));
     }
 }

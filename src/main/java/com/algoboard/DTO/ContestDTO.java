@@ -11,6 +11,9 @@ public class ContestDTO {
     private LocalDateTime endTime;
     private long duration;
 
+    public ContestDTO() {
+    }
+
     public ContestDTO(String contestId, String contestName, String contestUrl, String platform, LocalDateTime startTime, LocalDateTime endTime, long duration) {
         this.contestId = contestId;
         this.contestName = contestName;

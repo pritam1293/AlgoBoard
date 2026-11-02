@@ -1,38 +1,14 @@
-import React, { useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-const Navbar = ({ user, onLogout }) => {
-  const [userDropdownOpen, setUserDropdownOpen] = React.useState(false);
+const Navbar = ({ user }) => {
   const navigate = useNavigate();
-  const dropdownRef = useRef(null);
 
   const isLoggedIn = user !== null;
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setUserDropdownOpen(false);
-      }
-    };
-
-    if (userDropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [userDropdownOpen]);
-
-  const handleLogout = () => {
-    onLogout();
-    setUserDropdownOpen(false);
-  };
-
   return (
-    <nav className="bg-neutral-800 shadow-lg sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+    <nav className="sticky top-0 z-50 px-4 sm:px-6 lg:px-8 py-3">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-between h-14 px-4 sm:px-6 rounded-full bg-neutral-800/60 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40">
           {/* Logo */}
           <div className="flex items-center">
             <button
@@ -42,14 +18,14 @@ const Navbar = ({ user, onLogout }) => {
               <img
                 src="/images/algoboard_logo.png"
                 alt="AlgoBoard Logo"
-                className="w-10 h-10 mr-3 bg-white rounded-lg p-1"
+                className="w-9 h-9 mr-2.5 bg-white rounded-lg p-1"
               />
               AlgoBoard
             </button>
           </div>
 
           {/* User Section */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 sm:space-x-6">
             {isLoggedIn && (
               <>
                 <button
@@ -64,16 +40,13 @@ const Navbar = ({ user, onLogout }) => {
                 >
                   Platform Search
                 </button>
-              </>
-            )}
-            {isLoggedIn ? (
-              <div className="relative" ref={dropdownRef}>
                 <button
-                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                  className="flex items-center text-white hover:text-gray-300 transition duration-200"
+                  onClick={() =>
+                    navigate(`/profile/${encodeURIComponent(user.email)}`)
+                  }
+                  className="flex items-center text-neutral-300 hover:text-white transition duration-200 font-medium whitespace-nowrap"
                 >
-                  <span className="mr-2">👤</span>
-                  {user.firstName || user.email}
+                  Profile
                   <svg
                     className="w-4 h-4 ml-1"
                     fill="none"
@@ -84,130 +57,13 @@ const Navbar = ({ user, onLogout }) => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
+                      d="M5 12h14M13 6l6 6-6 6"
                     />
                   </svg>
                 </button>
-
-                {userDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-neutral-800 rounded-lg shadow-lg border border-neutral-700 z-50">
-                    <div className="py-2">
-                      <div className="px-4 py-2 text-neutral-300 border-b border-neutral-700">
-                        <p className="text-sm font-medium">{user.firstName || user.email}</p>
-                        <p className="text-xs text-neutral-400">{user.email}</p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          navigate(`/profile/${encodeURIComponent(user.email)}`);
-                          setUserDropdownOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-neutral-300 hover:bg-neutral-700 transition duration-200 flex items-center"
-                      >
-                        <svg
-                          className="w-4 h-4 mr-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                          />
-                        </svg>
-                        My Profile
-                      </button>
-                      <button
-                        onClick={() => {
-                          navigate("/contests");
-                          setUserDropdownOpen(false);
-                        }}
-                        className="md:hidden w-full text-left px-4 py-2 text-neutral-300 hover:bg-neutral-700 transition duration-200 flex items-center"
-                      >
-                        <svg
-                          className="w-4 h-4 mr-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        Contests
-                      </button>
-                      <button
-                        onClick={() => {
-                          navigate("/platform-search");
-                          setUserDropdownOpen(false);
-                        }}
-                        className="md:hidden w-full text-left px-4 py-2 text-neutral-300 hover:bg-neutral-700 transition duration-200 flex items-center"
-                      >
-                        <svg
-                          className="w-4 h-4 mr-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                          />
-                        </svg>
-                        Platform Search
-                      </button>
-                      <button
-                        onClick={() => {
-                          navigate("/account-settings");
-                          setUserDropdownOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-neutral-300 hover:bg-neutral-700 transition duration-200 flex items-center"
-                      >
-                        <svg
-                          className="w-4 h-4 mr-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 4v16m8-8H4"
-                          />
-                        </svg>
-                        Account Settings
-                      </button>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full text-left px-4 py-2 text-neutral-300 hover:bg-neutral-700 transition duration-200 flex items-center"
-                      >
-                        <svg
-                          className="w-4 h-4 mr-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                          />
-                        </svg>
-                        Logout
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
+              </>
+            )}
+            {!isLoggedIn && (
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => navigate("/login")}
@@ -217,7 +73,7 @@ const Navbar = ({ user, onLogout }) => {
                 </button>
                 <button
                   onClick={() => navigate("/signup")}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition duration-200"
                 >
                   Sign Up
                 </button>

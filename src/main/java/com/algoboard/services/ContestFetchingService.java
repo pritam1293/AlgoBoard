@@ -8,6 +8,9 @@ import com.algoboard.DTO.ContestDTO;
 import com.algoboard.DTO.Leetcode.LC_ContestDTO.ContestHistory;
 
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.client.RestTemplate;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -31,12 +34,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class ContestFetchingService {
+    private static final Logger logger = LoggerFactory.getLogger(ContestFetchingService.class);
+    private static final int JSOUP_TIMEOUT_MILLIS = 5000;
+
     // Timezone constants for consistent handling across all datetime operations
     private static final ZoneId IST_ZONE = ZoneId.of("Asia/Kolkata");
     private static final ZoneOffset IST_OFFSET = ZoneOffset.of("+05:30");
 
-    private RestTemplate restTemplate = new RestTemplate();
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Value("${app.leetcode.past-contests.username:}")
+    private String leetcodePastContestsUsername;
+
+    public ContestFetchingService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
 
     /**
      * Custom comparator for sorting contests by priority and time
@@ -145,8 +158,7 @@ public class ContestFetchingService {
                 }
             }
         } catch (Exception e) {
-            System.out.println("");
-            System.out.println("Error fetching Codeforces contests: " + e.getMessage());
+            logger.warn("Error fetching Codeforces contests: {}", e.getClass().getSimpleName());
         }
     }
 
@@ -165,8 +177,7 @@ public class ContestFetchingService {
                 addCodechefContests(allContests, response.getPastContests(), formatter, 4);
             }
         } catch (Exception e) {
-            System.out.println("");
-            System.out.println("Error fetching CodeChef contests: " + e.getMessage());
+            logger.warn("Error fetching CodeChef contests: {}", e.getClass().getSimpleName());
         }
     }
 
@@ -201,20 +212,20 @@ public class ContestFetchingService {
         try {
             upcomingFuture.get(8, TimeUnit.SECONDS);
         } catch (Exception e) {
-            System.out.println("AtCoder upcoming contests timeout or error: " + e.getMessage());
+            logger.warn("AtCoder upcoming contests timed out or failed: {}", e.getClass().getSimpleName());
         }
 
         try {
             pastFuture.get(8, TimeUnit.SECONDS);
         } catch (Exception e) {
-            System.out.println("AtCoder past contests timeout or error: " + e.getMessage());
+            logger.warn("AtCoder past contests timed out or failed: {}", e.getClass().getSimpleName());
         }
     }
 
     private void fetchAtcoderUpcomingContests(List<ContestDTO> allContests) {
         String acurl = "https://atcoder.jp/contests/";
         try {
-            Document doc = Jsoup.connect(acurl).get();
+            Document doc = Jsoup.connect(acurl).timeout(JSOUP_TIMEOUT_MILLIS).get();
 
             // Try multiple selectors to find the upcoming contests table
             Element upcomingTable = null;
@@ -310,14 +321,14 @@ public class ContestFetchingService {
                 }
             }
         } catch (Exception e) {
-            System.out.println("Error fetching AtCoder upcoming contests: " + e.getMessage());
+            logger.warn("Error fetching AtCoder upcoming contests: {}", e.getClass().getSimpleName());
         }
     }
 
     private void fetchAtcoderPastContests(List<ContestDTO> allContests) {
         String acurl = "https://atcoder.jp/contests/archive";
         try {
-            Document doc = Jsoup.connect(acurl).get();
+            Document doc = Jsoup.connect(acurl).timeout(JSOUP_TIMEOUT_MILLIS).get();
             Elements rows = doc.select("table tbody tr");
 
             int countPastContests = 0;
@@ -356,7 +367,7 @@ public class ContestFetchingService {
                 }
             }
         } catch (IOException e) {
-            System.out.println("Error fetching AtCoder past contests: " + e.getMessage());
+            logger.warn("Error fetching AtCoder past contests: {}", e.getClass().getSimpleName());
         }
     }
 
@@ -370,13 +381,13 @@ public class ContestFetchingService {
         try {
             futureFuture.get(8, TimeUnit.SECONDS);
         } catch (Exception e) {
-            System.out.println("LeetCode future contests timeout or error: " + e.getMessage());
+            logger.warn("LeetCode future contests timed out or failed: {}", e.getClass().getSimpleName());
         }
 
         try {
             pastFuture.get(8, TimeUnit.SECONDS);
         } catch (Exception e) {
-            System.out.println("LeetCode past contests timeout or error: " + e.getMessage());
+            logger.warn("LeetCode past contests timed out or failed: {}", e.getClass().getSimpleName());
         }
     }
 
@@ -405,12 +416,20 @@ public class ContestFetchingService {
                 }
             }
         } catch (Exception e) {
-            System.out.println("Error fetching LeetCode future contests: " + e.getMessage());
+            logger.warn("Error fetching LeetCode future contests: {}", e.getClass().getSimpleName());
         }
     }
 
     private void fetchLeetcodePastContests(List<ContestDTO> allContests) {
-        String lcurl = "https://leetcode-stats.tashif.codes/Pritam1293/contests";
+        String username = leetcodePastContestsUsername == null ? "" : leetcodePastContestsUsername.trim();
+        if (username.isEmpty()) {
+            return;
+        }
+        if (!username.matches("^[A-Za-z0-9_.-]{1,64}$")) {
+            logger.warn("Invalid LeetCode past-contests username configuration; skipping");
+            return;
+        }
+        String lcurl = "https://leetcode-stats.tashif.codes/" + username + "/contests";
         try {
             LC_ContestDTO response = restTemplate.getForObject(lcurl, LC_ContestDTO.class);
             if (response != null && response.getStatus().equals("success")) {
@@ -438,7 +457,7 @@ public class ContestFetchingService {
                 }
             }
         } catch (Exception e) {
-            System.out.println("Error fetching LeetCode past contests: " + e.getMessage());
+            logger.warn("Error fetching LeetCode past contests: {}", e.getClass().getSimpleName());
         }
     }
 

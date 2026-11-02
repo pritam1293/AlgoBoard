@@ -243,12 +243,23 @@ DATABASE_USERNAME=your_neon_username
 DATABASE_PASSWORD=your_neon_password
 ```
 
-Optional local test login (enabled with `APP_TEST_ACCOUNT_ENABLED=true`):
+Database schema migrations run automatically on startup via Flyway. Set a strong JWT secret in `.env` (it must be Base64 and decode to at least 32 bytes):
 
-```text
-Email: abcd
-Password: abcd
+```bash
+sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -base64 48)|" .env
 ```
+
+### Cache Setup
+
+Contest and profile data use an in-memory cache by default, so Redis is not required. Cache entries are cleared periodically by the application.
+
+To use Redis instead, set `CACHE_TYPE=redis` in `.env` and start a Redis instance:
+
+```bash
+docker run -d --name algoboard-redis -p 127.0.0.1:6379:6379 redis:7-alpine
+```
+
+If you use a different host, port, or password, also set `REDIS_HOST`, `REDIS_PORT`, and `REDIS_PASSWORD` in `.env`.
 
 ### Frontend Setup
 

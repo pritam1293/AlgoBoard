@@ -34,6 +34,14 @@ class AuthService {
 
   // Logout user
   logout() {
+    const token = apiService.getAuthToken();
+    if (token) {
+      apiService
+        .post("/auth/logout", {}, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .catch(() => {});
+    }
     apiService.removeAuthToken();
     localStorage.removeItem("userData");
   }

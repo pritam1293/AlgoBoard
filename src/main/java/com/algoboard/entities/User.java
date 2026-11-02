@@ -38,6 +38,9 @@ public class User {
     @Column(name = "leetcode_username", length = 100)
     private String leetcodeUsername;
 
+    @Column(name = "token_version")
+    private Long tokenVersion = 0L;
+
     public User() {
 
     }
@@ -112,6 +115,14 @@ public class User {
 
     public void setLeetcodeUsername(String leetcodeUsername) {
         this.leetcodeUsername = leetcodeUsername;
+    }
+
+    public long getTokenVersion() {
+        return tokenVersion == null ? 0L : tokenVersion;
+    }
+
+    public void setTokenVersion(long tokenVersion) {
+        this.tokenVersion = tokenVersion;
     }
 
 }

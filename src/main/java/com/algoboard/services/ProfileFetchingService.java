@@ -18,6 +18,8 @@ import com.algoboard.DTO.Leetcode.LC_ContestDTO.ContestHistory;
 import com.algoboard.DTO.Leetcode.LC_UserDTO.RecentSubmission;
 import com.algoboard.DTO.Leetcode.LC_UserDTO.SubmissionStat;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -35,14 +37,19 @@ import java.util.HashSet;
 @Service
 public class ProfileFetchingService {
 
-    private final RestTemplate restTemplate;
+    private static final Logger logger = LoggerFactory.getLogger(ProfileFetchingService.class);
 
-    public ProfileFetchingService() {
-        this.restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
+    private final Validation validation;
+
+    public ProfileFetchingService(RestTemplate restTemplate, Validation validation) {
+        this.restTemplate = restTemplate;
+        this.validation = validation;
     }
 
     // Fetch and aggregate Codeforces profile data
     public Codeforces fetchCodeforcesProfile(String username) {
+        requireValidUsername(username);
         String profileUrl = "https://codeforces.com/api/user.info?handles=" + username;
         String contestUrl = "https://codeforces.com/api/user.rating?handle=" + username;
         try {
@@ -134,6 +141,7 @@ public class ProfileFetchingService {
 
     // Fetch and aggregate Atcoder profile data
     public Atcoder fetchAtcoderProfile(String username) {
+        requireValidUsername(username);
         String url = "https://atcoder.jp/users/" + username + "/history/json";
 
         try {
@@ -235,6 +243,7 @@ public class ProfileFetchingService {
     
     // Fetch and aggregate Codechef profile data
     public Codechef fetchCodechefProfile(String username) {
+        requireValidUsername(username);
         String ccurl = "https://clist.by/account/" + username + "/resource/codechef.com/ratings/?resource=codechef.com";
         Codechef codechefProfile = new Codechef();
         try {
@@ -295,6 +304,7 @@ public class ProfileFetchingService {
     
     // Fetch and aggregate Leetcode profile data
     public Leetcode fetchLeetcodeProfile(String username) {
+        requireValidUsername(username);
         String lcuserurl = "https://leetcode-stats.tashif.codes/" + username + "/profile";
         String lccontesturl = "https://leetcode-stats.tashif.codes/" + username + "/contests";
 
@@ -327,13 +337,13 @@ public class ProfileFetchingService {
             try {
                 userProfileResponse = userProfileFuture.get(10, TimeUnit.SECONDS);
             } catch (Exception e) {
-                System.out.println("LeetCode profile API timeout or error for " + username + ": " + e.getMessage());
+                logger.warn("LeetCode profile API timed out or failed");
             }
 
             try {
                 contestResponse = contestFuture.get(10, TimeUnit.SECONDS);
             } catch (Exception e) {
-                System.out.println("LeetCode contest API timeout or error for " + username + ": " + e.getMessage());
+                logger.warn("LeetCode contest API timed out or failed");
             }
 
             // Check if we got valid responses
@@ -430,13 +440,14 @@ public class ProfileFetchingService {
 
             return leetcodeProfile;
         } catch (Exception e) {
-            System.out.println("");
-            System.out.println("DETAILED ERROR fetching LeetCode profile for user: " + username + " (LeetCode ID: "
-                    + username + ")");
-            System.out.println("Error type: " + e.getClass().getSimpleName());
-            System.out.println("Error message: " + e.getMessage());
-            e.printStackTrace();
+            logger.warn("LeetCode profile fetch failed: {}", e.getClass().getSimpleName());
             return new Leetcode();
+        }
+    }
+
+    private void requireValidUsername(String username) {
+        if (username == null || username.isEmpty() || !validation.isValidPlatformUsername(username)) {
+            throw new IllegalArgumentException("Invalid platform username format.");
         }
     }
 }

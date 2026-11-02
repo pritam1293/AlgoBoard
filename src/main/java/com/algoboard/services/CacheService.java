@@ -17,79 +17,70 @@ public class CacheService {
         this.cacheManager = cacheManager;
     }
 
-    // Automatically refresh contest list cache every 30 minutes
     @CacheEvict(value = "contestList", allEntries = true)
-    @Scheduled(fixedRate = 1800000) // 30 minutes in milliseconds
+    @Scheduled(fixedRate = 1800000)
     public void refreshContestListCache() {
-        // Cache will be automatically refreshed on next access
     }
 
-    // Automatically refresh LeetCode profile cache every 1 hour
     @CacheEvict(value = "leetcodeProfile", allEntries = true)
-    @Scheduled(fixedRate = 3600000) // 1 hour in milliseconds
+    @Scheduled(fixedRate = 3600000)
     public void refreshLeetcodeProfileCache() {
-        // Cache will be automatically refreshed on next access
     }
 
-    // Automatically refresh Codeforces profile cache every 1 hour
     @CacheEvict(value = "codeforcesProfile", allEntries = true)
-    @Scheduled(fixedRate = 3600000) // 1 hour in milliseconds
+    @Scheduled(fixedRate = 3600000)
     public void refreshCodeforcesProfileCache() {
-        // Cache will be automatically refreshed on next access
     }
 
-    // Automatically refresh AtCoder profile cache every 1 hour
     @CacheEvict(value = "atcoderProfile", allEntries = true)
-    @Scheduled(fixedRate = 3600000) // 1 hour in milliseconds
+    @Scheduled(fixedRate = 3600000)
     public void refreshAtcoderProfileCache() {
-        // Cache will be automatically refreshed on next access
     }
 
-    // Automatically refresh CodeChef profile cache every 1 hour
     @CacheEvict(value = "codechefProfile", allEntries = true)
-    @Scheduled(fixedRate = 3600000) // 1 hour in milliseconds
+    @Scheduled(fixedRate = 3600000)
     public void refreshCodechefProfileCache() {
-        // Cache will be automatically refreshed on next access
     }
 
-    // Selective cache eviction methods for individual users
-    public void evictCodeforcesCache(String key) {
-        Cache cache = cacheManager.getCache("codeforcesProfile");
-        if (cache != null) {
-            cache.evict(Objects.requireNonNull(key, "Cache key cannot be null"));
-        }
+    public void evictCodeforcesCache(String email) {
+        evict("codeforcesProfile", emailKey(email));
     }
 
-    public void evictAtcoderCache(String key) {
-        Cache cache = cacheManager.getCache("atcoderProfile");
-        if (cache != null) {
-            cache.evict(Objects.requireNonNull(key, "Cache key cannot be null"));
-        }
+    public void evictAtcoderCache(String email) {
+        evict("atcoderProfile", emailKey(email));
     }
 
-    public void evictLeetcodeCache(String key) {
-        Cache cache = cacheManager.getCache("leetcodeProfile");
-        if (cache != null) {
-            cache.evict(Objects.requireNonNull(key, "Cache key cannot be null"));
-        }
+    public void evictLeetcodeCache(String email) {
+        evict("leetcodeProfile", emailKey(email));
     }
 
-    public void evictCodechefCache(String key) {
-        Cache cache = cacheManager.getCache("codechefProfile");
-        if (cache != null) {
-            cache.evict(Objects.requireNonNull(key, "Cache key cannot be null"));
-        }
+    public void evictCodechefCache(String email) {
+        evict("codechefProfile", emailKey(email));
     }
 
-    // Utility method to clear all profile caches for a user
-    public void evictAllProfileCaches(String key) {
-        evictCodeforcesCache(key);
-        evictAtcoderCache(key);
-        evictLeetcodeCache(key);
-        evictCodechefCache(key);
+    public void evictCodeforcesUsernameCache(String username) {
+        evict("codeforcesProfile", usernameKey(username));
     }
 
-    // Utility method to clear all caches
+    public void evictAtcoderUsernameCache(String username) {
+        evict("atcoderProfile", usernameKey(username));
+    }
+
+    public void evictLeetcodeUsernameCache(String username) {
+        evict("leetcodeProfile", usernameKey(username));
+    }
+
+    public void evictCodechefUsernameCache(String username) {
+        evict("codechefProfile", usernameKey(username));
+    }
+
+    public void evictAllProfileCaches(String email) {
+        evictCodeforcesCache(email);
+        evictAtcoderCache(email);
+        evictLeetcodeCache(email);
+        evictCodechefCache(email);
+    }
+
     public void evictAllCaches() {
         clearCache("contestList");
         clearCache("codeforcesProfile");
@@ -98,9 +89,23 @@ public class CacheService {
         clearCache("leetcodeProfile");
     }
 
-    private void clearCache(String name) {
-        String cacheName = Objects.requireNonNull(name, "Cache name cannot be null");
+    private void evict(String cacheName, String key) {
         Cache cache = cacheManager.getCache(cacheName);
+        if (cache != null) {
+            cache.evict(key);
+        }
+    }
+
+    private String emailKey(String email) {
+        return "email:" + Objects.requireNonNull(email, "Cache email cannot be null");
+    }
+
+    private String usernameKey(String username) {
+        return "user:" + Objects.requireNonNull(username, "Cache username cannot be null");
+    }
+
+    private void clearCache(String name) {
+        Cache cache = cacheManager.getCache(Objects.requireNonNull(name, "Cache name cannot be null"));
         if (cache != null) {
             cache.clear();
         }

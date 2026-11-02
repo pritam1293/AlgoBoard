@@ -7,6 +7,9 @@ public class UserContestHistory {
     private long oldRating;
     private long newRating;
 
+    public UserContestHistory() {
+    }
+
     public UserContestHistory(String contestId, String contestName, long standing, long oldRating, long newRating) {
         this.contestId = contestId;
         this.contestName = contestName;
