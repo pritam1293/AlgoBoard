@@ -36,10 +36,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class ContestFetchingService {
     private static final Logger logger = LoggerFactory.getLogger(ContestFetchingService.class);
     private static final int JSOUP_TIMEOUT_MILLIS = 5000;
+    private static final int FETCH_TIMEOUT_SECONDS = 8;
+    private static final int LEETCODE_CONTEST_DURATION_MINUTES = 90;
 
     // Timezone constants for consistent handling across all datetime operations
     private static final ZoneId IST_ZONE = ZoneId.of("Asia/Kolkata");
     private static final ZoneOffset IST_OFFSET = ZoneOffset.of("+05:30");
+
+    private static final DateTimeFormatter CODECHEF_DATE_FORMAT =
+            DateTimeFormatter.ofPattern("dd MMM yyyy  HH:mm:ss");
+    private static final DateTimeFormatter ATCODER_DATE_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssZ");
+    private static final Pattern CONTEST_ID_PATTERN = Pattern.compile("(?<=/contests?/)[^/]+");
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -67,14 +75,11 @@ public class ContestFetchingService {
             return Integer.compare(priority1, priority2);
         }
 
-        // Secondary sort: by start time within same priority
-        if (priority1 == 1) { // Live contests - sort by earliest start time
-            return contest1.getStartTime().compareTo(contest2.getStartTime());
-        } else if (priority1 == 2) { // Upcoming contests - sort by earliest start time
-            return contest1.getStartTime().compareTo(contest2.getStartTime());
-        } else { // Finished contests - sort by latest start time (most recent first)
+        // Secondary sort: live/upcoming by earliest start; finished by most recent
+        if (priority1 == 3) {
             return contest2.getStartTime().compareTo(contest1.getStartTime());
         }
+        return contest1.getStartTime().compareTo(contest2.getStartTime());
     }
 
     private int getContestPriority(ContestDTO contest, LocalDateTime now) {
@@ -88,72 +93,18 @@ public class ContestFetchingService {
     }
 
     public void getCodeforcesContestList(List<ContestDTO> allContests) {
-        String cfurl = "https://codeforces.com/api/contest.list";
+        String cfUrl = "https://codeforces.com/api/contest.list";
         try {
-            CF_ContestListDTO response = restTemplate.getForObject(cfurl, CF_ContestListDTO.class);
+            CF_ContestListDTO response = restTemplate.getForObject(cfUrl, CF_ContestListDTO.class);
             int pastContestCount = 0;
-            if (response != null && response.getStatus().equals("OK")) {
+            if (response != null && "OK".equals(response.getStatus())) {
                 for (CF_ContestListDTO.CodeforcesContest contest : response.getResult()) {
-                    if (contest.getPhase().equals("BEFORE")) {
-                        synchronized (allContests) {
-                            allContests.add(new ContestDTO(
-                                    String.valueOf(contest.getId()),
-                                    contest.getName(),
-                                    "https://codeforces.com/contests/" + contest.getId(),
-                                    "codeforces",
-                                    LocalDateTime.ofInstant(Instant.ofEpochSecond(contest.getStartTimeSeconds()),
-                                            IST_ZONE),
-                                    LocalDateTime.ofInstant(Instant.ofEpochSecond(
-                                            contest.getStartTimeSeconds() + contest.getDurationSeconds()),
-                                            IST_ZONE),
-                                    contest.getDurationSeconds() / 60));
-                        }
-                    } else if (contest.getPhase().equals("CODING")) {
-                        synchronized (allContests) {
-                            allContests.add(new ContestDTO(
-                                    String.valueOf(contest.getId()),
-                                    contest.getName(),
-                                    "https://codeforces.com/contests/" + contest.getId(),
-                                    "codeforces",
-                                    LocalDateTime.ofInstant(Instant.ofEpochSecond(contest.getStartTimeSeconds()),
-                                            IST_ZONE),
-                                    LocalDateTime.ofInstant(Instant.ofEpochSecond(
-                                            contest.getStartTimeSeconds() + contest.getDurationSeconds()),
-                                            IST_ZONE),
-                                    contest.getDurationSeconds() / 60));
-                        }
-                    } else if (contest.getPhase().equals("SYSTEM_TEST")) {
-                        synchronized (allContests) {
-                            allContests.add(new ContestDTO(
-                                    String.valueOf(contest.getId()),
-                                    contest.getName(),
-                                    "https://codeforces.com/contests/" + contest.getId(),
-                                    "codeforces",
-                                    LocalDateTime.ofInstant(Instant.ofEpochSecond(contest.getStartTimeSeconds()),
-                                            IST_ZONE),
-                                    LocalDateTime.ofInstant(Instant.ofEpochSecond(
-                                            contest.getStartTimeSeconds() + contest.getDurationSeconds()),
-                                            IST_ZONE),
-                                    contest.getDurationSeconds() / 60));
-                        }
-                    } else {
+                    if (!isCodeforcesUpcomingOrLive(contest.getPhase())) {
                         pastContestCount++;
-                        synchronized (allContests) {
-                            allContests.add(new ContestDTO(
-                                    String.valueOf(contest.getId()),
-                                    contest.getName(),
-                                    "https://codeforces.com/contests/" + contest.getId(),
-                                    "codeforces",
-                                    LocalDateTime.ofInstant(Instant.ofEpochSecond(contest.getStartTimeSeconds()),
-                                            IST_ZONE),
-                                    LocalDateTime.ofInstant(Instant.ofEpochSecond(
-                                            contest.getStartTimeSeconds() + contest.getDurationSeconds()),
-                                            IST_ZONE),
-                                    contest.getDurationSeconds() / 60));
-                        }
                     }
+                    addContest(allContests, toContest(contest));
                     if (pastContestCount == 3) {
-                        break;// Limit to 3 past contests
+                        break; // Limit to 3 past contests
                     }
                 }
             }
@@ -162,39 +113,55 @@ public class ContestFetchingService {
         }
     }
 
+    private boolean isCodeforcesUpcomingOrLive(String phase) {
+        return "BEFORE".equals(phase) || "CODING".equals(phase) || "SYSTEM_TEST".equals(phase);
+    }
+
+    private ContestDTO toContest(CF_ContestListDTO.CodeforcesContest contest) {
+        LocalDateTime startTime = LocalDateTime.ofInstant(
+                Instant.ofEpochSecond(contest.getStartTimeSeconds()), IST_ZONE);
+        LocalDateTime endTime = LocalDateTime.ofInstant(
+                Instant.ofEpochSecond(contest.getStartTimeSeconds() + contest.getDurationSeconds()), IST_ZONE);
+        return new ContestDTO(
+                String.valueOf(contest.getId()),
+                contest.getName(),
+                "https://codeforces.com/contests/" + contest.getId(),
+                "codeforces",
+                startTime,
+                endTime,
+                contest.getDurationSeconds() / 60);
+    }
+
     public void getCodechefContestList(List<ContestDTO> allContests) {
-        String ccurl = "https://www.codechef.com/api/list/contests/all?sort_by=START&sorting_order=asc&offset=0&mode=all";
+        String ccUrl = "https://www.codechef.com/api/list/contests/all?sort_by=START&sorting_order=asc&offset=0&mode=all";
         try {
-            CC_ContestListDTO response = restTemplate.getForObject(ccurl, CC_ContestListDTO.class);
+            CC_ContestListDTO response = restTemplate.getForObject(ccUrl, CC_ContestListDTO.class);
 
-            // Create a DateTimeFormatter for the CodeChef date format: "20 Aug 2025
-            // 20:00:00"
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy  HH:mm:ss");
-
-            if (response != null && response.getStatus().equals("success")) {
-                addCodechefContests(allContests, response.getPresentContests(), formatter, -1);
-                addCodechefContests(allContests, response.getFutureContests(), formatter, -1);
-                addCodechefContests(allContests, response.getPastContests(), formatter, 4);
+            if (response != null && "success".equals(response.getStatus())) {
+                addCodechefContests(allContests, response.getPresentContests(), -1);
+                addCodechefContests(allContests, response.getFutureContests(), -1);
+                addCodechefContests(allContests, response.getPastContests(), 4);
             }
         } catch (Exception e) {
             logger.warn("Error fetching CodeChef contests: {}", e.getClass().getSimpleName());
         }
     }
 
-    private void addCodechefContests(List<ContestDTO> allContests, List<CC_ContestListDTO.CodechefContest> contestList,
-            DateTimeFormatter formatter, int limit) {
+    private void addCodechefContests(List<ContestDTO> allContests,
+            List<CC_ContestListDTO.CodechefContest> contestList, int limit) {
+        if (contestList == null) {
+            return;
+        }
         int count = 0;
         for (CC_ContestListDTO.CodechefContest contest : contestList) {
-            synchronized (allContests) {
-                allContests.add(new ContestDTO(
-                        contest.getContestCode(),
-                        contest.getContestName(),
-                        "https://www.codechef.com/" + contest.getContestCode(),
-                        "codechef",
-                        LocalDateTime.parse(contest.getContestStartDate(), formatter),
-                        LocalDateTime.parse(contest.getContestEndDate(), formatter),
-                        Long.parseLong(contest.getContestDuration())));
-            }
+            addContest(allContests, new ContestDTO(
+                    contest.getContestCode(),
+                    contest.getContestName(),
+                    "https://www.codechef.com/" + contest.getContestCode(),
+                    "codechef",
+                    LocalDateTime.parse(contest.getContestStartDate(), CODECHEF_DATE_FORMAT),
+                    LocalDateTime.parse(contest.getContestEndDate(), CODECHEF_DATE_FORMAT),
+                    Long.parseLong(contest.getContestDuration())));
 
             if (limit > 0 && ++count >= limit) {
                 break; // Limit reached
@@ -209,17 +176,8 @@ public class ContestFetchingService {
         CompletableFuture<Void> pastFuture = CompletableFuture.runAsync(() -> fetchAtcoderPastContests(allContests));
 
         // Wait for both to complete with timeout protection
-        try {
-            upcomingFuture.get(8, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            logger.warn("AtCoder upcoming contests timed out or failed: {}", e.getClass().getSimpleName());
-        }
-
-        try {
-            pastFuture.get(8, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            logger.warn("AtCoder past contests timed out or failed: {}", e.getClass().getSimpleName());
-        }
+        await(upcomingFuture, "AtCoder upcoming");
+        await(pastFuture, "AtCoder past");
     }
 
     private void fetchAtcoderUpcomingContests(List<ContestDTO> allContests) {
@@ -285,36 +243,9 @@ public class ContestFetchingService {
             // Loop through each contest entry (skip the first header row)
             for (int i = 1; i < rows.size(); i++) {
                 try {
-                    Element row = rows.get(i);
-                    Elements cols = row.select("td");
-
-                    if (cols.size() >= 3) {
-                        String dateStr = cols.get(0).text();
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssZ");
-                        ZonedDateTime zonedDateTime = ZonedDateTime.parse(dateStr, formatter);
-                        final LocalDateTime startTime = zonedDateTime.withZoneSameInstant(IST_ZONE).toLocalDateTime();
-                        Element nameCol = cols.get(1).selectFirst("a");
-                        if (nameCol != null) {
-                            String contestName = nameCol.text();
-                            String contestUrl = "https://atcoder.jp" + nameCol.attr("href");
-                            String durationStr = cols.get(2).text();
-                            final String contestId = contestIdExtractorFromUrl(contestUrl);
-                            String[] parts = durationStr.split(":");
-                            final int hours = Integer.parseInt(parts[0]);
-                            final int minutes = Integer.parseInt(parts[1]);
-                            final long totalTimeMinutes = hours * 60 + minutes;
-                            final LocalDateTime endTime = startTime.plusMinutes(totalTimeMinutes);
-                            synchronized (allContests) {
-                                allContests.add(new ContestDTO(
-                                        contestId,
-                                        contestName,
-                                        contestUrl,
-                                        "atcoder",
-                                        startTime,
-                                        endTime,
-                                        totalTimeMinutes));
-                            }
-                        }
+                    ContestDTO contest = toAtcoderContest(rows.get(i));
+                    if (contest != null) {
+                        addContest(allContests, contest);
                     }
                 } catch (Exception e) {
                     return;
@@ -333,42 +264,47 @@ public class ContestFetchingService {
 
             int countPastContests = 0;
             for (Element row : rows) {
-                Elements cols = row.select("td");
-                if (cols.size() >= 3) {
-                    String dateStr = cols.get(0).text();
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssZ");
-                    ZonedDateTime zonedDateTime = ZonedDateTime.parse(dateStr, formatter);
-                    final LocalDateTime startTime = zonedDateTime.withZoneSameInstant(IST_ZONE)
-                            .toLocalDateTime();
-
-                    Element linkElement = cols.get(1).selectFirst("a");
-                    final String contestName = linkElement.text();
-                    final String contestUrl = linkElement.absUrl("href");
-                    final String contestId = contestIdExtractorFromUrl(contestUrl);
-                    String durationStr = cols.get(2).text();
-                    String[] parts = durationStr.split(":");
-                    final int hours = Integer.parseInt(parts[0]);
-                    final int minutes = Integer.parseInt(parts[1]);
-                    final long totalTimeMinutes = hours * 60 + minutes;
-                    final LocalDateTime endTime = startTime.plusMinutes(totalTimeMinutes);
-
-                    synchronized (allContests) {
-                        allContests.add(new ContestDTO(
-                                contestId,
-                                contestName,
-                                contestUrl,
-                                "atcoder",
-                                startTime,
-                                endTime,
-                                totalTimeMinutes));
-                    }
-                    if (++countPastContests == 3)
-                        break; // stop after 3 contests
+                ContestDTO contest = toAtcoderContest(row);
+                if (contest == null) {
+                    continue;
+                }
+                addContest(allContests, contest);
+                if (++countPastContests == 3) {
+                    break; // stop after 3 contests
                 }
             }
         } catch (IOException e) {
             logger.warn("Error fetching AtCoder past contests: {}", e.getClass().getSimpleName());
         }
+    }
+
+    private ContestDTO toAtcoderContest(Element row) {
+        Elements cols = row.select("td");
+        if (cols.size() < 3) {
+            return null;
+        }
+        Element link = cols.get(1).selectFirst("a");
+        if (link == null) {
+            return null;
+        }
+        LocalDateTime startTime = ZonedDateTime.parse(cols.get(0).text(), ATCODER_DATE_FORMAT)
+                .withZoneSameInstant(IST_ZONE)
+                .toLocalDateTime();
+        long durationMinutes = parseDurationMinutes(cols.get(2).text());
+        String contestUrl = link.absUrl("href");
+        return new ContestDTO(
+                contestIdExtractorFromUrl(contestUrl),
+                link.text(),
+                contestUrl,
+                "atcoder",
+                startTime,
+                startTime.plusMinutes(durationMinutes),
+                durationMinutes);
+    }
+
+    private long parseDurationMinutes(String duration) {
+        String[] parts = duration.split(":");
+        return Integer.parseInt(parts[0]) * 60L + Integer.parseInt(parts[1]);
     }
 
     public void getLeetcodeContestList(List<ContestDTO> allContests) {
@@ -378,17 +314,8 @@ public class ContestFetchingService {
         CompletableFuture<Void> pastFuture = CompletableFuture.runAsync(() -> fetchLeetcodePastContests(allContests));
 
         // Wait for both to complete with timeout protection
-        try {
-            futureFuture.get(8, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            logger.warn("LeetCode future contests timed out or failed: {}", e.getClass().getSimpleName());
-        }
-
-        try {
-            pastFuture.get(8, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            logger.warn("LeetCode past contests timed out or failed: {}", e.getClass().getSimpleName());
-        }
+        await(futureFuture, "LeetCode future");
+        await(pastFuture, "LeetCode past");
     }
 
     private void fetchLeetcodeFutureContests(List<ContestDTO> allContests) {
@@ -402,17 +329,15 @@ public class ContestFetchingService {
 
             if (response != null && response.isOk()) {
                 for (LC_ContestListDTO.LeetcodeContest contest : response.getData()) {
-                    synchronized (allContests) {
-                        allContests.add(new ContestDTO(
-                                contestIdExtractorFromUrl(contest.getUrl()),
-                                contest.getTitle(),
-                                contest.getUrl(),
-                                "leetcode",
-                                LocalDateTime.ofInstant(Instant.parse(contest.getStartTime()),
-                                        IST_ZONE),
-                                LocalDateTime.ofInstant(Instant.parse(contest.getEndTime()), IST_ZONE),
-                                contest.getDuration() / 60));
-                    }
+                    addContest(allContests, new ContestDTO(
+                            contestIdExtractorFromUrl(contest.getUrl()),
+                            contest.getTitle(),
+                            contest.getUrl(),
+                            "leetcode",
+                            LocalDateTime.ofInstant(Instant.parse(contest.getStartTime()),
+                                    IST_ZONE),
+                            LocalDateTime.ofInstant(Instant.parse(contest.getEndTime()), IST_ZONE),
+                            contest.getDuration() / 60));
                 }
             }
         } catch (Exception e) {
@@ -440,19 +365,15 @@ public class ContestFetchingService {
                     for (int index = 0; index < Math.min(4, history.size()); index++) {
                         LocalDateTime startTime = LocalDateTime.ofEpochSecond(
                                 history.get(index).getContest().getStartTime(), 0, IST_OFFSET);
-                        LocalDateTime endTime = startTime.plusMinutes(90);
-                        final String contestId = history.get(index).getContest().getTitle().toLowerCase().replace(" ",
-                                "-");
-                        synchronized (allContests) {
-                            allContests.add(new ContestDTO(
-                                    contestId,
-                                    history.get(index).getContest().getTitle(),
-                                    "https://leetcode.com/contest/" + contestId,
-                                    "leetcode",
-                                    startTime,
-                                    endTime,
-                                    90));
-                        }
+                        String contestId = history.get(index).getContest().getTitle().toLowerCase().replace(" ", "-");
+                        addContest(allContests, new ContestDTO(
+                                contestId,
+                                history.get(index).getContest().getTitle(),
+                                "https://leetcode.com/contest/" + contestId,
+                                "leetcode",
+                                startTime,
+                                startTime.plusMinutes(LEETCODE_CONTEST_DURATION_MINUTES),
+                                LEETCODE_CONTEST_DURATION_MINUTES));
                     }
                 }
             }
@@ -461,9 +382,22 @@ public class ContestFetchingService {
         }
     }
 
+    private void addContest(List<ContestDTO> contests, ContestDTO contest) {
+        synchronized (contests) {
+            contests.add(contest);
+        }
+    }
+
+    private void await(CompletableFuture<Void> future, String description) {
+        try {
+            future.get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            logger.warn("{} contests timed out or failed: {}", description, e.getClass().getSimpleName());
+        }
+    }
+
     private String contestIdExtractorFromUrl(String url) {
-        String regex = "(?<=/contests?/)[^/]+";
-        Matcher matcher = Pattern.compile(regex).matcher(url);
+        Matcher matcher = CONTEST_ID_PATTERN.matcher(url);
         return matcher.find() ? matcher.group() : "";
     }
 }

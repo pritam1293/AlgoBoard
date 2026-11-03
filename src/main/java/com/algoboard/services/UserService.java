@@ -23,6 +23,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 @Service
 public class UserService implements IUserService {
@@ -303,19 +306,19 @@ public class UserService implements IUserService {
 
             if (codeforcesChanged) {
                 cacheService.evictCodeforcesCache(email);
-                evictCodeforcesUsername(oldCodeforces);
+                evictUsernameIfPresent(oldCodeforces, cacheService::evictCodeforcesUsernameCache);
             }
             if (atcoderChanged) {
                 cacheService.evictAtcoderCache(email);
-                evictAtcoderUsername(oldAtcoder);
+                evictUsernameIfPresent(oldAtcoder, cacheService::evictAtcoderUsernameCache);
             }
             if (codechefChanged) {
                 cacheService.evictCodechefCache(email);
-                evictCodechefUsername(oldCodechef);
+                evictUsernameIfPresent(oldCodechef, cacheService::evictCodechefUsernameCache);
             }
             if (leetcodeChanged) {
                 cacheService.evictLeetcodeCache(email);
-                evictLeetcodeUsername(oldLeetcode);
+                evictUsernameIfPresent(oldLeetcode, cacheService::evictLeetcodeUsernameCache);
             }
             return true;
         } catch (IllegalArgumentException e) {
@@ -326,27 +329,9 @@ public class UserService implements IUserService {
         }
     }
 
-    private void evictCodeforcesUsername(String username) {
+    private void evictUsernameIfPresent(String username, Consumer<String> evictor) {
         if (username != null && !username.isEmpty()) {
-            cacheService.evictCodeforcesUsernameCache(username);
-        }
-    }
-
-    private void evictAtcoderUsername(String username) {
-        if (username != null && !username.isEmpty()) {
-            cacheService.evictAtcoderUsernameCache(username);
-        }
-    }
-
-    private void evictCodechefUsername(String username) {
-        if (username != null && !username.isEmpty()) {
-            cacheService.evictCodechefUsernameCache(username);
-        }
-    }
-
-    private void evictLeetcodeUsername(String username) {
-        if (username != null && !username.isEmpty()) {
-            cacheService.evictLeetcodeUsernameCache(username);
+            evictor.accept(username);
         }
     }
 
@@ -384,136 +369,85 @@ public class UserService implements IUserService {
     @Override
     @Cacheable(value = "codeforcesProfile", key = "'email:' + #email", unless = "#result == null || #result.username == null")
     public Codeforces getCodeforcesProfile(String email) {
-        try {
-            User user = findUserByEmail(email);
-            String username = user.getCodeforcesUsername();
-            if (username == null || username.isEmpty()) {
-                return new Codeforces();
-            }
-            requireValidUsername(username);
-            return profileFetchingService.fetchCodeforcesProfile(username);
-        } catch (Exception e) {
-            logger.warn("Codeforces profile lookup failed: {}", e.getClass().getSimpleName());
-            throw new IllegalArgumentException("Unable to retrieve Codeforces profile.");
-        }
+        return getCachedProfile(email, "Codeforces", User::getCodeforcesUsername,
+                profileFetchingService::fetchCodeforcesProfile, Codeforces::new);
     }
 
     @Override
     @Cacheable(value = "atcoderProfile", key = "'email:' + #email", unless = "#result == null || #result.username == null")
     public Atcoder getAtcoderProfile(String email) {
-        try {
-            User user = findUserByEmail(email);
-            String username = user.getAtcoderUsername();
-            if (username == null || username.isEmpty()) {
-                return new Atcoder();
-            }
-            requireValidUsername(username);
-            return profileFetchingService.fetchAtcoderProfile(username);
-        } catch (Exception e) {
-            logger.warn("AtCoder profile lookup failed: {}", e.getClass().getSimpleName());
-            throw new IllegalArgumentException("Unable to retrieve AtCoder profile.");
-        }
+        return getCachedProfile(email, "AtCoder", User::getAtcoderUsername,
+                profileFetchingService::fetchAtcoderProfile, Atcoder::new);
     }
 
     @Override
     @Cacheable(value = "codechefProfile", key = "'email:' + #email", unless = "#result == null || #result.username == null")
     public Codechef getCodechefProfile(String email) {
-        try {
-            User user = findUserByEmail(email);
-            String username = user.getCodechefUsername();
-            if (username == null || username.isEmpty()) {
-                return new Codechef();
-            }
-            requireValidUsername(username);
-            return profileFetchingService.fetchCodechefProfile(username);
-        } catch (Exception e) {
-            logger.warn("CodeChef profile lookup failed: {}", e.getClass().getSimpleName());
-            throw new IllegalArgumentException("Unable to retrieve CodeChef profile.");
-        }
+        return getCachedProfile(email, "CodeChef", User::getCodechefUsername,
+                profileFetchingService::fetchCodechefProfile, Codechef::new);
     }
 
     @Override
     @Cacheable(value = "leetcodeProfile", key = "'email:' + #email", unless = "#result == null || #result.username == null")
     public Leetcode getLeetcodeProfile(String email) {
-        try {
-            User user = findUserByEmail(email);
-            String username = user.getLeetcodeUsername();
-            if (username == null || username.isEmpty()) {
-                return new Leetcode();
-            }
-            requireValidUsername(username);
-            return profileFetchingService.fetchLeetcodeProfile(username);
-        } catch (Exception e) {
-            logger.warn("LeetCode profile lookup failed: {}", e.getClass().getSimpleName());
-            throw new IllegalArgumentException("Unable to retrieve LeetCode profile.");
-        }
+        return getCachedProfile(email, "LeetCode", User::getLeetcodeUsername,
+                profileFetchingService::fetchLeetcodeProfile, Leetcode::new);
     }
 
     @Override
     @Cacheable(value = "codeforcesProfile", key = "'user:' + #cfusername", unless = "#result == null || #result.username == null")
     public Codeforces fetchCodeforcesProfile(String cfusername) {
-        try {
-            cfusername = normalizePlatformUsername(cfusername, "Codeforces");
-            if (cfusername == null || cfusername.isEmpty()) {
-                throw new IllegalArgumentException("Codeforces username cannot be null or empty.");
-            }
-            return profileFetchingService.fetchCodeforcesProfile(cfusername);
-        } catch (IllegalArgumentException e) {
-            throw e;
-        } catch (Exception e) {
-            logger.warn("Codeforces profile fetch failed: {}", e.getClass().getSimpleName());
-            throw new IllegalArgumentException("Unable to fetch Codeforces profile.");
-        }
+        return fetchProfile(cfusername, "Codeforces", profileFetchingService::fetchCodeforcesProfile);
     }
 
     @Override
     @Cacheable(value = "atcoderProfile", key = "'user:' + #atcusername", unless = "#result == null || #result.username == null")
     public Atcoder fetchAtcoderProfile(String atcusername) {
-        try {
-            atcusername = normalizePlatformUsername(atcusername, "AtCoder");
-            if (atcusername == null || atcusername.isEmpty()) {
-                throw new IllegalArgumentException("AtCoder username cannot be null or empty.");
-            }
-            return profileFetchingService.fetchAtcoderProfile(atcusername);
-        } catch (IllegalArgumentException e) {
-            throw e;
-        } catch (Exception e) {
-            logger.warn("AtCoder profile fetch failed: {}", e.getClass().getSimpleName());
-            throw new IllegalArgumentException("Unable to fetch AtCoder profile.");
-        }
+        return fetchProfile(atcusername, "AtCoder", profileFetchingService::fetchAtcoderProfile);
     }
 
     @Override
     @Cacheable(value = "codechefProfile", key = "'user:' + #ccusername", unless = "#result == null || #result.username == null")
     public Codechef fetchCodechefProfile(String ccusername) {
-        try {
-            ccusername = normalizePlatformUsername(ccusername, "CodeChef");
-            if (ccusername == null || ccusername.isEmpty()) {
-                throw new IllegalArgumentException("CodeChef username cannot be null or empty.");
-            }
-            return profileFetchingService.fetchCodechefProfile(ccusername);
-        } catch (IllegalArgumentException e) {
-            throw e;
-        } catch (Exception e) {
-            logger.warn("CodeChef profile fetch failed: {}", e.getClass().getSimpleName());
-            throw new IllegalArgumentException("Unable to fetch CodeChef profile.");
-        }
+        return fetchProfile(ccusername, "CodeChef", profileFetchingService::fetchCodechefProfile);
     }
 
     @Override
     @Cacheable(value = "leetcodeProfile", key = "'user:' + #lcusername", unless = "#result == null || #result.username == null")
     public Leetcode fetchLeetcodeProfile(String lcusername) {
+        return fetchProfile(lcusername, "LeetCode", profileFetchingService::fetchLeetcodeProfile);
+    }
+
+    private <T> T getCachedProfile(String email, String platform,
+            Function<User, String> usernameGetter,
+            Function<String, T> fetcher,
+            Supplier<T> emptyProfile) {
         try {
-            lcusername = normalizePlatformUsername(lcusername, "LeetCode");
-            if (lcusername == null || lcusername.isEmpty()) {
-                throw new IllegalArgumentException("LeetCode username cannot be null or empty.");
+            User user = findUserByEmail(email);
+            String username = usernameGetter.apply(user);
+            if (username == null || username.isEmpty()) {
+                return emptyProfile.get();
             }
-            return profileFetchingService.fetchLeetcodeProfile(lcusername);
+            requireValidUsername(username);
+            return fetcher.apply(username);
+        } catch (Exception e) {
+            logger.warn("{} profile lookup failed: {}", platform, e.getClass().getSimpleName());
+            throw new IllegalArgumentException("Unable to retrieve " + platform + " profile.");
+        }
+    }
+
+    private <T> T fetchProfile(String username, String platform, Function<String, T> fetcher) {
+        try {
+            username = normalizePlatformUsername(username, platform);
+            if (username == null || username.isEmpty()) {
+                throw new IllegalArgumentException(platform + " username cannot be null or empty.");
+            }
+            return fetcher.apply(username);
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
-            logger.warn("LeetCode profile fetch failed: {}", e.getClass().getSimpleName());
-            throw new IllegalArgumentException("Unable to fetch LeetCode profile.");
+            logger.warn("{} profile fetch failed: {}", platform, e.getClass().getSimpleName());
+            throw new IllegalArgumentException("Unable to fetch " + platform + " profile.");
         }
     }
 

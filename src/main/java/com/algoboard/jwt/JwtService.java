@@ -12,9 +12,7 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 @Service
 public class JwtService {
@@ -47,23 +45,8 @@ public class JwtService {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    public List<String> extractRoles(String token) {
-        return extractClaim(token, claims -> (List<String>) claims.get("roles"));
-    }
-
     public String extractEmail(String token) {
         return extractAllClaims(token).getSubject();
-    }
-
-    public long extractTokenVersion(String token) {
-        Number version = extractClaim(token, claims -> claims.get(TOKEN_VERSION_CLAIM, Number.class));
-        return version == null ? 0L : version.longValue();
-    }
-
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
     }
 
     public String generateToken(UserDetails userDetails) {
@@ -104,18 +87,16 @@ public class JwtService {
         if (!(userDetails instanceof UserPrincipal principal)) {
             return false;
         }
-        final String email = extractEmail(token);
-        return email.equals(userDetails.getUsername())
-                && extractTokenVersion(token) == principal.getTokenVersion()
-                && !isTokenExpired(token);
-    }
-
-    private boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
-    }
-
-    private Date extractExpiration(String token) {
-        return extractAllClaims(token).getExpiration();
+        Claims claims = extractAllClaims(token);
+        String email = claims.getSubject();
+        Number version = claims.get(TOKEN_VERSION_CLAIM, Number.class);
+        long tokenVersion = version == null ? 0L : version.longValue();
+        Date expiration = claims.getExpiration();
+        return email != null
+                && email.equals(userDetails.getUsername())
+                && tokenVersion == principal.getTokenVersion()
+                && expiration != null
+                && expiration.after(new Date());
     }
 
     private Claims extractAllClaims(String token) {

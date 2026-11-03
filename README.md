@@ -249,6 +249,19 @@ Database schema migrations run automatically on startup via Flyway. Set a strong
 sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -base64 48)|" .env
 ```
 
+After the schema has been migrated once, local startups can skip Flyway, Hibernate schema validation, and eager database connections, which significantly reduces startup time against a remote database such as Neon. Add these to `.env`:
+
+```bash
+FLYWAY_ENABLED=false
+JPA_DDL_AUTO=none
+DB_MIN_IDLE=0
+DB_INIT_FAIL_TIMEOUT=-1
+HIBERNATE_JDBC_METADATA_ACCESS=false
+JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
+```
+
+Delete these lines (or restore the defaults `FLYWAY_ENABLED=true`, `JPA_DDL_AUTO=validate`, `DB_MIN_IDLE=1`, `DB_INIT_FAIL_TIMEOUT=1`, `HIBERNATE_JDBC_METADATA_ACCESS=true`, and empty `JPA_DATABASE_PLATFORM`) whenever you add a new migration so Flyway can apply it.
+
 ### Cache Setup
 
 Contest and profile data use an in-memory cache by default, so Redis is not required. Cache entries are cleared periodically by the application.

@@ -22,24 +22,14 @@ public class CacheService {
     public void refreshContestListCache() {
     }
 
-    @CacheEvict(value = "leetcodeProfile", allEntries = true)
+    @CacheEvict(value = {
+            "leetcodeProfile",
+            "codeforcesProfile",
+            "atcoderProfile",
+            "codechefProfile"
+    }, allEntries = true)
     @Scheduled(fixedRate = 3600000)
-    public void refreshLeetcodeProfileCache() {
-    }
-
-    @CacheEvict(value = "codeforcesProfile", allEntries = true)
-    @Scheduled(fixedRate = 3600000)
-    public void refreshCodeforcesProfileCache() {
-    }
-
-    @CacheEvict(value = "atcoderProfile", allEntries = true)
-    @Scheduled(fixedRate = 3600000)
-    public void refreshAtcoderProfileCache() {
-    }
-
-    @CacheEvict(value = "codechefProfile", allEntries = true)
-    @Scheduled(fixedRate = 3600000)
-    public void refreshCodechefProfileCache() {
+    public void refreshProfileCaches() {
     }
 
     public void evictCodeforcesCache(String email) {

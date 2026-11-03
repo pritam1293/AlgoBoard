@@ -32,12 +32,15 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 
 @Service
 public class ProfileFetchingService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProfileFetchingService.class);
+    private static final Pattern ATCODER_CONTEST_NAME_PATTERN =
+            Pattern.compile("(atcoder\\s+.*?\\s+contest\\s+\\d+)", Pattern.CASE_INSENSITIVE);
 
     private final RestTemplate restTemplate;
     private final Validation validation;
@@ -107,7 +110,7 @@ public class ProfileFetchingService {
                 from += count;
             }
             CF_UserDTO.Result result = profileResponse.getResult().get(0);
-            java.util.List<CF_ContestHistoryDTO.Result> contestResults = contestResponse.getResult();
+            List<CF_ContestHistoryDTO.Result> contestResults = contestResponse.getResult();
             List<UserContestHistory> contestHistory = new ArrayList<>();
             if (contestResults != null) {
                 for (CF_ContestHistoryDTO.Result contestResult : contestResults) {
@@ -120,7 +123,7 @@ public class ProfileFetchingService {
                 }
 
                 // Reverse the contest history array
-                java.util.Collections.reverse(contestHistory);
+                Collections.reverse(contestHistory);
             }
             return new Codeforces(
                     username,
@@ -175,7 +178,7 @@ public class ProfileFetchingService {
             String currRank = getRankByRating(currRating);
             String maxRank = getRankByRating(maxRating);
 
-            java.util.Collections.reverse(history);
+            Collections.reverse(history);
 
             return new Atcoder(
                     username,
@@ -191,8 +194,7 @@ public class ProfileFetchingService {
     }
 
     private String contestNameExtractor(String originalName) {
-        Pattern pattern = Pattern.compile("(atcoder\\s+.*?\\s+contest\\s+\\d+)", Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(originalName);
+        Matcher matcher = ATCODER_CONTEST_NAME_PATTERN.matcher(originalName);
         if (matcher.find()) {
             return matcher.group(1).replaceAll("\\s+", " ").trim();
         }
@@ -270,7 +272,7 @@ public class ProfileFetchingService {
                         currentRating = contest.getNewRating() != null ? contest.getNewRating() : currentRating;
                     }
                 }
-                java.util.Collections.reverse(history);
+                Collections.reverse(history);
                 codechefProfile.setMaxRating(maxRating < 0 ? 0 : maxRating);
                 codechefProfile.setRating(currentRating < 0 ? 0 : currentRating);
                 codechefProfile.setContestHistory(history);
@@ -425,7 +427,7 @@ public class ProfileFetchingService {
                         }
                     }
                 }
-                java.util.Collections.reverse(contestHistory);
+                Collections.reverse(contestHistory);
 
                 leetcodeProfile.setContestHistory(contestHistory);
                 leetcodeProfile.setMaxRating(maxRating);

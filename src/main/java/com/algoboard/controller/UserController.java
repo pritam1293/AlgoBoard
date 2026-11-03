@@ -3,10 +3,6 @@ package com.algoboard.controller;
 import com.algoboard.DTO.ContestDTO;
 import com.algoboard.DTO.RequestDTO.UserAuthenticationResponse;
 import com.algoboard.DTO.RequestDTO.UserProfile;
-import com.algoboard.entities.Atcoder;
-import com.algoboard.entities.Codechef;
-import com.algoboard.entities.Codeforces;
-import com.algoboard.entities.Leetcode;
 import com.algoboard.entities.User;
 import com.algoboard.jwt.JwtService;
 import com.algoboard.services.CustomUserDetailsService;
@@ -56,11 +52,13 @@ public class UserController {
         this.loginAttemptService = loginAttemptService;
     }
 
+    // GET /api/home
     @GetMapping("/home")
     public String home() {
         return "Welcome to AlgoBoard!";
     }
 
+    // POST /api/auth/signup
     @PostMapping("/auth/signup")
     public ResponseEntity<?> signup(@RequestBody User user) {
         try {
@@ -72,6 +70,7 @@ public class UserController {
         }
     }
 
+    // POST /api/auth/login
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> credentials, HttpServletRequest request) {
         String email = credentials.get("email");
@@ -100,12 +99,14 @@ public class UserController {
         }
     }
 
+    // POST /api/auth/logout
     @PostMapping("/auth/logout")
     public ResponseEntity<?> logout(Authentication authentication) {
         userService.revokeUserTokens(currentEmail(authentication));
         return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Logout successful", null));
     }
 
+    // GET /api/users/profile?email={email} (email optional; omit for own profile)
     @GetMapping("/users/profile")
     public ResponseEntity<?> getUserProfile(@RequestParam(required = false) String email,
             Authentication authentication) {
@@ -118,6 +119,7 @@ public class UserController {
                 "User profile retrieved successfully", userService.getPublicProfile(email)));
     }
 
+    // PUT /api/users/profile
     @PutMapping("/users/profile")
     public ResponseEntity<?> updateUser(@RequestBody UserProfile profile, Authentication authentication) {
         profile.setEmail(currentEmail(authentication));
@@ -125,6 +127,7 @@ public class UserController {
         return ResponseEntity.ok(ResponseUtil.createSuccessResponse("User updated successfully", updatedProfile));
     }
 
+    // PUT /api/auth/change-password
     @PutMapping("/auth/change-password")
     public ResponseEntity<?> updatePassword(@RequestBody Map<String, String> payload,
             Authentication authentication, HttpServletRequest request) {
@@ -144,6 +147,7 @@ public class UserController {
         }
     }
 
+    // DELETE /api/users/delete
     @DeleteMapping("/users/delete")
     public ResponseEntity<?> deleteUser(@RequestBody Map<String, String> payload,
             Authentication authentication, HttpServletRequest request) {
@@ -163,6 +167,7 @@ public class UserController {
         }
     }
 
+    // POST /api/add/cp/profiles
     @PostMapping("/add/cp/profiles")
     public ResponseEntity<?> addCPProfile(@RequestBody Map<String, String> payload, Authentication authentication) {
         String email = currentEmail(authentication);
@@ -178,6 +183,7 @@ public class UserController {
         return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Platform profiles updated successfully", null));
     }
 
+    // GET /api/contest/list
     @GetMapping("/contest/list")
     public ResponseEntity<?> getContestList() {
         List<ContestDTO> contestList = userService.getContestList();
@@ -185,60 +191,64 @@ public class UserController {
                 "Contest list retrieved successfully", contestList));
     }
 
+    // GET /api/platforms/codeforces?email={email}
     @GetMapping("/platforms/codeforces")
     public ResponseEntity<?> getCodeforcesProfile(@RequestParam String email) {
-        Codeforces codeforcesProfile = userService.getCodeforcesProfile(email);
-        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
-                "Codeforces profile retrieved successfully", codeforcesProfile));
+        return profileResponse("Codeforces profile retrieved successfully",
+                userService.getCodeforcesProfile(email));
     }
 
+    // GET /api/platforms/atcoder?email={email}
     @GetMapping("/platforms/atcoder")
     public ResponseEntity<?> getAtcoderProfile(@RequestParam String email) {
-        Atcoder atcoderProfile = userService.getAtcoderProfile(email);
-        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
-                "AtCoder profile retrieved successfully", atcoderProfile));
+        return profileResponse("AtCoder profile retrieved successfully",
+                userService.getAtcoderProfile(email));
     }
 
+    // GET /api/platforms/codechef?email={email}
     @GetMapping("/platforms/codechef")
     public ResponseEntity<?> getCodechefProfile(@RequestParam String email) {
-        Codechef codechefProfile = userService.getCodechefProfile(email);
-        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
-                "CodeChef profile retrieved successfully", codechefProfile));
+        return profileResponse("CodeChef profile retrieved successfully",
+                userService.getCodechefProfile(email));
     }
 
+    // GET /api/platforms/leetcode?email={email}
     @GetMapping("/platforms/leetcode")
     public ResponseEntity<?> getLeetcodeProfile(@RequestParam String email) {
-        Leetcode leetcodeProfile = userService.getLeetcodeProfile(email);
-        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
-                "LeetCode profile retrieved successfully", leetcodeProfile));
+        return profileResponse("LeetCode profile retrieved successfully",
+                userService.getLeetcodeProfile(email));
     }
 
+    // GET /api/users/codeforces/profile?username={username}
     @GetMapping("/users/codeforces/profile")
     public ResponseEntity<?> fetchCodeforcesProfile(@RequestParam String username) {
-        Codeforces codeforcesProfile = userService.fetchCodeforcesProfile(username);
-        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
-                "Codeforces profile fetched successfully", codeforcesProfile));
+        return profileResponse("Codeforces profile fetched successfully",
+                userService.fetchCodeforcesProfile(username));
     }
 
+    // GET /api/users/atcoder/profile?username={username}
     @GetMapping("/users/atcoder/profile")
     public ResponseEntity<?> fetchAtcoderProfile(@RequestParam String username) {
-        Atcoder atcoderProfile = userService.fetchAtcoderProfile(username);
-        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
-                "AtCoder profile fetched successfully", atcoderProfile));
+        return profileResponse("AtCoder profile fetched successfully",
+                userService.fetchAtcoderProfile(username));
     }
 
+    // GET /api/users/codechef/profile?username={username}
     @GetMapping("/users/codechef/profile")
     public ResponseEntity<?> fetchCodechefProfile(@RequestParam String username) {
-        Codechef codechefProfile = userService.fetchCodechefProfile(username);
-        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
-                "CodeChef profile fetched successfully", codechefProfile));
+        return profileResponse("CodeChef profile fetched successfully",
+                userService.fetchCodechefProfile(username));
     }
 
+    // GET /api/users/leetcode/profile?username={username}
     @GetMapping("/users/leetcode/profile")
     public ResponseEntity<?> fetchLeetcodeProfile(@RequestParam String username) {
-        Leetcode leetcodeProfile = userService.fetchLeetcodeProfile(username);
-        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
-                "LeetCode profile fetched successfully", leetcodeProfile));
+        return profileResponse("LeetCode profile fetched successfully",
+                userService.fetchLeetcodeProfile(username));
+    }
+
+    private ResponseEntity<?> profileResponse(String message, Object profile) {
+        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(message, profile));
     }
 
     private String currentEmail(Authentication authentication) {
