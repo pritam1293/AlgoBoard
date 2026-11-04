@@ -8,18 +8,22 @@ import com.algoboard.entities.UserContestHistory;
 import com.algoboard.entities.Leetcode.Level;
 import com.algoboard.entities.Leetcode.Problem;
 import com.algoboard.DTO.Atcoder.AC_ContestDTO;
-import com.algoboard.DTO.Codechef.CC_ContestDTO;
 import com.algoboard.DTO.Codeforces.CF_ContestHistoryDTO;
 import com.algoboard.DTO.Codeforces.CF_SubmissionsDTO;
 import com.algoboard.DTO.Codeforces.CF_UserDTO;
-import com.algoboard.DTO.Leetcode.LC_ContestDTO;
-import com.algoboard.DTO.Leetcode.LC_UserDTO;
-import com.algoboard.DTO.Leetcode.LC_ContestDTO.ContestHistory;
-import com.algoboard.DTO.Leetcode.LC_UserDTO.RecentSubmission;
-import com.algoboard.DTO.Leetcode.LC_UserDTO.SubmissionStat;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -28,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.AbstractMap;
@@ -41,13 +46,57 @@ public class ProfileFetchingService {
     private static final Logger logger = LoggerFactory.getLogger(ProfileFetchingService.class);
     private static final Pattern ATCODER_CONTEST_NAME_PATTERN =
             Pattern.compile("(atcoder\\s+.*?\\s+contest\\s+\\d+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern CODECHEF_ALL_RATING_PATTERN =
+            Pattern.compile("var\\s+all_rating\\s*=\\s*(\\[.*?\\])\\s*;", Pattern.DOTALL);
+    private static final Pattern DIGITS_PATTERN = Pattern.compile("\\d+");
+    private static final String CODECHEF_PROFILE_URL = "https://www.codechef.com/users/";
+    private static final String LEETCODE_GRAPHQL_URL = "https://leetcode.com/graphql";
+    private static final String BROWSER_USER_AGENT =
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
+    private static final String LEETCODE_PROFILE_QUERY = """
+            query userProfile($username: String!) {
+              matchedUser(username: $username) {
+                username
+                submitStats {
+                  acSubmissionNum { difficulty count submissions }
+                  totalSubmissionNum { difficulty count submissions }
+                }
+              }
+              userContestRanking(username: $username) {
+                attendedContestsCount
+                rating
+                globalRanking
+                totalParticipants
+                topPercentage
+                badge { name }
+              }
+              userContestRankingHistory(username: $username) {
+                attended
+                trendDirection
+                problemsSolved
+                totalProblems
+                finishTimeInSeconds
+                rating
+                ranking
+                contest { title startTime }
+              }
+              recentSubmissionList(username: $username, limit: 10) {
+                title
+                titleSlug
+                statusDisplay
+                timestamp
+              }
+            }
+            """;
 
     private final RestTemplate restTemplate;
     private final Validation validation;
+    private final ObjectMapper objectMapper;
 
-    public ProfileFetchingService(RestTemplate restTemplate, Validation validation) {
+    public ProfileFetchingService(RestTemplate restTemplate, Validation validation, ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
         this.validation = validation;
+        this.objectMapper = objectMapper;
     }
 
     // Fetch and aggregate Codeforces profile data
@@ -243,47 +292,115 @@ public class ProfileFetchingService {
         return rankTitle;
     }
     
-    // Fetch and aggregate Codechef profile data
+    // Fetch and aggregate CodeChef profile data by scraping the public profile page.
+    // Contest lists are unaffected and still come from the CodeChef contests API.
     public Codechef fetchCodechefProfile(String username) {
         requireValidUsername(username);
-        String ccurl = "https://clist.by/account/" + username + "/resource/codechef.com/ratings/?resource=codechef.com";
-        Codechef codechefProfile = new Codechef();
         try {
-            CC_ContestDTO codechefResponse = restTemplate.getForObject(ccurl, CC_ContestDTO.class);
-            if (codechefResponse != null && codechefResponse.getStatus().equals("ok")) {
-                codechefProfile.setUsername(username);
-
-                long maxRating = -1, currentRating = -1;
-                List<UserContestHistory> history = new ArrayList<>();
-                if (codechefResponse.getData() != null && codechefResponse.getData().getResources() != null
-                        && codechefResponse.getData().getResources().getCodechefCom() != null
-                        && codechefResponse.getData().getResources().getCodechefCom().getData() != null
-                        && codechefResponse.getData().getResources().getCodechefCom().getData().size() > 0) {
-                    List<CC_ContestDTO.Contest> contests = codechefResponse.getData().getResources().getCodechefCom()
-                            .getData().get(0);
-                    for (CC_ContestDTO.Contest contest : contests) {
-                        history.add(new UserContestHistory(
-                                contest.getKey(),
-                                contest.getName(),
-                                Long.parseLong(contest.getPlace()),
-                                contest.getOldRating() != null ? contest.getOldRating() : 0,
-                                contest.getNewRating() != null ? contest.getNewRating() : 0));
-                        maxRating = Math.max(maxRating, contest.getNewRating() != null ? contest.getNewRating() : 0);
-                        currentRating = contest.getNewRating() != null ? contest.getNewRating() : currentRating;
-                    }
-                }
-                Collections.reverse(history);
-                codechefProfile.setMaxRating(maxRating < 0 ? 0 : maxRating);
-                codechefProfile.setRating(currentRating < 0 ? 0 : currentRating);
-                codechefProfile.setContestHistory(history);
-                codechefProfile.setContestParticipations(history.size());
-                codechefProfile.setRank(getCodechefRankByRating(currentRating));
-                codechefProfile.setMaxRank(getCodechefRankByRating(maxRating));
+            Document document = fetchCodechefProfilePage(username);
+            if (document == null) {
+                return new Codechef();
             }
+
+            List<UserContestHistory> history = extractCodechefContestHistory(document);
+            long currentRating = -1;
+            long maxRating = -1;
+            for (UserContestHistory contest : history) {
+                currentRating = contest.getNewRating();
+                maxRating = Math.max(maxRating, contest.getNewRating());
+            }
+
+            if (history.isEmpty()) {
+                long pageRating = parseCodechefCurrentRating(document);
+                if (pageRating > 0) {
+                    currentRating = pageRating;
+                    maxRating = pageRating;
+                }
+            }
+
+            // The profile page lists contests oldest-first; the API contract is newest-first.
+            Collections.reverse(history);
+
+            Codechef codechefProfile = new Codechef();
+            codechefProfile.setUsername(username);
+            codechefProfile.setRating(currentRating < 0 ? 0 : currentRating);
+            codechefProfile.setMaxRating(maxRating < 0 ? 0 : maxRating);
+            codechefProfile.setRank(getCodechefRankByRating(currentRating));
+            codechefProfile.setMaxRank(getCodechefRankByRating(maxRating));
+            codechefProfile.setContestParticipations(history.size());
+            codechefProfile.setContestHistory(history);
+            return codechefProfile;
         } catch (Exception e) {
+            logger.warn("CodeChef profile scrape failed for {}: {}", username, e.getClass().getSimpleName());
             return new Codechef();
         }
-        return codechefProfile;
+    }
+
+    private Document fetchCodechefProfilePage(String username) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.USER_AGENT, BROWSER_USER_AGENT);
+        headers.set(HttpHeaders.ACCEPT, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+        headers.set(HttpHeaders.ACCEPT_LANGUAGE, "en-US,en;q=0.9");
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                CODECHEF_PROFILE_URL + username, Objects.requireNonNull(HttpMethod.GET),
+                new HttpEntity<>(headers), String.class);
+        String body = response.getBody();
+        if (!response.getStatusCode().is2xxSuccessful() || body == null || body.isBlank()) {
+            return null;
+        }
+
+        Document document = Jsoup.parse(body, CODECHEF_PROFILE_URL + username);
+        // Unknown handles redirect to the CodeChef home page, which has none of these markers.
+        boolean looksLikeProfile = document.selectFirst("#rating-block-all") != null
+                || document.selectFirst(".rating-header") != null
+                || document.selectFirst(".rating-number") != null
+                || CODECHEF_ALL_RATING_PATTERN.matcher(body).find();
+        if (!looksLikeProfile) {
+            logger.warn("CodeChef profile page not found for {}", username);
+            return null;
+        }
+        return document;
+    }
+
+    private List<UserContestHistory> extractCodechefContestHistory(Document document) throws Exception {
+        List<UserContestHistory> history = new ArrayList<>();
+        Matcher matcher = CODECHEF_ALL_RATING_PATTERN.matcher(document.html());
+        if (!matcher.find()) {
+            return history;
+        }
+
+        JsonNode ratings = objectMapper.readTree(matcher.group(1));
+        if (ratings == null || !ratings.isArray()) {
+            return history;
+        }
+
+        // all_rating entries are chronological and only carry the post-contest rating,
+        // so the previous entry's rating becomes the old rating of the next one.
+        long previousRating = 0;
+        for (JsonNode contest : ratings) {
+            long newRating = contest.path("rating").asLong(previousRating);
+            history.add(new UserContestHistory(
+                    contest.path("code").asText(""),
+                    contest.path("name").asText(""),
+                    contest.path("rank").asLong(0),
+                    previousRating,
+                    newRating));
+            previousRating = newRating;
+        }
+        return history;
+    }
+
+    private long parseCodechefCurrentRating(Document document) {
+        Element ratingElement = document.selectFirst("#rating-block-all .rating-number");
+        if (ratingElement == null) {
+            ratingElement = document.selectFirst(".rating-number");
+        }
+        if (ratingElement == null) {
+            return 0;
+        }
+        Matcher matcher = DIGITS_PATTERN.matcher(ratingElement.text());
+        return matcher.find() ? Long.parseLong(matcher.group()) : 0;
     }
 
     final private String getCodechefRankByRating(long rating) {
@@ -304,147 +421,149 @@ public class ProfileFetchingService {
         return "Unrated";
     }
     
-    // Fetch and aggregate Leetcode profile data
+    // Fetch and aggregate LeetCode profile data from LeetCode's own public GraphQL endpoint.
+    // The HTML profile pages are Cloudflare-protected, so GraphQL is the server-side source.
     public Leetcode fetchLeetcodeProfile(String username) {
         requireValidUsername(username);
-        String lcuserurl = "https://leetcode-stats.tashif.codes/" + username + "/profile";
-        String lccontesturl = "https://leetcode-stats.tashif.codes/" + username + "/contests";
-
         try {
-            // Start both API calls simultaneously
-            CompletableFuture<LC_UserDTO> userProfileFuture = CompletableFuture
-                    .supplyAsync(() -> {
-                        try {
-                            LC_UserDTO response = restTemplate.getForObject(lcuserurl, LC_UserDTO.class);
-                            return response;
-                        } catch (Exception e) {
-                            return null;
-                        }
-                    });
-
-            CompletableFuture<LC_ContestDTO> contestFuture = CompletableFuture
-                    .supplyAsync(() -> {
-                        try {
-                            LC_ContestDTO response = restTemplate.getForObject(lccontesturl, LC_ContestDTO.class);
-                            return response;
-                        } catch (Exception e) {
-                            return null;
-                        }
-                    });
-
-            // Wait for both API calls to complete with timeout protection
-            LC_UserDTO userProfileResponse = null;
-            LC_ContestDTO contestResponse = null;
-
-            try {
-                userProfileResponse = userProfileFuture.get(10, TimeUnit.SECONDS);
-            } catch (Exception e) {
-                logger.warn("LeetCode profile API timed out or failed");
+            JsonNode data = queryLeetcodeProfile(username);
+            if (data == null) {
+                return new Leetcode();
             }
 
-            try {
-                contestResponse = contestFuture.get(10, TimeUnit.SECONDS);
-            } catch (Exception e) {
-                logger.warn("LeetCode contest API timed out or failed");
-            }
-
-            // Check if we got valid responses
-            if (userProfileResponse == null && contestResponse == null) {
+            JsonNode matchedUser = data.path("matchedUser");
+            JsonNode contestRanking = data.path("userContestRanking");
+            if (isNullOrMissing(matchedUser) && isNullOrMissing(contestRanking)) {
                 return new Leetcode();
             }
 
             Leetcode leetcodeProfile = new Leetcode();
+            leetcodeProfile.setUsername(username);
 
-            if (userProfileResponse != null && userProfileResponse.getStatus().equals("success")) {
-                // problems solved and accepted submissions
-                Level problemsSolved = new Level(0, 0, 0, 0);
-                Level acceptedSubmissions = new Level(0, 0, 0, 0);
-                if (userProfileResponse.getSubmitStats() != null
-                        && userProfileResponse.getSubmitStats().getAcSubmissionNum() != null) {
-                    for (SubmissionStat submissionStat : userProfileResponse.getSubmitStats().getAcSubmissionNum()) {
-                        if (submissionStat.getDifficulty().equals("All")) {
-                            problemsSolved.setAll(submissionStat.getCount());
-                            acceptedSubmissions.setAll(submissionStat.getSubmissions());
-                        } else if (submissionStat.getDifficulty().equals("Easy")) {
-                            problemsSolved.setEasy(submissionStat.getCount());
-                            acceptedSubmissions.setEasy(submissionStat.getSubmissions());
-                        } else if (submissionStat.getDifficulty().equals("Medium")) {
-                            problemsSolved.setMedium(submissionStat.getCount());
-                            acceptedSubmissions.setMedium(submissionStat.getSubmissions());
-                        } else if (submissionStat.getDifficulty().equals("Hard")) {
-                            problemsSolved.setHard(submissionStat.getCount());
-                            acceptedSubmissions.setHard(submissionStat.getSubmissions());
-                        }
-                    }
-                }
-                // total submissions
-                Level totalSubmissions = new Level(0, 0, 0, 0);
-                if (userProfileResponse.getSubmitStats() != null
-                        || userProfileResponse.getSubmitStats().getTotalSubmissionNum() != null) {
-                    for (SubmissionStat submissionStat : userProfileResponse.getSubmitStats().getTotalSubmissionNum()) {
-                        if (submissionStat.getDifficulty().equals("All")) {
-                            totalSubmissions.setAll(submissionStat.getSubmissions());
-                        } else if (submissionStat.getDifficulty().equals("Easy")) {
-                            totalSubmissions.setEasy(submissionStat.getSubmissions());
-                        } else if (submissionStat.getDifficulty().equals("Medium")) {
-                            totalSubmissions.setMedium(submissionStat.getSubmissions());
-                        } else if (submissionStat.getDifficulty().equals("Hard")) {
-                            totalSubmissions.setHard(submissionStat.getSubmissions());
-                        }
-                    }
-                }
+            JsonNode submitStats = matchedUser.path("submitStats");
+            leetcodeProfile.setProblemsSolved(
+                    buildLeetcodeLevel(submitStats.path("acSubmissionNum"), true));
+            leetcodeProfile.setAcceptedSubmissions(
+                    buildLeetcodeLevel(submitStats.path("acSubmissionNum"), false));
+            leetcodeProfile.setTotalSubmissions(
+                    buildLeetcodeLevel(submitStats.path("totalSubmissionNum"), false));
+            leetcodeProfile.setRecentSubmissions(buildLeetcodeRecentSubmissions(data.path("recentSubmissionList")));
 
-                List<Problem> recentSubmissions = new ArrayList<>();
-                if (userProfileResponse.getRecentSubmissions() != null) {
-                    for (RecentSubmission submission : userProfileResponse.getRecentSubmissions()) {
-                        recentSubmissions.add(new Problem(
-                                submission.getStatusDisplay(),
-                                submission.getTitle(),
-                                "https://leetcode.com/problems/" + submission.getTitleSlug() + "/description"));
-                    }
-                }
-                leetcodeProfile.setUsername(username);
-                leetcodeProfile.setProblemsSolved(problemsSolved);
-                leetcodeProfile.setTotalSubmissions(totalSubmissions);
-                leetcodeProfile.setAcceptedSubmissions(acceptedSubmissions);
-                leetcodeProfile.setRecentSubmissions(recentSubmissions);
+            long currentRating = 0;
+            long maxRating = 0;
+            long attendedContests = 0;
+            if (isNullOrMissing(contestRanking)) {
+                leetcodeProfile.setRank("Newbie");
+            } else {
+                currentRating = Math.round(contestRanking.path("rating").asDouble(0));
+                attendedContests = contestRanking.path("attendedContestsCount").asLong(0);
+                JsonNode badgeName = contestRanking.path("badge").path("name");
+                leetcodeProfile.setRank(
+                        badgeName.isTextual() && !badgeName.asText().isBlank() ? badgeName.asText() : "Newbie");
             }
 
-            if (contestResponse != null && contestResponse.getStatus().equals("success")) {
-                long rating = 0, maxRating = 0;
-                List<UserContestHistory> contestHistory = new ArrayList<>();
-                if (contestResponse.getContestHistory() != null) {
-                    for (ContestHistory history : contestResponse.getContestHistory()) {
-                        if (history.isAttended()) {
-                            contestHistory.add(new UserContestHistory(
-                                    history.getContest().getTitle().toLowerCase().replace(" ", "-"),
-                                    history.getContest().getTitle(),
-                                    history.getRanking(),
-                                    rating,
-                                    (long) (history.getRating() + 0.5)));
-                            rating = (long) (history.getRating() + 0.5);
-                            maxRating = Math.max(maxRating, rating);
-                        }
+            List<UserContestHistory> contestHistory = new ArrayList<>();
+            JsonNode history = data.path("userContestRankingHistory");
+            long previousRating = 0;
+            if (history.isArray()) {
+                for (JsonNode contest : history) {
+                    if (!contest.path("attended").asBoolean(false)) {
+                        continue;
                     }
-                }
-                Collections.reverse(contestHistory);
-
-                leetcodeProfile.setContestHistory(contestHistory);
-                leetcodeProfile.setMaxRating(maxRating);
-                leetcodeProfile.setRating((long) (contestResponse.getRating() + 0.5));
-                leetcodeProfile.setContestParticipations(contestResponse.getAttendedContestsCount());
-                if (contestResponse.getBadge() != null && contestResponse.getBadge().getName() != null) {
-                    leetcodeProfile.setRank(contestResponse.getBadge().getName());
-                } else {
-                    leetcodeProfile.setRank("Newbie");
+                    String contestTitle = contest.path("contest").path("title").asText("");
+                    long newRating = Math.round(contest.path("rating").asDouble(0));
+                    contestHistory.add(new UserContestHistory(
+                            contestTitle.toLowerCase().replace(" ", "-"),
+                            contestTitle,
+                            contest.path("ranking").asLong(0),
+                            previousRating,
+                            newRating));
+                    previousRating = newRating;
+                    maxRating = Math.max(maxRating, newRating);
                 }
             }
+            // GraphQL history is oldest-first; the API contract is newest-first.
+            Collections.reverse(contestHistory);
 
+            leetcodeProfile.setContestHistory(contestHistory);
+            leetcodeProfile.setContestParticipations(attendedContests);
+            leetcodeProfile.setRating(currentRating);
+            leetcodeProfile.setMaxRating(Math.max(maxRating, currentRating));
             return leetcodeProfile;
         } catch (Exception e) {
-            logger.warn("LeetCode profile fetch failed: {}", e.getClass().getSimpleName());
+            logger.warn("LeetCode profile fetch failed for {}: {}", username, e.getClass().getSimpleName());
             return new Leetcode();
         }
+    }
+
+    private JsonNode queryLeetcodeProfile(String username) throws Exception {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set(HttpHeaders.USER_AGENT, BROWSER_USER_AGENT);
+        headers.set(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+        headers.set(HttpHeaders.REFERER, "https://leetcode.com/u/" + username + "/");
+        headers.set(HttpHeaders.ORIGIN, "https://leetcode.com");
+
+        Map<String, Object> payload = Map.of(
+                "query", LEETCODE_PROFILE_QUERY,
+                "variables", Map.of("username", username));
+        HttpEntity<String> request = new HttpEntity<>(objectMapper.writeValueAsString(payload), headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                LEETCODE_GRAPHQL_URL, Objects.requireNonNull(HttpMethod.POST), request, String.class);
+        String body = response.getBody();
+        if (!response.getStatusCode().is2xxSuccessful() || body == null || body.isBlank()) {
+            return null;
+        }
+
+        JsonNode root = objectMapper.readTree(body);
+        if (root.has("errors")) {
+            logger.warn("LeetCode GraphQL returned errors for {}: {}", username, root.path("errors"));
+            return null;
+        }
+        JsonNode data = root.path("data");
+        return isNullOrMissing(data) ? null : data;
+    }
+
+    private Level buildLeetcodeLevel(JsonNode stats, boolean useSolvedCount) {
+        Level level = new Level(0, 0, 0, 0);
+        if (stats == null || !stats.isArray()) {
+            return level;
+        }
+        for (JsonNode stat : stats) {
+            long value = useSolvedCount
+                    ? stat.path("count").asLong(0)
+                    : stat.path("submissions").asLong(0);
+            switch (stat.path("difficulty").asText("")) {
+                case "All" -> level.setAll(value);
+                case "Easy" -> level.setEasy(value);
+                case "Medium" -> level.setMedium(value);
+                case "Hard" -> level.setHard(value);
+                default -> {
+                    // Ignore unknown difficulty buckets.
+                }
+            }
+        }
+        return level;
+    }
+
+    private List<Problem> buildLeetcodeRecentSubmissions(JsonNode submissions) {
+        List<Problem> recentSubmissions = new ArrayList<>();
+        if (submissions == null || !submissions.isArray()) {
+            return recentSubmissions;
+        }
+        for (JsonNode submission : submissions) {
+            String titleSlug = submission.path("titleSlug").asText("");
+            recentSubmissions.add(new Problem(
+                    submission.path("statusDisplay").asText(""),
+                    submission.path("title").asText(""),
+                    "https://leetcode.com/problems/" + titleSlug + "/description"));
+        }
+        return recentSubmissions;
+    }
+
+    private boolean isNullOrMissing(JsonNode node) {
+        return node == null || node.isMissingNode() || node.isNull();
     }
 
     private void requireValidUsername(String username) {
