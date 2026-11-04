@@ -3,7 +3,6 @@ import { useAuth } from "../../context/AuthContext";
 import { MESSAGE_CLASSES, BUTTON_CLASSES } from "../../constants/styles";
 import FormInput from "../common/FormInput";
 import LoadingSpinner from "../common/LoadingSpinner";
-import PlatformGrid from "../common/PlatformGrid";
 
 const LoginForm = ({ onSwitchToSignup }) => {
   const { login, validateLoginForm } = useAuth();
@@ -197,13 +196,6 @@ const LoginForm = ({ onSwitchToSignup }) => {
           </button>
         </p>
       </form>
-
-      <div className="mt-8 border-t border-white/10 pt-6 lg:hidden">
-        <p className="mb-4 text-center text-xs font-medium uppercase tracking-widest text-white">
-          Supported platforms
-        </p>
-        <PlatformGrid />
-      </div>
     </div>
   );
 };

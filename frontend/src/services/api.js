@@ -16,7 +16,10 @@ class ApiService {
     this.axiosInstance.interceptors.request.use(
       (config) => {
         const token = this.getAuthToken();
-        if (token) {
+        const isPublicAuthRequest = ['/auth/login', '/auth/signup'].some((path) =>
+          (config.url || '').endsWith(path)
+        );
+        if (token && !isPublicAuthRequest) {
           config.headers.Authorization = `Bearer ${token}`;
         }
         return config;

@@ -2,7 +2,6 @@ import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
-import PlatformGrid from "../common/PlatformGrid";
 
 const FEATURES = [
   "Track progress across all supported platforms",
@@ -94,13 +93,6 @@ const AuthSlider = () => {
                   </li>
                 ))}
               </ul>
-            </div>
-
-            <div className="relative mt-12 border-t border-white/10 pt-5">
-              <p className="mb-3 text-[10px] font-medium uppercase tracking-widest text-white">
-                Supported platforms
-              </p>
-              <PlatformGrid />
             </div>
           </aside>
 

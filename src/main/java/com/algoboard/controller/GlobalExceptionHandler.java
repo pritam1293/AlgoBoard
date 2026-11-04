@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 
 import java.util.Map;
 
@@ -36,6 +37,14 @@ public class GlobalExceptionHandler {
         logger.warn("Data integrity violation: {}", e.getClass().getSimpleName());
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ResponseUtil.createErrorResponse("Request could not be completed."));
+    }
+
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleClientDisconnect(AsyncRequestNotUsableException e) {
+        // The client closed the connection before the response was written.
+        // There is nothing to send back, so do not log this as a server error.
+        logger.debug("Client disconnected before response completed: {}",
+                e.getCause() != null ? e.getCause().getClass().getSimpleName() : e.getClass().getSimpleName());
     }
 
     @ExceptionHandler(Exception.class)

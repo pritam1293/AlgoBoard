@@ -54,8 +54,8 @@ public class UserController {
 
     // GET /api/home
     @GetMapping("/home")
-    public String home() {
-        return "Welcome to AlgoBoard!";
+    public ResponseEntity<?> home() {
+        return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Welcome to AlgoBoard!", null));
     }
 
     // POST /api/auth/signup
