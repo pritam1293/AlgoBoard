@@ -369,28 +369,28 @@ public class UserService implements IUserService {
     @Override
     @Cacheable(value = "codeforcesProfile", key = "'email:' + #email", unless = "#result == null || #result.username == null")
     public Codeforces getCodeforcesProfile(String email) {
-        return getCachedProfile(email, "Codeforces", User::getCodeforcesUsername,
+        return getCachedProfile(email, "Codeforces", user -> user.getCodeforcesUsername(),
                 profileFetchingService::fetchCodeforcesProfile, Codeforces::new);
     }
 
     @Override
     @Cacheable(value = "atcoderProfile", key = "'email:' + #email", unless = "#result == null || #result.username == null")
     public Atcoder getAtcoderProfile(String email) {
-        return getCachedProfile(email, "AtCoder", User::getAtcoderUsername,
+        return getCachedProfile(email, "AtCoder", user -> user.getAtcoderUsername(),
                 profileFetchingService::fetchAtcoderProfile, Atcoder::new);
     }
 
     @Override
     @Cacheable(value = "codechefProfile", key = "'email:' + #email", unless = "#result == null || #result.username == null")
     public Codechef getCodechefProfile(String email) {
-        return getCachedProfile(email, "CodeChef", User::getCodechefUsername,
+        return getCachedProfile(email, "CodeChef", user -> user.getCodechefUsername(),
                 profileFetchingService::fetchCodechefProfile, Codechef::new);
     }
 
     @Override
     @Cacheable(value = "leetcodeProfile", key = "'email:' + #email", unless = "#result == null || #result.username == null")
     public Leetcode getLeetcodeProfile(String email) {
-        return getCachedProfile(email, "LeetCode", User::getLeetcodeUsername,
+        return getCachedProfile(email, "LeetCode", user -> user.getLeetcodeUsername(),
                 profileFetchingService::fetchLeetcodeProfile, Leetcode::new);
     }
 

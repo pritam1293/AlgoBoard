@@ -80,9 +80,9 @@ public class CacheService {
     }
 
     private void evict(String cacheName, String key) {
-        Cache cache = cacheManager.getCache(cacheName);
+        Cache cache = cacheManager.getCache(Objects.requireNonNull(cacheName, "Cache name cannot be null"));
         if (cache != null) {
-            cache.evict(key);
+            cache.evict(Objects.requireNonNull(key, "Cache key cannot be null"));
         }
     }
 

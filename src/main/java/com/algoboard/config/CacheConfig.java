@@ -33,14 +33,18 @@ public class CacheConfig {
             "atcoderProfile"
     };
 
+    // Spring's @NonNullApi/@NonNullFields annotations make JDT flag unannotated
+    // ("legacy") code as unchecked null conversions. These values are non-null.
     @Bean
     @ConditionalOnProperty(name = "app.cache.type", havingValue = "simple", matchIfMissing = true)
+    @SuppressWarnings("null")
     public CacheManager inMemoryCacheManager() {
         return new ConcurrentMapCacheManager(CACHE_NAMES);
     }
 
     @Bean
     @ConditionalOnProperty(name = "app.cache.type", havingValue = "redis")
+    @SuppressWarnings("null")
     public CacheManager redisCacheManager(RedisConnectionFactory connectionFactory, ObjectMapper objectMapper) {
         ObjectMapper cacheMapper = objectMapper.copy();
         cacheMapper.activateDefaultTyping(

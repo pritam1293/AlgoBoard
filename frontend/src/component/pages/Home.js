@@ -79,27 +79,27 @@ const Home = () => {
 
         if (response?.data) {
           const now = new Date();
-          const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-          const running = response.data.filter((contest) => {
-            const startTime = new Date(contest.startTime);
-            const endTime = new Date(contest.endTime);
-            return (
-              !isNaN(startTime.getTime()) &&
-              !isNaN(endTime.getTime()) &&
-              now >= startTime &&
-              now <= endTime
-            );
-          });
+          const running = response.data
+            .filter((contest) => {
+              const startTime = new Date(contest.startTime);
+              const endTime = new Date(contest.endTime);
+              return (
+                !isNaN(startTime.getTime()) &&
+                !isNaN(endTime.getTime()) &&
+                now >= startTime &&
+                now <= endTime
+              );
+            })
+            .sort((a, b) => new Date(a.endTime) - new Date(b.endTime));
 
-          const upcoming = response.data.filter((contest) => {
-            const startTime = new Date(contest.startTime);
-            return (
-              !isNaN(startTime.getTime()) &&
-              startTime >= now &&
-              startTime <= next24Hours
-            );
-          });
+          // Every future contest is eligible, no matter how far away it is.
+          const upcoming = response.data
+            .filter((contest) => {
+              const startTime = new Date(contest.startTime);
+              return !isNaN(startTime.getTime()) && startTime >= now;
+            })
+            .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 
           setRunningContests(running);
           setUpcomingContests(upcoming);
@@ -242,6 +242,21 @@ const Home = () => {
     });
   };
 
+  // Contest radar shows 4 contests total: live contests first (ending soonest),
+  // then upcoming contests (starting soonest) regardless of how far away they are.
+  const radarContests = useMemo(() => {
+    const live = runningContests.map((contest) => ({
+      contest,
+      isLive: true,
+    }));
+    const upcoming = upcomingContests.map((contest) => ({
+      contest,
+      isLive: false,
+    }));
+
+    return [...live, ...upcoming].slice(0, 4);
+  }, [runningContests, upcomingContests]);
+
   const platformEntries = Object.entries(platformStats);
   const hasPlatformStats = platformEntries.length > 0;
 
@@ -353,11 +368,11 @@ const Home = () => {
     return (
       <div
         key={`${isLive ? "live" : "upcoming"}-${contest.name}-${contest.startTime}`}
-        className="rounded-xl border border-white/5 bg-white/[0.03] p-3.5 transition-colors hover:bg-white/[0.06]"
+        className="flex flex-1 flex-col justify-center rounded-xl border border-white/5 bg-white/[0.03] p-3 transition-colors hover:bg-white/[0.06]"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            <div className="mb-1 flex flex-wrap items-center gap-2">
               <span
                 className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${theme.badge}`}
               >
@@ -492,14 +507,14 @@ const Home = () => {
         {/* Main dashboard grid */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Platform performance */}
-          <section className="lg:col-span-2">
+          <section className="flex flex-col lg:col-span-2">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-white">
                   Platform performance
                 </h2>
                 <p className="text-xs text-white">
-                  Live snapshot of your linked competitive programming accounts
+                  Live snapshot of your competitive programming accounts
                 </p>
               </div>
               <button
@@ -510,147 +525,128 @@ const Home = () => {
               </button>
             </div>
 
-            {connectedPlatforms.length === 0 ? (
-              <div className="flex min-h-[260px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-neutral-900/40 p-8 text-center">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white">
-                  <svg
-                    className="h-6 w-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+            <div className="grid flex-1 auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-2">
+              {PLATFORMS.map((platform) => {
+                const theme = getTheme(platform.id);
+                const isConnected = Boolean(
+                  user?.[platform.usernameField]
+                );
+                const stat = isConnected ? platformStats[platform.id] : null;
+                const username =
+                  stat?.username || user?.[platform.usernameField];
+
+                return (
+                  <div
+                    key={platform.id}
+                    className="group relative overflow-hidden rounded-2xl border border-white/10 bg-neutral-900/60 p-5 backdrop-blur-sm transition duration-300 hover:-translate-y-0.5 hover:border-white/20"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.8}
-                      d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5m6.5-3.5l1.5-1.5a4 4 0 015.656 5.656l-3 3a4 4 0 01-5.656 0"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-semibold text-white">
-                  No platforms connected
-                </h3>
-                <p className="mt-1 max-w-sm text-xs leading-relaxed text-white">
-                  Link Codeforces, AtCoder, CodeChef, or LeetCode to unlock
-                  ratings, contest history, and problem statistics.
-                </p>
-                <button
-                  onClick={() => navigate(`${profileBasePath}/platforms`)}
-                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-blue-500"
-                >
-                  Connect accounts
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {connectedPlatforms.map((platform) => {
-                  const theme = getTheme(platform.id);
-                  const stat = platformStats[platform.id];
-                  const username = stat?.username || user?.[platform.usernameField];
-
-                  return (
                     <div
-                      key={platform.id}
-                      className="group relative overflow-hidden rounded-2xl border border-white/10 bg-neutral-900/60 p-5 backdrop-blur-sm transition duration-300 hover:-translate-y-0.5 hover:border-white/20"
-                    >
-                      <div
-                        className={`absolute -right-10 -top-10 h-28 w-28 rounded-full bg-gradient-to-br ${theme.glow} to-transparent opacity-70 blur-2xl`}
-                      />
-                      <div className="relative">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex min-w-0 items-center gap-3">
-                            <div
-                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${theme.icon}`}
-                            >
-                              <img
-                                src={platform.logo}
-                                alt={`${platform.name} logo`}
-                                className="h-6 w-6 object-contain"
-                              />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-white">
-                                {platform.name}
-                              </p>
-                              <p className="truncate text-xs text-white">
-                                @{username || "not linked"}
-                              </p>
-                            </div>
-                          </div>
-                          <span
-                            className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${theme.badge}`}
+                      className={`absolute -right-10 -top-10 h-28 w-28 rounded-full bg-gradient-to-br ${theme.glow} to-transparent opacity-70 blur-2xl`}
+                    />
+                    <div className="relative">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div
+                            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${theme.icon}`}
                           >
-                            {stat?.rank || "Unranked"}
-                          </span>
-                        </div>
-
-                        <div className="mt-5 grid grid-cols-3 gap-2">
-                          <div>
-                            <p className="text-[10px] uppercase tracking-wide text-white">
-                              Rating
-                            </p>
-                            <p className={`mt-0.5 text-base font-semibold ${theme.text}`}>
-                              {stat ? stat.rating || 0 : "—"}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] uppercase tracking-wide text-white">
-                              Peak
-                            </p>
-                            <p className="mt-0.5 text-base font-semibold text-white">
-                              {stat ? stat.maxRating || 0 : "—"}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] uppercase tracking-wide text-white">
-                              Contests
-                            </p>
-                            <p className="mt-0.5 text-base font-semibold text-white">
-                              {stat ? stat.contestParticipations || 0 : "—"}
-                            </p>
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() =>
-                            navigate(
-                              `/profile/${encodeURIComponent(user?.email || "")}`
-                            )
-                          }
-                          className="mt-4 flex w-full items-center justify-between rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/[0.06] hover:text-white"
-                        >
-                          View statistics
-                          <svg
-                            className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 12h14M13 6l6 6-6 6"
+                            <img
+                              src={platform.logo}
+                              alt={`${platform.name} logo`}
+                              className="h-6 w-6 object-contain"
                             />
-                          </svg>
-                        </button>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-white">
+                              {platform.name}
+                            </p>
+                            <p className="truncate text-xs text-white">
+                              {isConnected
+                                ? `@${username || "linked"}`
+                                : "Click to connect your account"}
+                            </p>
+                          </div>
+                        </div>
+                        <span
+                          className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                            isConnected
+                              ? theme.badge
+                              : "border-white/10 bg-white/5 text-white"
+                          }`}
+                        >
+                          {isConnected ? stat?.rank || "Unranked" : "Not connected"}
+                        </span>
                       </div>
+
+                      <div className="mt-5 grid grid-cols-3 gap-2">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wide text-white">
+                            Rating
+                          </p>
+                          <p className={`mt-0.5 text-base font-semibold ${theme.text}`}>
+                            {stat ? stat.rating || 0 : "—"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wide text-white">
+                            Peak
+                          </p>
+                          <p className="mt-0.5 text-base font-semibold text-white">
+                            {stat ? stat.maxRating || 0 : "—"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wide text-white">
+                            Contests
+                          </p>
+                          <p className="mt-0.5 text-base font-semibold text-white">
+                            {stat ? stat.contestParticipations || 0 : "—"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() =>
+                          navigate(
+                            isConnected
+                              ? `/profile/${encodeURIComponent(
+                                  user?.email || ""
+                                )}`
+                              : `${profileBasePath}/platforms`
+                          )
+                        }
+                        className="mt-4 flex w-full items-center justify-between rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/[0.06] hover:text-white"
+                      >
+                        {isConnected ? "View statistics" : "Connect account"}
+                        <svg
+                          className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 12h14M13 6l6 6-6 6"
+                          />
+                        </svg>
+                      </button>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                  </div>
+                );
+              })}
+            </div>
           </section>
 
           {/* Contest radar */}
-          <section>
+          <section className="flex flex-col">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-white">
                   Contest radar
                 </h2>
                 <p className="text-xs text-white">
-                  Live and starting within 24 hours
+                  Live now, then the next scheduled contests
                 </p>
               </div>
               <button
@@ -661,8 +657,8 @@ const Home = () => {
               </button>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-neutral-900/60 p-4 backdrop-blur-sm">
-              <div className="mb-3 flex items-center gap-2">
+            <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-white/10 bg-neutral-900/60 p-4 backdrop-blur-sm">
+              <div className="mb-2 flex items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                   {runningContests.length} live
@@ -672,26 +668,20 @@ const Home = () => {
                 </span>
               </div>
 
-              <div className="max-h-[520px] space-y-2.5 overflow-y-auto pr-1">
+              <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1">
                 {contestsLoading ? (
-                  <div className="flex items-center justify-center rounded-xl border border-white/5 bg-white/[0.03] px-4 py-10">
+                  <div className="flex flex-1 items-center justify-center rounded-xl border border-white/5 bg-white/[0.03] px-4 py-10">
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
                     <span className="ml-3 text-xs text-white">
                       Loading contests...
                     </span>
                   </div>
-                ) : runningContests.length > 0 ||
-                  upcomingContests.length > 0 ? (
-                  <>
-                    {runningContests.map((contest) =>
-                      renderContestItem(contest, true)
-                    )}
-                    {upcomingContests.map((contest) =>
-                      renderContestItem(contest, false)
-                    )}
-                  </>
+                ) : radarContests.length > 0 ? (
+                  radarContests.map(({ contest, isLive }) =>
+                    renderContestItem(contest, isLive)
+                  )
                 ) : (
-                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-10 text-center">
+                  <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-10 text-center">
                     <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white">
                       <svg
                         className="h-5 w-5"
