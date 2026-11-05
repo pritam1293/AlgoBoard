@@ -168,51 +168,145 @@ const PlatformStatistics = ({
         }
 
         const submissions = normalizeRecentSubmissions(platformData.recentSubmissions).slice(0, 10);
+        const isCodeforces = platformId === 'codeforces';
 
         if (submissions.length === 0) {
             return (
                 <div className="rounded-2xl border border-white/10 bg-neutral-900/60 p-6 backdrop-blur-sm">
-                    <h4 className="text-lg font-semibold text-white mb-4">Recent Submissions</h4>
-                    <p className="text-white">No recent submissions available</p>
+                    <div className="mb-4 flex items-center justify-between gap-2">
+                        <h4 className="text-lg font-semibold text-white">Recent Submissions</h4>
+                    </div>
+                    <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-8 text-center">
+                        <p className="text-sm text-white/50">No recent submissions available</p>
+                    </div>
                 </div>
             );
         }
 
+        const formatStatus = (status) => {
+            if (!status) return "Unknown";
+            if (!isCodeforces) return status;
+            const verdicts = {
+                OK: "Accepted",
+                WRONG_ANSWER: "Wrong Answer",
+                TIME_LIMIT_EXCEEDED: "Time Limit Exceeded",
+                MEMORY_LIMIT_EXCEEDED: "Memory Limit Exceeded",
+                RUNTIME_ERROR: "Runtime Error",
+                COMPILATION_ERROR: "Compilation Error",
+                IDLENESS_LIMIT_EXCEEDED: "Idleness Limit Exceeded",
+                SECURITY_VIOLATED: "Security Violated",
+                CRASHED: "Crashed",
+                TESTING: "Testing",
+                REJECTED: "Rejected",
+                SKIPPED: "Skipped",
+                PARTIAL: "Partial"
+            };
+            return verdicts[status] || status.replace(/_/g, " ").toLowerCase();
+        };
+
+        const getSubmissionUrl = (submission) => {
+            if (isCodeforces) {
+                return submission.id && submission.index
+                    ? `https://codeforces.com/problemset/problem/${submission.id}/${submission.index}`
+                    : null;
+            }
+            return submission.problemUrl || null;
+        };
+
         return (
             <div className="rounded-2xl border border-white/10 bg-neutral-900/60 p-6 backdrop-blur-sm">
-                <h4 className="text-lg font-semibold text-white mb-4">Recent Submissions</h4>
-                <div className="space-y-3">
-                    {submissions.map((submission, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.03] transition-colors hover:bg-white/[0.06]">
-                            <div className="flex-1">
-                                <a
-                                    href={
-                                        platformId === 'codeforces'
-                                            ? (submission.id && submission.index
-                                                ? `https://codeforces.com/problemset/problem/${submission.id}/${submission.index}`
-                                                : "#")
-                                            : submission.problemUrl || "#"
-                                    }
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-400 hover:text-blue-300 font-medium"
-                                >
-                                    {platformId === 'codeforces'
+                <div className="mb-4 flex items-center justify-between gap-2">
+                    <h4 className="text-lg font-semibold text-white">Recent Submissions</h4>
+                    <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-white/60">
+                        Last {submissions.length}
+                    </span>
+                </div>
+
+                <div className="overflow-hidden rounded-xl border border-white/10">
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[520px] border-collapse text-sm">
+                            <thead>
+                                <tr className="border-b border-white/10 bg-white/[0.03] text-[11px] uppercase tracking-wider text-white/50">
+                                    <th className="w-10 px-4 py-3 text-left font-semibold">#</th>
+                                    <th className="px-4 py-3 text-left font-semibold">Problem</th>
+                                    {isCodeforces && (
+                                        <th className="px-4 py-3 text-center font-semibold">Problem ID</th>
+                                    )}
+                                    <th className="px-4 py-3 text-right font-semibold">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {submissions.map((submission, index) => {
+                                    const accepted = isCodeforces
+                                        ? submission.status === 'OK'
+                                        : submission.status === 'Accepted';
+                                    const unknown = !submission.status;
+                                    const problemName = isCodeforces
                                         ? submission.name || submission.problemTitle || "Unknown problem"
-                                        : submission.problemTitle || "Unknown problem"}
-                                </a>
-                            </div>
-                            <div className={`px-3 py-1 rounded-full text-xs font-medium ${(platformId === 'codeforces' && submission.status === 'OK') ||
-                                (platformId === 'leetcode' && submission.status === 'Accepted')
-                                ? 'bg-green-600 text-white'
-                                : 'bg-red-600 text-white'
-                                }`}>
-                                {platformId === 'codeforces' && submission.status === 'OK'
-                                    ? 'Accepted'
-                                    : submission.status || 'Unknown'}
-                            </div>
-                        </div>
-                    ))}
+                                        : submission.problemTitle || "Unknown problem";
+                                    const submissionUrl = getSubmissionUrl(submission);
+
+                                    return (
+                                        <tr
+                                            key={index}
+                                            className="border-b border-white/5 transition-colors last:border-0 hover:bg-white/[0.04]"
+                                        >
+                                            <td className="px-4 py-3.5 text-xs tabular-nums text-white/40">
+                                                {index + 1}
+                                            </td>
+                                            <td className="max-w-[320px] px-4 py-3.5">
+                                                {submissionUrl ? (
+                                                    <a
+                                                        href={submissionUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="group inline-flex items-center gap-1.5 font-medium text-white transition-colors hover:text-blue-400"
+                                                    >
+                                                        <span className="truncate">{problemName}</span>
+                                                        <svg
+                                                            className="h-3.5 w-3.5 flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            stroke="currentColor"
+                                                            strokeWidth={2}
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                                            />
+                                                        </svg>
+                                                    </a>
+                                                ) : (
+                                                    <span className="font-medium text-white">{problemName}</span>
+                                                )}
+                                            </td>
+                                            {isCodeforces && (
+                                                <td className="px-4 py-3.5 text-center text-xs tabular-nums text-white/50">
+                                                    {submission.id ? `${submission.id}${submission.index ? submission.index : ''}` : "—"}
+                                                </td>
+                                            )}
+                                            <td className="px-4 py-3.5 text-right">
+                                                <span
+                                                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ring-1 ring-inset ${accepted
+                                                        ? "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20"
+                                                        : unknown
+                                                            ? "bg-white/5 text-white/50 ring-white/10"
+                                                            : "bg-red-500/10 text-red-400 ring-red-500/20"
+                                                        }`}
+                                                >
+                                                    <span
+                                                        className={`h-1.5 w-1.5 rounded-full ${accepted ? "bg-emerald-400" : unknown ? "bg-white/40" : "bg-red-400"}`}
+                                                    />
+                                                    {formatStatus(submission.status)}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         );
@@ -278,81 +372,144 @@ const PlatformStatistics = ({
         const currentContests = history.slice(startIndex, endIndex);
         const totalPages = Math.ceil(history.length / CONTESTS_PER_PAGE);
 
+        const getContestUrl = (contestId) => {
+            if (!contestId) return null;
+            const baseUrls = {
+                codeforces: `https://codeforces.com/contest/${contestId}`,
+                codechef: `https://www.codechef.com/${contestId}`,
+                leetcode: `https://leetcode.com/contest/${contestId}`,
+                atcoder: `https://atcoder.jp/contests/${contestId}`
+            };
+            return baseUrls[selectedPlatform?.id] || null;
+        };
+
         return (
             <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-white">Contest History</h4>
-                <div className="space-y-2">
-                    {currentContests.map((contest, index) => (
-                        <div key={index} className="rounded-xl border border-white/5 bg-white/[0.03] p-4">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h5 className="text-white font-medium">
-                                        {contest.contestId ? (
-                                            <a
-                                                href={(() => {
-                                                    const baseUrls = {
-                                                        codeforces: `https://codeforces.com/contest/${contest.contestId}`,
-                                                        codechef: `https://www.codechef.com/${contest.contestId}`,
-                                                        leetcode: `https://leetcode.com/contest/${contest.contestId}`,
-                                                        atcoder: `https://atcoder.jp/contests/${contest.contestId}`
-                                                    };
-                                                    return baseUrls[selectedPlatform?.id] || '#';
-                                                })()}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-blue-400 hover:text-blue-300 hover:underline transition-colors"
-                                            >
-                                                {contest.contestName}
-                                            </a>
-                                        ) : (
-                                            contest.contestName
-                                        )}
-                                    </h5>
-                                    <p className="text-white text-sm">
-                                        Standing: {contest.standing}
-                                    </p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-white">
-                                        {contest.oldRating} → {contest.newRating}
-                                    </p>
-                                    <p
-                                        className={`text-sm ${contest.newRating > contest.oldRating
-                                            ? "text-green-400"
-                                            : "text-red-400"
-                                            }`}
-                                    >
-                                        {contest.newRating > contest.oldRating ? "+" : ""}
-                                        {contest.newRating - contest.oldRating}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-lg font-semibold text-white">Contest History</h4>
+                    <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-white/60">
+                        {history.length} contests
+                    </span>
+                </div>
+
+                <div className="overflow-hidden rounded-2xl border border-white/10 bg-neutral-900/60 backdrop-blur-sm">
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[620px] border-collapse text-sm">
+                            <thead>
+                                <tr className="border-b border-white/10 bg-white/[0.03] text-[11px] uppercase tracking-wider text-white/50">
+                                    <th className="px-5 py-3 text-left font-semibold">Contest</th>
+                                    <th className="px-4 py-3 text-center font-semibold">Standing</th>
+                                    <th className="px-4 py-3 text-right font-semibold">Old Rating</th>
+                                    <th className="px-4 py-3 text-right font-semibold">New Rating</th>
+                                    <th className="px-5 py-3 text-right font-semibold">Delta</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {currentContests.map((contest, index) => {
+                                    const delta = contest.newRating - contest.oldRating;
+                                    const isPositive = delta > 0;
+                                    const isNegative = delta < 0;
+                                    const trendClass = isPositive
+                                        ? "text-emerald-400"
+                                        : isNegative
+                                            ? "text-red-400"
+                                            : "text-white/50";
+                                    const contestUrl = getContestUrl(contest.contestId);
+
+                                    return (
+                                        <tr
+                                            key={index}
+                                            className="border-b border-white/5 transition-colors last:border-0 hover:bg-white/[0.04]"
+                                        >
+                                            <td className="max-w-[300px] px-5 py-3.5">
+                                                {contestUrl ? (
+                                                    <a
+                                                        href={contestUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="group inline-flex items-center gap-1.5 font-medium text-white transition-colors hover:text-blue-400"
+                                                    >
+                                                        <span className="truncate">{contest.contestName}</span>
+                                                        <svg
+                                                            className="h-3.5 w-3.5 flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            stroke="currentColor"
+                                                            strokeWidth={2}
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                                            />
+                                                        </svg>
+                                                    </a>
+                                                ) : (
+                                                    <span className="font-medium text-white">{contest.contestName}</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3.5 text-center tabular-nums text-white/70">
+                                                {contest.standing.toLocaleString()}
+                                            </td>
+                                            <td className="px-4 py-3.5 text-right tabular-nums text-white/60">
+                                                {contest.oldRating.toLocaleString()}
+                                            </td>
+                                            <td className={`px-4 py-3.5 text-right font-semibold tabular-nums ${trendClass}`}>
+                                                {contest.newRating.toLocaleString()}
+                                            </td>
+                                            <td className="px-5 py-3.5 text-right">
+                                                <span
+                                                    className={`inline-flex min-w-[72px] items-center justify-end gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold tabular-nums ${isPositive
+                                                        ? "bg-emerald-500/10 text-emerald-400 ring-1 ring-inset ring-emerald-500/20"
+                                                        : isNegative
+                                                            ? "bg-red-500/10 text-red-400 ring-1 ring-inset ring-red-500/20"
+                                                            : "bg-white/5 text-white/50 ring-1 ring-inset ring-white/10"
+                                                        }`}
+                                                >
+                                                    <span aria-hidden="true">
+                                                        {isPositive ? "▲" : isNegative ? "▼" : "▬"}
+                                                    </span>
+                                                    {Math.abs(delta).toLocaleString()}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 {/* Contest Pagination */}
                 {totalPages > 1 && setContestPage && (
-                    <div className="flex justify-center items-center gap-4 mt-4">
-                        <button
-                            onClick={() => setContestPage(Math.max(0, contestPage - 1))}
-                            disabled={contestPage === 0}
-                            className="rounded-xl border border-blue-400/20 bg-blue-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-white"
-                        >
-                            Previous
-                        </button>
-                        <span className="text-white">
-                            {contestPage + 1} of {totalPages}
+                    <div className="flex items-center justify-between gap-4 pt-1">
+                        <span className="text-xs font-medium text-white/50">
+                            Page {contestPage + 1} of {totalPages}
                         </span>
-                        <button
-                            onClick={() =>
-                                setContestPage(Math.min(totalPages - 1, contestPage + 1))
-                            }
-                            disabled={contestPage === totalPages - 1}
-                            className="rounded-xl border border-blue-400/20 bg-blue-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-white"
-                        >
-                            Next
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setContestPage(Math.max(0, contestPage - 1))}
+                                disabled={contestPage === 0}
+                                className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-medium text-white transition hover:border-white/20 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-white/10 disabled:hover:bg-white/5"
+                            >
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                                </svg>
+                                Previous
+                            </button>
+                            <button
+                                onClick={() =>
+                                    setContestPage(Math.min(totalPages - 1, contestPage + 1))
+                                }
+                                disabled={contestPage === totalPages - 1}
+                                className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-medium text-white transition hover:border-white/20 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-white/10 disabled:hover:bg-white/5"
+                            >
+                                Next
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
