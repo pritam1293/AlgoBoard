@@ -8,7 +8,7 @@ const SimpleProfileDisplay = ({ platform, profileData }) => {
             codechef: 'text-orange-400',
             leetcode: 'text-yellow-400',
         };
-        return colors[platformName.toLowerCase()] || 'text-white';
+        return colors[String(platformName || '').toLowerCase()] || 'text-white';
     };
 
     const renderCodeforcesProfile = (data) => (
@@ -139,7 +139,7 @@ const SimpleProfileDisplay = ({ platform, profileData }) => {
                     <div className="space-y-2">
                         <div className="flex justify-between">
                             <span className="text-white">Username:</span>
-                            <span className="text-white font-medium">{data.username}</span>
+                            <span className="text-white font-medium">{data.username || '—'}</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-white">Ranking:</span>
@@ -153,11 +153,15 @@ const SimpleProfileDisplay = ({ platform, profileData }) => {
                     <div className="space-y-2">
                         <div className="flex justify-between">
                             <span className="text-white">Problems Solved:</span>
-                            <span className="text-white font-medium">{data.totalSolved || 0}</span>
+                            <span className="text-white font-medium">{data.totalSolved ?? 0}</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-white">Acceptance Rate:</span>
-                            <span className="text-white font-medium">{data.acceptanceRate || 'N/A'}%</span>
+                            <span className="text-white font-medium">
+                                {data.acceptanceRate === null || data.acceptanceRate === undefined
+                                    ? 'N/A'
+                                    : `${data.acceptanceRate}%`}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -166,7 +170,7 @@ const SimpleProfileDisplay = ({ platform, profileData }) => {
     );
 
     const renderProfileContent = () => {
-        switch (platform.toLowerCase()) {
+        switch (String(platform || '').toLowerCase()) {
             case 'codeforces':
                 return renderCodeforcesProfile(profileData);
             case 'atcoder':
@@ -194,7 +198,7 @@ const SimpleProfileDisplay = ({ platform, profileData }) => {
                     <div className="w-full h-full rounded-full bg-current"></div>
                 </div>
                 <h3 className={`text-xl font-semibold ${getPlatformColor(platform)}`}>
-                    {platform.charAt(0).toUpperCase() + platform.slice(1)} Profile
+                    {String(platform || '').charAt(0).toUpperCase() + String(platform || '').slice(1)} Profile
                 </h3>
             </div>
             {renderProfileContent()}

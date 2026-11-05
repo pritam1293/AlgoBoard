@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import contestService from "../../services/contestService";
 import platformService from "../../services/platformService";
 import { PLATFORMS } from "../../config/platformsConfig";
+import { normalizePlatformData } from "../../utils/platformUtils";
 
 const PLATFORM_THEMES = {
   codeforces: {
@@ -143,7 +144,13 @@ const Home = () => {
       const nextStats = {};
       results.forEach((result) => {
         if (result.status === "fulfilled" && result.value.data) {
-          nextStats[result.value.id] = result.value.data;
+          const normalized = normalizePlatformData(
+            result.value.id,
+            result.value.data
+          );
+          if (normalized) {
+            nextStats[result.value.id] = normalized;
+          }
         }
       });
 

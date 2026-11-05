@@ -336,7 +336,10 @@ public class ContestFetchingService {
             JsonNode contests = data == null ? null : data.path("upcomingContests");
             if (contests != null && contests.isArray()) {
                 for (JsonNode contest : contests) {
-                    addContest(allContests, toLeetcodeContest(contest));
+                    ContestDTO dto = toLeetcodeContest(contest);
+                    if (dto != null) {
+                        addContest(allContests, dto);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -370,7 +373,7 @@ public class ContestFetchingService {
             List<ContestDTO> endedContests = new ArrayList<>();
             for (JsonNode contest : contests) {
                 ContestDTO dto = toLeetcodeContest(contest);
-                if (dto.getEndTime().isBefore(now)) {
+                if (dto != null && dto.getEndTime().isBefore(now)) {
                     endedContests.add(dto);
                 }
             }
@@ -393,10 +396,20 @@ public class ContestFetchingService {
      * epoch seconds.
      */
     private ContestDTO toLeetcodeContest(JsonNode contest) {
+        if (contest == null || contest.isNull() || contest.isMissingNode()) {
+            return null;
+        }
         String title = contest.path("title").asText("");
         String titleSlug = contest.path("titleSlug").asText("");
         long startEpochSeconds = contest.path("startTime").asLong(0);
-        long durationSeconds = contest.path("duration").asLong(LEETCODE_CONTEST_DURATION_MINUTES * 60L);
+        // Skip malformed entries instead of adding an epoch-1970 contest.
+        if (titleSlug.isBlank() || startEpochSeconds <= 0) {
+            return null;
+        }
+        long durationSeconds = contest.path("duration").asLong(0);
+        if (durationSeconds <= 0) {
+            durationSeconds = LEETCODE_CONTEST_DURATION_MINUTES * 60L;
+        }
 
         LocalDateTime startTime = LocalDateTime.ofInstant(
                 Instant.ofEpochSecond(startEpochSeconds), IST_ZONE);

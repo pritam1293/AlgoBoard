@@ -7,7 +7,11 @@ import PlatformStatistics from "../common/PlatformStatistics";
 import { PLATFORMS } from "../../config/platformsConfig";
 import platformService from "../../services/platformService";
 import userService from "../../services/userService";
-import { getPlatformColor, getRankColor } from "../../utils/platformUtils";
+import {
+  getPlatformColor,
+  getRankColor,
+  normalizePlatformData,
+} from "../../utils/platformUtils";
 
 const Profile = () => {
   const {
@@ -103,9 +107,12 @@ const Profile = () => {
       );
 
       if (stats?.data) {
-        setPlatformData(stats.data);
-        setContestPage(0);
-        setSolutionsPage(0);
+        const normalized = normalizePlatformData(platform.id, stats.data);
+        if (normalized) {
+          setPlatformData(normalized);
+          setContestPage(0);
+          setSolutionsPage(0);
+        }
       }
     } catch (err) {
       setError(`Failed to fetch ${platform.name} statistics`);
@@ -131,10 +138,14 @@ const Profile = () => {
         connectedPlatforms.forEach((platform) => {
           const platformId = platform.id;
           const platformResult = platformsData[platformId];
-          if (platformResult) {
+          const normalized = normalizePlatformData(
+            platformId,
+            platformResult?.data || platformResult
+          );
+          if (normalized) {
             allData[platformId] = {
               platform,
-              data: platformResult?.data || platformResult,
+              data: normalized,
             };
           }
         });

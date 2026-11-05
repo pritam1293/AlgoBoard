@@ -6,9 +6,12 @@ import { useAuth } from "../../context/AuthContext";
 import { PLATFORMS } from "../../config/platformsConfig";
 import platformProfileService from "../../services/platformProfileService";
 import {
+  calculateAcceptanceRate,
+  formatPercent,
   getPlatformColor,
   getPlatformDisplayName,
   getRankColor,
+  normalizePlatformData,
 } from "../../utils/platformUtils";
 
 const PLATFORM_URLS = {
@@ -44,9 +47,10 @@ const PlatformProfileSearch = () => {
           platform,
           handle
         );
+        const normalized = normalizePlatformData(platform, response.data);
 
-        if (response.status === "success" && response.data) {
-          setPlatformData(response.data);
+        if (response.status === "success" && normalized) {
+          setPlatformData(normalized);
           navigate(`/platform-search/${platform}/${handle}?status=true`, {
             replace: true,
           });
@@ -89,6 +93,11 @@ const PlatformProfileSearch = () => {
         setSolutionsPage,
       })
     : null;
+
+  const leetcodeAcceptanceRate = calculateAcceptanceRate(
+    platformData?.acceptedSubmissions?.all,
+    platformData?.totalSubmissions?.all
+  );
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -486,13 +495,7 @@ const PlatformProfileSearch = () => {
                       {selectedPlatform === "leetcode" &&
                         renderStatTile(
                           "Acceptance",
-                          platformData.totalSubmissions?.all
-                            ? `${(
-                                (platformData.acceptedSubmissions.all /
-                                  platformData.totalSubmissions.all) *
-                                100
-                              ).toFixed(1)}%`
-                            : "—",
+                          formatPercent(leetcodeAcceptanceRate),
                           "text-emerald-400"
                         )}
                     </div>

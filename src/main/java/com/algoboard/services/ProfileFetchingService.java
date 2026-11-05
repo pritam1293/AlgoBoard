@@ -425,13 +425,13 @@ public class ProfileFetchingService {
         try {
             JsonNode data = queryLeetcodeProfile(username);
             if (data == null) {
-                return new Leetcode();
+                return emptyLeetcodeProfile();
             }
 
             JsonNode matchedUser = data.path("matchedUser");
             JsonNode contestRanking = data.path("userContestRanking");
             if (isNullOrMissing(matchedUser) && isNullOrMissing(contestRanking)) {
-                return new Leetcode();
+                return emptyLeetcodeProfile();
             }
 
             Leetcode leetcodeProfile = new Leetcode();
@@ -496,8 +496,26 @@ public class ProfileFetchingService {
             return leetcodeProfile;
         } catch (Exception e) {
             logger.warn("LeetCode profile fetch failed for {}: {}", username, e.getClass().getSimpleName());
-            return new Leetcode();
+            return emptyLeetcodeProfile();
         }
+    }
+
+    /**
+     * Returns a fully populated, all-default profile so callers never receive
+     * null fields when LeetCode data is missing or the request fails.
+     */
+    private Leetcode emptyLeetcodeProfile() {
+        Leetcode profile = new Leetcode();
+        profile.setProblemsSolved(new Level(0, 0, 0, 0));
+        profile.setTotalSubmissions(new Level(0, 0, 0, 0));
+        profile.setAcceptedSubmissions(new Level(0, 0, 0, 0));
+        profile.setRecentSubmissions(new ArrayList<>());
+        profile.setContestHistory(new ArrayList<>());
+        profile.setRank("Unranked");
+        profile.setRating(0);
+        profile.setMaxRating(0);
+        profile.setContestParticipations(0);
+        return profile;
     }
 
     private JsonNode queryLeetcodeProfile(String username) throws Exception {
@@ -525,8 +543,9 @@ public class ProfileFetchingService {
         }
 
         JsonNode root = objectMapper.readTree(body);
-        if (root.has("errors")) {
-            logger.warn("LeetCode GraphQL returned errors for {}: {}", username, root.path("errors"));
+        JsonNode errors = root.path("errors");
+        if (errors.isArray() && !errors.isEmpty()) {
+            logger.warn("LeetCode GraphQL returned errors for {}: {}", username, errors);
             return null;
         }
         JsonNode data = root.path("data");
@@ -562,10 +581,13 @@ public class ProfileFetchingService {
         }
         for (JsonNode submission : submissions) {
             String titleSlug = submission.path("titleSlug").asText("");
+            String problemUrl = titleSlug.isBlank()
+                    ? ""
+                    : "https://leetcode.com/problems/" + titleSlug + "/description";
             recentSubmissions.add(new Problem(
                     submission.path("statusDisplay").asText(""),
                     submission.path("title").asText(""),
-                    "https://leetcode.com/problems/" + titleSlug + "/description"));
+                    problemUrl));
         }
         return recentSubmissions;
     }

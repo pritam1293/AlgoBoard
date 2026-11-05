@@ -10,6 +10,14 @@ import {
     Legend,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
+import {
+    calculateAcceptanceRate,
+    formatPercent,
+    normalizeContestHistory,
+    normalizeLevel,
+    normalizeRecentSubmissions,
+    toSafeNumber,
+} from "../../utils/platformUtils";
 
 ChartJS.register(
     CategoryScale,
@@ -39,7 +47,9 @@ const PlatformStatistics = ({
             return null;
         }
 
-        const { problemsSolved, totalSubmissions, acceptedSubmissions } = platformData;
+        const problemsSolved = normalizeLevel(platformData.problemsSolved);
+        const totalSubmissions = normalizeLevel(platformData.totalSubmissions);
+        const acceptedSubmissions = normalizeLevel(platformData.acceptedSubmissions);
 
         return (
             <div className="rounded-2xl border border-white/10 bg-neutral-900/60 p-6 backdrop-blur-sm">
@@ -117,25 +127,25 @@ const PlatformStatistics = ({
                             <div className="flex justify-between">
                                 <span className="text-white">Overall:</span>
                                 <span className="text-white">
-                                    {((acceptedSubmissions.all / totalSubmissions.all) * 100).toFixed(1)}%
+                                    {formatPercent(calculateAcceptanceRate(acceptedSubmissions.all, totalSubmissions.all))}
                                 </span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-green-400">Easy:</span>
                                 <span className="text-white">
-                                    {((acceptedSubmissions.easy / totalSubmissions.easy) * 100).toFixed(1)}%
+                                    {formatPercent(calculateAcceptanceRate(acceptedSubmissions.easy, totalSubmissions.easy))}
                                 </span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-yellow-400">Medium:</span>
                                 <span className="text-white">
-                                    {((acceptedSubmissions.medium / totalSubmissions.medium) * 100).toFixed(1)}%
+                                    {formatPercent(calculateAcceptanceRate(acceptedSubmissions.medium, totalSubmissions.medium))}
                                 </span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-red-400">Hard:</span>
                                 <span className="text-white">
-                                    {((acceptedSubmissions.hard / totalSubmissions.hard) * 100).toFixed(1)}%
+                                    {formatPercent(calculateAcceptanceRate(acceptedSubmissions.hard, totalSubmissions.hard))}
                                 </span>
                             </div>
                         </div>
@@ -147,12 +157,19 @@ const PlatformStatistics = ({
 
     // Recent submissions component for LeetCode and Codeforces
     const renderRecentSubmissions = () => {
-        if (!platformData?.recentSubmissions ||
-            (selectedPlatform?.id !== 'leetcode' && selectedPlatform?.id !== 'codeforces')) {
+        const platformId = selectedPlatform?.id;
+        if (platformId !== 'leetcode' && platformId !== 'codeforces') {
             return null;
         }
 
-        if (platformData.recentSubmissions.length === 0) {
+        // Missing data means the platform did not send this section at all.
+        if (!Array.isArray(platformData?.recentSubmissions)) {
+            return null;
+        }
+
+        const submissions = normalizeRecentSubmissions(platformData.recentSubmissions).slice(0, 10);
+
+        if (submissions.length === 0) {
             return (
                 <div className="rounded-2xl border border-white/10 bg-neutral-900/60 p-6 backdrop-blur-sm">
                     <h4 className="text-lg font-semibold text-white mb-4">Recent Submissions</h4>
@@ -160,8 +177,6 @@ const PlatformStatistics = ({
                 </div>
             );
         }
-
-        const submissions = platformData.recentSubmissions.slice(0, 10); // Show latest 10
 
         return (
             <div className="rounded-2xl border border-white/10 bg-neutral-900/60 p-6 backdrop-blur-sm">
@@ -172,25 +187,29 @@ const PlatformStatistics = ({
                             <div className="flex-1">
                                 <a
                                     href={
-                                        selectedPlatform?.id === 'codeforces'
-                                            ? `https://codeforces.com/problemset/problem/${submission.id}/${submission.index}`
-                                            : submission.problemUrl
+                                        platformId === 'codeforces'
+                                            ? (submission.id && submission.index
+                                                ? `https://codeforces.com/problemset/problem/${submission.id}/${submission.index}`
+                                                : "#")
+                                            : submission.problemUrl || "#"
                                     }
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-blue-400 hover:text-blue-300 font-medium"
                                 >
-                                    {selectedPlatform?.id === 'codeforces' ? submission.name : submission.problemTitle}
+                                    {platformId === 'codeforces'
+                                        ? submission.name || submission.problemTitle || "Unknown problem"
+                                        : submission.problemTitle || "Unknown problem"}
                                 </a>
                             </div>
-                            <div className={`px-3 py-1 rounded-full text-xs font-medium ${(selectedPlatform?.id === 'codeforces' && submission.status === 'OK') ||
-                                (selectedPlatform?.id === 'leetcode' && submission.status === 'Accepted')
+                            <div className={`px-3 py-1 rounded-full text-xs font-medium ${(platformId === 'codeforces' && submission.status === 'OK') ||
+                                (platformId === 'leetcode' && submission.status === 'Accepted')
                                 ? 'bg-green-600 text-white'
                                 : 'bg-red-600 text-white'
                                 }`}>
-                                {selectedPlatform?.id === 'codeforces' && submission.status === 'OK'
+                                {platformId === 'codeforces' && submission.status === 'OK'
                                     ? 'Accepted'
-                                    : submission.status}
+                                    : submission.status || 'Unknown'}
                             </div>
                         </div>
                     ))}
@@ -201,39 +220,44 @@ const PlatformStatistics = ({
 
     // Rating overview stats component
     const renderRatingOverview = () => {
-        if (!platformData?.currentRating && !platformData?.maxRating) {
+        const data = platformData && typeof platformData === "object" ? platformData : {};
+        if (!data.currentRating && !data.maxRating) {
             return null;
         }
+
+        const hasCurrentRating = data.currentRating !== undefined && data.currentRating !== null;
+        const hasMaxRating = data.maxRating !== undefined && data.maxRating !== null;
+        const hasContests = data.contestsParticipated !== undefined && data.contestsParticipated !== null;
+        const hasSolved = data.problemsSolved !== undefined && data.problemsSolved !== null;
+        const solved = data.problemsSolved && typeof data.problemsSolved === "object"
+            ? normalizeLevel(data.problemsSolved).all
+            : toSafeNumber(data.problemsSolved);
 
         return (
             <div className="rounded-2xl border border-white/10 bg-neutral-900/60 p-6 backdrop-blur-sm">
                 <h4 className="text-lg font-semibold text-white mb-4">Rating Overview</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {platformData.currentRating !== undefined && (
+                    {hasCurrentRating && (
                         <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4 text-center">
-                            <p className="text-2xl font-bold text-blue-400">{platformData.currentRating}</p>
+                            <p className="text-2xl font-bold text-blue-400">{toSafeNumber(data.currentRating)}</p>
                             <p className="text-sm text-white">Current Rating</p>
                         </div>
                     )}
-                    {platformData.maxRating !== undefined && (
+                    {hasMaxRating && (
                         <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4 text-center">
-                            <p className="text-2xl font-bold text-yellow-400">{platformData.maxRating}</p>
+                            <p className="text-2xl font-bold text-yellow-400">{toSafeNumber(data.maxRating)}</p>
                             <p className="text-sm text-white">Max Rating</p>
                         </div>
                     )}
-                    {platformData.contestsParticipated !== undefined && (
+                    {hasContests && (
                         <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4 text-center">
-                            <p className="text-2xl font-bold text-green-400">{platformData.contestsParticipated}</p>
+                            <p className="text-2xl font-bold text-green-400">{toSafeNumber(data.contestsParticipated)}</p>
                             <p className="text-sm text-white">Contests</p>
                         </div>
                     )}
-                    {platformData.problemsSolved !== undefined && (
+                    {hasSolved && (
                         <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4 text-center">
-                            <p className="text-2xl font-bold text-purple-400">
-                                {typeof platformData.problemsSolved === 'object'
-                                    ? platformData.problemsSolved.all
-                                    : platformData.problemsSolved}
-                            </p>
+                            <p className="text-2xl font-bold text-purple-400">{solved}</p>
                             <p className="text-sm text-white">Problems Solved</p>
                         </div>
                     )}
@@ -244,22 +268,15 @@ const PlatformStatistics = ({
 
     // Contest history with pagination
     const renderContestHistory = () => {
-        if (
-            !platformData?.contestHistory ||
-            platformData.contestHistory.length === 0
-        ) {
+        const history = normalizeContestHistory(platformData?.contestHistory);
+        if (history.length === 0) {
             return <p className="text-white">No contest history available</p>;
         }
 
         const startIndex = contestPage * CONTESTS_PER_PAGE;
         const endIndex = startIndex + CONTESTS_PER_PAGE;
-        const currentContests = platformData.contestHistory.slice(
-            startIndex,
-            endIndex
-        );
-        const totalPages = Math.ceil(
-            platformData.contestHistory.length / CONTESTS_PER_PAGE
-        );
+        const currentContests = history.slice(startIndex, endIndex);
+        const totalPages = Math.ceil(history.length / CONTESTS_PER_PAGE);
 
         return (
             <div className="space-y-4">
@@ -344,19 +361,23 @@ const PlatformStatistics = ({
 
     // Accepted solutions with pagination
     const renderAcceptedSolutions = () => {
-        if (!platformData?.problemSet || platformData.problemSet.length === 0) {
+        const problemSet = Array.isArray(platformData?.problemSet)
+            ? platformData.problemSet.filter((problem) => problem && typeof problem === "object")
+            : [];
+
+        if (problemSet.length === 0) {
             return <p className="text-white">No accepted solutions available</p>;
         }
 
         const startIndex = solutionsPage * SOLUTIONS_PER_PAGE;
         const endIndex = startIndex + SOLUTIONS_PER_PAGE;
-        const currentSolutions = platformData.problemSet.slice(startIndex, endIndex);
-        const totalPages = Math.ceil(platformData.problemSet.length / SOLUTIONS_PER_PAGE);
+        const currentSolutions = problemSet.slice(startIndex, endIndex);
+        const totalPages = Math.ceil(problemSet.length / SOLUTIONS_PER_PAGE);
 
         return (
             <div className="space-y-4">
                 <h4 className="text-lg font-semibold text-white">
-                    Accepted Solutions ({platformData.problemSet.length})
+                    Accepted Solutions ({problemSet.length})
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {currentSolutions.map((problem, index) => (
@@ -395,7 +416,7 @@ const PlatformStatistics = ({
                                     </span>
                                 )}
                             </div>
-                            {problem.tags && problem.tags.length > 0 && (
+                            {Array.isArray(problem.tags) && problem.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-1">
                                     {problem.tags.slice(0, 3).map((tag, tagIndex) => (
                                         <span
@@ -444,7 +465,8 @@ const PlatformStatistics = ({
 
     // Rating progression chart
     const renderRatingChart = () => {
-        if (!platformData?.contestHistory || platformData.contestHistory.length === 0) {
+        const history = normalizeContestHistory(platformData?.contestHistory);
+        if (history.length === 0) {
             return (
                 <div>
                     <h4 className="text-lg font-semibold text-white mb-4">Rating Progression</h4>
@@ -453,8 +475,8 @@ const PlatformStatistics = ({
             );
         }
 
-        const reversedContestHistory = [...platformData.contestHistory].reverse();
-        const maxRating = platformData.maxRating;
+        const reversedContestHistory = [...history].reverse();
+        const maxRating = toSafeNumber(platformData?.maxRating);
         let highestRatingIndex = -1;
         for (let i = 0; i < reversedContestHistory.length; i++) {
             if (reversedContestHistory[i].newRating === maxRating) {
@@ -607,7 +629,10 @@ const PlatformStatistics = ({
 
     // All platforms superimposed chart
     const renderAllPlatformsChart = () => {
-        const platformEntries = Object.entries(allPlatformsData);
+        const platformEntries =
+            allPlatformsData && typeof allPlatformsData === "object" && !Array.isArray(allPlatformsData)
+                ? Object.entries(allPlatformsData)
+                : [];
 
         if (platformEntries.length === 0) {
             return (
@@ -624,56 +649,64 @@ const PlatformStatistics = ({
 
         const datasets = [];
 
-        platformEntries.forEach(([platformId, { platform, data }]) => {
-            if (data.contestHistory && data.contestHistory.length > 0) {
-                const reversedHistory = [...data.contestHistory].reverse();
-                const color = platformColors[platformId] || "rgb(156, 163, 175)";
-
-                // Find the contest where user achieved their max rating (latest occurrence if multiple)
-                const maxRating = data.maxRating;
-                let highestRatingIndex = -1;
-                for (let i = reversedHistory.length - 1; i >= 0; i--) {
-                    if (reversedHistory[i].newRating === maxRating) {
-                        highestRatingIndex = i;
-                        break;
-                    }
-                }
-
-                datasets.push({
-                    label: platform.name,
-                    data: reversedHistory.map((contest) => contest.newRating),
-                    borderColor: color,
-                    backgroundColor: `${color.replace('rgb', 'rgba').replace(')', ', 0.05)')}`,
-                    tension: 0.3,
-                    pointBackgroundColor: reversedHistory.map(
-                        (_, index) =>
-                            index === highestRatingIndex
-                                ? "rgb(255, 215, 0)" // Golden for highest rating
-                                : color // Platform color for all other contests
-                    ),
-                    pointBorderColor: reversedHistory.map((_, index) =>
-                        index === highestRatingIndex
-                            ? "rgba(255, 255, 255, 1)" // White border for highest
-                            : "rgba(255, 255, 255, 0.8)" // Semi-transparent white for others
-                    ),
-                    pointBorderWidth: reversedHistory.map((_, index) =>
-                        index === highestRatingIndex ? 1 : 0.5 // Slightly thicker border for highest
-                    ),
-                    pointRadius: reversedHistory.map(
-                        (_, index) => (index === highestRatingIndex ? 3 : 2.5) // Much smaller dots
-                    ),
-                    pointHoverRadius: 4, // Small hover radius
-                    pointHoverBackgroundColor: reversedHistory.map((_, index) =>
-                        index === highestRatingIndex
-                            ? "rgb(255, 215, 0)"
-                            : color
-                    ),
-                    pointHoverBorderColor: "#ffffff",
-                    pointHoverBorderWidth: 2,
-                    borderWidth: 2,
-                    fill: false,
-                });
+        platformEntries.forEach(([platformId, entry]) => {
+            const data = entry?.data;
+            if (!data || typeof data !== "object") {
+                return;
             }
+
+            const reversedHistory = [...normalizeContestHistory(data.contestHistory)].reverse();
+            if (reversedHistory.length === 0) {
+                return;
+            }
+
+            const color = platformColors[platformId] || "rgb(156, 163, 175)";
+
+            // Find the contest where user achieved their max rating (latest occurrence if multiple)
+            const maxRating = toSafeNumber(data.maxRating);
+            let highestRatingIndex = -1;
+            for (let i = reversedHistory.length - 1; i >= 0; i--) {
+                if (reversedHistory[i].newRating === maxRating) {
+                    highestRatingIndex = i;
+                    break;
+                }
+            }
+
+            datasets.push({
+                platformId,
+                label: entry?.platform?.name || platformId,
+                data: reversedHistory.map((contest) => contest.newRating),
+                borderColor: color,
+                backgroundColor: `${color.replace('rgb', 'rgba').replace(')', ', 0.05)')}`,
+                tension: 0.3,
+                pointBackgroundColor: reversedHistory.map(
+                    (_, index) =>
+                        index === highestRatingIndex
+                            ? "rgb(255, 215, 0)" // Golden for highest rating
+                            : color // Platform color for all other contests
+                ),
+                pointBorderColor: reversedHistory.map((_, index) =>
+                    index === highestRatingIndex
+                        ? "rgba(255, 255, 255, 1)" // White border for highest
+                        : "rgba(255, 255, 255, 0.8)" // Semi-transparent white for others
+                ),
+                pointBorderWidth: reversedHistory.map((_, index) =>
+                    index === highestRatingIndex ? 1 : 0.5 // Slightly thicker border for highest
+                ),
+                pointRadius: reversedHistory.map(
+                    (_, index) => (index === highestRatingIndex ? 3 : 2.5) // Much smaller dots
+                ),
+                pointHoverRadius: 4, // Small hover radius
+                pointHoverBackgroundColor: reversedHistory.map((_, index) =>
+                    index === highestRatingIndex
+                        ? "rgb(255, 215, 0)"
+                        : color
+                ),
+                pointHoverBorderColor: "#ffffff",
+                pointHoverBorderWidth: 2,
+                borderWidth: 2,
+                fill: false,
+            });
         });
 
         if (datasets.length === 0) {
@@ -714,12 +747,16 @@ const PlatformStatistics = ({
                         title: function (context) {
                             const datasetIndex = context[0].datasetIndex;
                             const contestIndex = context[0].dataIndex;
-                            const platformId = Object.keys(allPlatformsData)[datasetIndex];
-                            const contestHistory = [...allPlatformsData[platformId].data.contestHistory].reverse();
+                            const platformId = datasets[datasetIndex]?.platformId;
+                            const contestHistory = normalizeContestHistory(
+                                allPlatformsData?.[platformId]?.data?.contestHistory
+                            ).reverse();
 
                             if (contestHistory[contestIndex]) {
                                 const contest = contestHistory[contestIndex];
-                                const maxRating = allPlatformsData[platformId].data.maxRating;
+                                const maxRating = toSafeNumber(
+                                    allPlatformsData?.[platformId]?.data?.maxRating
+                                );
                                 const isHighest = contest.newRating === maxRating;
                                 return isHighest
                                     ? `🏆 ${contest.contestName} (Peak Rating!)`
@@ -730,17 +767,22 @@ const PlatformStatistics = ({
                         label: function (context) {
                             const datasetIndex = context.datasetIndex;
                             const contestIndex = context.dataIndex;
-                            const platformId = Object.keys(allPlatformsData)[datasetIndex];
-                            const contestHistory = [...allPlatformsData[platformId].data.contestHistory].reverse();
+                            const dataset = datasets[datasetIndex];
+                            const platformId = dataset?.platformId;
+                            const contestHistory = normalizeContestHistory(
+                                allPlatformsData?.[platformId]?.data?.contestHistory
+                            ).reverse();
 
                             if (contestHistory[contestIndex]) {
                                 const contest = contestHistory[contestIndex];
                                 const change = contest.newRating - contest.oldRating;
-                                const maxRating = allPlatformsData[platformId].data.maxRating;
+                                const maxRating = toSafeNumber(
+                                    allPlatformsData?.[platformId]?.data?.maxRating
+                                );
                                 const isHighest = contest.newRating === maxRating;
 
                                 const baseLabels = [
-                                    `Platform: ${datasets[datasetIndex].label}`,
+                                    `Platform: ${dataset?.label || platformId || "Unknown"}`,
                                     `Rating: ${contest.newRating}`,
                                     `Change: ${change > 0 ? "+" : ""}${change}`,
                                     `Standing: ${contest.standing}`,
@@ -752,7 +794,7 @@ const PlatformStatistics = ({
 
                                 return baseLabels;
                             }
-                            return `Rating: ${context.parsed.y}`;
+                            return `Rating: ${context.parsed?.y ?? 0}`;
                         },
                     },
                 },

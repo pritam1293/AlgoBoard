@@ -8,7 +8,7 @@ const PlatformProfileCard = ({ platform, profileData, isLoading, error }) => {
             codechef: 'bg-orange-500',
             leetcode: 'bg-yellow-500',
         };
-        return colors[platformName.toLowerCase()] || 'bg-gray-500';
+        return colors[String(platformName || '').toLowerCase()] || 'bg-gray-500';
     };
 
     if (isLoading) {
@@ -115,7 +115,7 @@ const PlatformProfileCard = ({ platform, profileData, isLoading, error }) => {
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <span className="text-white text-sm">Username:</span>
-                    <p className="font-medium text-white">{data.username}</p>
+                    <p className="font-medium text-white">{data.username || '—'}</p>
                 </div>
                 <div>
                     <span className="text-white text-sm">Ranking:</span>
@@ -123,18 +123,22 @@ const PlatformProfileCard = ({ platform, profileData, isLoading, error }) => {
                 </div>
                 <div>
                     <span className="text-white text-sm">Problems Solved:</span>
-                    <p className="font-medium text-white">{data.totalSolved || 0}</p>
+                    <p className="font-medium text-white">{data.totalSolved ?? 0}</p>
                 </div>
                 <div>
                     <span className="text-white text-sm">Acceptance Rate:</span>
-                    <p className="font-medium text-white">{data.acceptanceRate || 'N/A'}%</p>
+                    <p className="font-medium text-white">
+                        {data.acceptanceRate === null || data.acceptanceRate === undefined
+                            ? 'N/A'
+                            : `${data.acceptanceRate}%`}
+                    </p>
                 </div>
             </div>
         </div>
     );
 
     const renderProfileContent = () => {
-        switch (platform.toLowerCase()) {
+        switch (String(platform || '').toLowerCase()) {
             case 'codeforces':
                 return renderCodeforcesProfile(profileData);
             case 'atcoder':
