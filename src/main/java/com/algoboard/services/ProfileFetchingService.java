@@ -65,26 +65,18 @@ public class ProfileFetchingService {
               userContestRanking(username: $username) {
                 attendedContestsCount
                 rating
-                globalRanking
-                totalParticipants
-                topPercentage
                 badge { name }
               }
               userContestRankingHistory(username: $username) {
                 attended
-                trendDirection
-                problemsSolved
-                totalProblems
-                finishTimeInSeconds
                 rating
                 ranking
-                contest { title startTime }
+                contest { title titleSlug }
               }
               recentSubmissionList(username: $username, limit: 10) {
                 title
                 titleSlug
                 statusDisplay
-                timestamp
               }
             }
             """;
@@ -475,10 +467,17 @@ public class ProfileFetchingService {
                     if (!contest.path("attended").asBoolean(false)) {
                         continue;
                     }
-                    String contestTitle = contest.path("contest").path("title").asText("");
+                    JsonNode contestNode = contest.path("contest");
+                    String contestTitle = contestNode.path("title").asText("");
+                    // Prefer LeetCode's canonical slug so links stay correct for
+                    // contest titles that contain punctuation or extra words.
+                    String contestSlug = contestNode.path("titleSlug").asText("");
+                    if (contestSlug.isBlank()) {
+                        contestSlug = contestTitle.toLowerCase().replace(" ", "-");
+                    }
                     long newRating = Math.round(contest.path("rating").asDouble(0));
                     contestHistory.add(new UserContestHistory(
-                            contestTitle.toLowerCase().replace(" ", "-"),
+                            contestSlug,
                             contestTitle,
                             contest.path("ranking").asLong(0),
                             previousRating,

@@ -2,15 +2,22 @@ package com.algoboard.services;
 
 import com.algoboard.DTO.Codeforces.CF_ContestListDTO;
 import com.algoboard.DTO.Codechef.CC_ContestListDTO;
-import com.algoboard.DTO.Leetcode.LC_ContestDTO;
 import com.algoboard.DTO.Leetcode.LC_ContestListDTO;
 import com.algoboard.DTO.ContestDTO;
-import com.algoboard.DTO.Leetcode.LC_ContestDTO.ContestHistory;
+import com.fasterxml.jackson.databind.JsonNode;
 
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -18,9 +25,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -38,10 +43,13 @@ public class ContestFetchingService {
     private static final int JSOUP_TIMEOUT_MILLIS = 5000;
     private static final int FETCH_TIMEOUT_SECONDS = 8;
     private static final int LEETCODE_CONTEST_DURATION_MINUTES = 90;
+    private static final int LEETCODE_PAST_CONTEST_LIMIT = 4;
+    private static final String LEETCODE_GRAPHQL_URL = "https://leetcode.com/graphql";
+    private static final String BROWSER_USER_AGENT =
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
 
     // Timezone constants for consistent handling across all datetime operations
     private static final ZoneId IST_ZONE = ZoneId.of("Asia/Kolkata");
-    private static final ZoneOffset IST_OFFSET = ZoneOffset.of("+05:30");
 
     private static final DateTimeFormatter CODECHEF_DATE_FORMAT =
             DateTimeFormatter.ofPattern("dd MMM yyyy  HH:mm:ss");
@@ -51,9 +59,6 @@ public class ContestFetchingService {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
-
-    @Value("${app.leetcode.past-contests.username:}")
-    private String leetcodePastContestsUsername;
 
     public ContestFetchingService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
@@ -65,7 +70,7 @@ public class ContestFetchingService {
      * Within each category: Sort by start time (earliest first)
      */
     public int compareContestsByPriority(ContestDTO contest1, ContestDTO contest2) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(IST_ZONE);
 
         int priority1 = getContestPriority(contest1, now);
         int priority2 = getContestPriority(contest2, now);
@@ -83,12 +88,12 @@ public class ContestFetchingService {
     }
 
     private int getContestPriority(ContestDTO contest, LocalDateTime now) {
-        if (now.isAfter(contest.getStartTime()) && now.isBefore(contest.getEndTime())) {
-            return 1; // Live contest
+        if (contest.getEndTime() != null && now.isAfter(contest.getEndTime())) {
+            return 3; // Finished contest
         } else if (now.isBefore(contest.getStartTime())) {
             return 2; // Upcoming contest
         } else {
-            return 3; // Finished contest
+            return 1; // Live contest
         }
     }
 
@@ -319,6 +324,33 @@ public class ContestFetchingService {
     }
 
     private void fetchLeetcodeFutureContests(List<ContestDTO> allContests) {
+        // Direct LeetCode GraphQL call (public data, no credentials required).
+        final String query = """
+                query upcomingLeetcodeContests {
+                  upcomingContests {
+                    title
+                    titleSlug
+                    startTime
+                    duration
+                  }
+                }
+                """;
+        try {
+            JsonNode data = queryLeetcodeGraphql(query, Map.of());
+            JsonNode contests = data == null ? null : data.path("upcomingContests");
+            if (contests != null && contests.isArray()) {
+                for (JsonNode contest : contests) {
+                    addContest(allContests, toLeetcodeContest(contest));
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("Error fetching LeetCode future contests via GraphQL: {}",
+                    e.getClass().getSimpleName());
+        }
+
+        // ---- Previous third-party implementation (contest-hive), kept for testing
+        // if the GraphQL call fails. Uncomment to use it again. ----
+        /*
         String lcurl = "https://contest-hive.vercel.app/api/leetcode";
 
         try {
@@ -343,43 +375,106 @@ public class ContestFetchingService {
         } catch (Exception e) {
             logger.warn("Error fetching LeetCode future contests: {}", e.getClass().getSimpleName());
         }
+        */
     }
 
     private void fetchLeetcodePastContests(List<ContestDTO> allContests) {
-        String username = leetcodePastContestsUsername == null ? "" : leetcodePastContestsUsername.trim();
-        if (username.isEmpty()) {
-            return;
-        }
-        if (!username.matches("^[A-Za-z0-9_.-]{1,64}$")) {
-            logger.warn("Invalid LeetCode past-contests username configuration; skipping");
-            return;
-        }
-        String lcurl = "https://leetcode-stats.tashif.codes/" + username + "/contests";
+        // Direct LeetCode GraphQL call (public data, no credentials required).
+        // allContests is newest-first and also contains future contests, so keep
+        // only the ones that have already ended and take the most recent few.
+        final String query = """
+                query pastLeetcodeContests {
+                  allContests {
+                    title
+                    titleSlug
+                    startTime
+                    duration
+                  }
+                }
+                """;
         try {
-            LC_ContestDTO response = restTemplate.getForObject(lcurl, LC_ContestDTO.class);
-            if (response != null && response.getStatus().equals("success")) {
-                // last 4 contests
-                List<ContestHistory> history = response.getContestHistory();
-                if (history != null && !history.isEmpty()) {
-                    Collections.reverse(history);
-                    for (int index = 0; index < Math.min(4, history.size()); index++) {
-                        LocalDateTime startTime = LocalDateTime.ofEpochSecond(
-                                history.get(index).getContest().getStartTime(), 0, IST_OFFSET);
-                        String contestId = history.get(index).getContest().getTitle().toLowerCase().replace(" ", "-");
-                        addContest(allContests, new ContestDTO(
-                                contestId,
-                                history.get(index).getContest().getTitle(),
-                                "https://leetcode.com/contest/" + contestId,
-                                "leetcode",
-                                startTime,
-                                startTime.plusMinutes(LEETCODE_CONTEST_DURATION_MINUTES),
-                                LEETCODE_CONTEST_DURATION_MINUTES));
-                    }
+            JsonNode data = queryLeetcodeGraphql(query, Map.of());
+            JsonNode contests = data == null ? null : data.path("allContests");
+            if (contests == null || !contests.isArray()) {
+                return;
+            }
+
+            LocalDateTime now = LocalDateTime.now(IST_ZONE);
+            List<ContestDTO> endedContests = new ArrayList<>();
+            for (JsonNode contest : contests) {
+                ContestDTO dto = toLeetcodeContest(contest);
+                if (dto.getEndTime().isBefore(now)) {
+                    endedContests.add(dto);
                 }
             }
+            endedContests.sort(Comparator.comparing(ContestDTO::getStartTime).reversed());
+
+            int limit = Math.min(LEETCODE_PAST_CONTEST_LIMIT, endedContests.size());
+            for (int index = 0; index < limit; index++) {
+                addContest(allContests, endedContests.get(index));
+            }
         } catch (Exception e) {
-            logger.warn("Error fetching LeetCode past contests: {}", e.getClass().getSimpleName());
+            logger.warn("Error fetching LeetCode past contests via GraphQL: {}",
+                    e.getClass().getSimpleName());
         }
+    }
+
+    /**
+     * Maps a LeetCode GraphQL contest node (upcomingContests / allContests) to
+     * the common ContestDTO shape. LeetCode returns startTime and duration in
+     * epoch seconds.
+     */
+    private ContestDTO toLeetcodeContest(JsonNode contest) {
+        String title = contest.path("title").asText("");
+        String titleSlug = contest.path("titleSlug").asText("");
+        long startEpochSeconds = contest.path("startTime").asLong(0);
+        long durationSeconds = contest.path("duration").asLong(LEETCODE_CONTEST_DURATION_MINUTES * 60L);
+
+        LocalDateTime startTime = LocalDateTime.ofInstant(
+                Instant.ofEpochSecond(startEpochSeconds), IST_ZONE);
+        return new ContestDTO(
+                titleSlug,
+                title,
+                "https://leetcode.com/contest/" + titleSlug,
+                "leetcode",
+                startTime,
+                startTime.plusSeconds(durationSeconds),
+                durationSeconds / 60);
+    }
+
+    /**
+     * Executes a query against LeetCode's public GraphQL endpoint. No API key,
+     * cookie or login is needed for the public contest fields used here.
+     */
+    private JsonNode queryLeetcodeGraphql(String query, Map<String, Object> variables) throws Exception {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set(HttpHeaders.USER_AGENT, BROWSER_USER_AGENT);
+        headers.set(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+        headers.set(HttpHeaders.REFERER, "https://leetcode.com/contest/");
+        headers.set(HttpHeaders.ORIGIN, "https://leetcode.com");
+
+        Map<String, Object> payload = Map.of(
+                "query", query,
+                "variables", variables);
+        RequestEntity<String> request = RequestEntity
+                .post(Objects.requireNonNull(URI.create(LEETCODE_GRAPHQL_URL)))
+                .headers(headers)
+                .body(Objects.requireNonNull(objectMapper.writeValueAsString(payload)));
+
+        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
+        String body = response.getBody();
+        if (!response.getStatusCode().is2xxSuccessful() || body == null || body.isBlank()) {
+            return null;
+        }
+
+        JsonNode root = objectMapper.readTree(body);
+        if (root.has("errors") && !root.path("errors").isEmpty()) {
+            logger.warn("LeetCode GraphQL returned errors: {}", root.path("errors"));
+            return null;
+        }
+        JsonNode data = root.path("data");
+        return data.isMissingNode() || data.isNull() ? null : data;
     }
 
     private void addContest(List<ContestDTO> contests, ContestDTO contest) {
