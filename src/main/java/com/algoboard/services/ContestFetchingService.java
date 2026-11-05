@@ -45,16 +45,13 @@ public class ContestFetchingService {
     private static final int LEETCODE_CONTEST_DURATION_MINUTES = 90;
     private static final int LEETCODE_PAST_CONTEST_LIMIT = 4;
     private static final String LEETCODE_GRAPHQL_URL = "https://leetcode.com/graphql";
-    private static final String BROWSER_USER_AGENT =
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
+    private static final String BROWSER_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
 
     // Timezone constants for consistent handling across all datetime operations
     private static final ZoneId IST_ZONE = ZoneId.of("Asia/Kolkata");
 
-    private static final DateTimeFormatter CODECHEF_DATE_FORMAT =
-            DateTimeFormatter.ofPattern("dd MMM yyyy  HH:mm:ss");
-    private static final DateTimeFormatter ATCODER_DATE_FORMAT =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssZ");
+    private static final DateTimeFormatter CODECHEF_DATE_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy  HH:mm:ss");
+    private static final DateTimeFormatter ATCODER_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssZ");
     private static final Pattern CONTEST_ID_PATTERN = Pattern.compile("(?<=/contests?/)[^/]+");
 
     private final RestTemplate restTemplate;
@@ -347,35 +344,6 @@ public class ContestFetchingService {
             logger.warn("Error fetching LeetCode future contests via GraphQL: {}",
                     e.getClass().getSimpleName());
         }
-
-        // ---- Previous third-party implementation (contest-hive), kept for testing
-        // if the GraphQL call fails. Uncomment to use it again. ----
-        /*
-        String lcurl = "https://contest-hive.vercel.app/api/leetcode";
-
-        try {
-            // Get raw response as String to bypass content-type issue
-            String rawResponse = restTemplate.getForObject(lcurl, String.class);
-            // Parse using ObjectMapper to handle content-type issue
-            LC_ContestListDTO response = objectMapper.readValue(rawResponse, LC_ContestListDTO.class);
-
-            if (response != null && response.isOk()) {
-                for (LC_ContestListDTO.LeetcodeContest contest : response.getData()) {
-                    addContest(allContests, new ContestDTO(
-                            contestIdExtractorFromUrl(contest.getUrl()),
-                            contest.getTitle(),
-                            contest.getUrl(),
-                            "leetcode",
-                            LocalDateTime.ofInstant(Instant.parse(contest.getStartTime()),
-                                    IST_ZONE),
-                            LocalDateTime.ofInstant(Instant.parse(contest.getEndTime()), IST_ZONE),
-                            contest.getDuration() / 60));
-                }
-            }
-        } catch (Exception e) {
-            logger.warn("Error fetching LeetCode future contests: {}", e.getClass().getSimpleName());
-        }
-        */
     }
 
     private void fetchLeetcodePastContests(List<ContestDTO> allContests) {
