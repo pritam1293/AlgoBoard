@@ -2,7 +2,6 @@ package com.algoboard.services;
 
 import com.algoboard.DTO.Codeforces.CF_ContestListDTO;
 import com.algoboard.DTO.Codechef.CC_ContestListDTO;
-import com.algoboard.DTO.Leetcode.LC_ContestListDTO;
 import com.algoboard.DTO.ContestDTO;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -375,7 +374,8 @@ public class ContestFetchingService {
                     endedContests.add(dto);
                 }
             }
-            endedContests.sort(Comparator.comparing(ContestDTO::getStartTime).reversed());
+                endedContests.sort(Comparator.comparing(
+                    (ContestDTO contest) -> contest.getStartTime()).reversed());
 
             int limit = Math.min(LEETCODE_PAST_CONTEST_LIMIT, endedContests.size());
             for (int index = 0; index < limit; index++) {
