@@ -19,14 +19,14 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -342,9 +342,11 @@ public class ProfileFetchingService {
         headers.set(HttpHeaders.ACCEPT, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
         headers.set(HttpHeaders.ACCEPT_LANGUAGE, "en-US,en;q=0.9");
 
-        ResponseEntity<String> response = restTemplate.exchange(
-                CODECHEF_PROFILE_URL + username, Objects.requireNonNull(HttpMethod.GET),
-                new HttpEntity<>(headers), String.class);
+        RequestEntity<Void> request = RequestEntity
+                .get(Objects.requireNonNull(URI.create(CODECHEF_PROFILE_URL + username)))
+                .headers(headers)
+                .build();
+        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
         String body = response.getBody();
         if (!response.getStatusCode().is2xxSuccessful() || body == null || body.isBlank()) {
             return null;
@@ -507,10 +509,12 @@ public class ProfileFetchingService {
         Map<String, Object> payload = Map.of(
                 "query", LEETCODE_PROFILE_QUERY,
                 "variables", Map.of("username", username));
-        HttpEntity<String> request = new HttpEntity<>(objectMapper.writeValueAsString(payload), headers);
+        RequestEntity<String> request = RequestEntity
+                .post(Objects.requireNonNull(URI.create(LEETCODE_GRAPHQL_URL)))
+                .headers(headers)
+                .body(Objects.requireNonNull(objectMapper.writeValueAsString(payload)));
 
-        ResponseEntity<String> response = restTemplate.exchange(
-                LEETCODE_GRAPHQL_URL, Objects.requireNonNull(HttpMethod.POST), request, String.class);
+        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
         String body = response.getBody();
         if (!response.getStatusCode().is2xxSuccessful() || body == null || body.isBlank()) {
             return null;
