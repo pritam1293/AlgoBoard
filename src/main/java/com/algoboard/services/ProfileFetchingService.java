@@ -342,6 +342,9 @@ public class ProfileFetchingService {
         headers.set(HttpHeaders.ACCEPT, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
         headers.set(HttpHeaders.ACCEPT_LANGUAGE, "en-US,en;q=0.9");
 
+        // Use the RequestEntity overload rather than exchange(url, HttpMethod, ...):
+        // Spring's web.client package is @NonNullApi, so a bare HttpMethod field would
+        // trigger a JDT "Null type safety" warning.
         RequestEntity<Void> request = RequestEntity
                 .get(Objects.requireNonNull(URI.create(CODECHEF_PROFILE_URL + username)))
                 .headers(headers)
@@ -509,6 +512,8 @@ public class ProfileFetchingService {
         Map<String, Object> payload = Map.of(
                 "query", LEETCODE_PROFILE_QUERY,
                 "variables", Map.of("username", username));
+        // Same RequestEntity overload as above, to keep the call site free of a
+        // @NonNull HttpMethod parameter.
         RequestEntity<String> request = RequestEntity
                 .post(Objects.requireNonNull(URI.create(LEETCODE_GRAPHQL_URL)))
                 .headers(headers)
