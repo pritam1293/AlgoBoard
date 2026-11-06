@@ -55,7 +55,9 @@ public class SecurityConfig {
                                 .maxAgeInSeconds(31536000)))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login",
+                                "/api/auth/verify-email", "/api/auth/resend-verification")
+                        .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/home").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

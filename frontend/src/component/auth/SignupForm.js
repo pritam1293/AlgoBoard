@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getPasswordStrength } from "../../utils/validation";
 import {
@@ -10,6 +11,7 @@ import LoadingSpinner from "../common/LoadingSpinner";
 
 const SignupForm = ({ onSwitchToLogin }) => {
   const { signup, validateSignupForm } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -20,7 +22,6 @@ const SignupForm = ({ onSwitchToLogin }) => {
 
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
   const [passwordStrength, setPasswordStrength] = useState(
     getPasswordStrength("")
   );
@@ -71,12 +72,10 @@ const SignupForm = ({ onSwitchToLogin }) => {
         password: formData.password,
       });
       setErrors({});
-      setSuccessMessage(
-        "Account created successfully! Please log in with your credentials."
+      navigate(
+        `/verify-email-sent?email=${encodeURIComponent(formData.email.trim())}`,
+        { replace: true }
       );
-      setTimeout(() => {
-        onSwitchToLogin();
-      }, 2000);
     } catch (error) {
       setErrors({
         general: error.message || "Signup failed. Please try again.",
@@ -105,9 +104,6 @@ const SignupForm = ({ onSwitchToLogin }) => {
       </div>
 
       <form className="space-y-3" onSubmit={handleSubmit}>
-        {successMessage && (
-          <div className={MESSAGE_CLASSES.success}>{successMessage}</div>
-        )}
         {errors.general && (
           <div className={MESSAGE_CLASSES.error}>{errors.general}</div>
         )}

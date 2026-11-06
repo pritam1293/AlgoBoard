@@ -1,6 +1,8 @@
 import React from "react";
 import "./App.css";
 import AuthSlider from "./component/auth/AuthSlider";
+import VerifyEmail from "./component/auth/VerifyEmail";
+import VerificationSent from "./component/auth/VerificationSent";
 import Dashboard from "./component/pages/Home";
 import Contests from "./component/pages/Contests";
 import Profile from "./component/profile/Profile";
@@ -123,6 +125,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/verify-email-sent" element={<VerificationSent />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/" element={<Navigate to="/login" replace />} />

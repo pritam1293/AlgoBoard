@@ -4,6 +4,7 @@ import com.algoboard.DTO.ContestDTO;
 import com.algoboard.DTO.RequestDTO.UserAuthenticationResponse;
 import com.algoboard.DTO.RequestDTO.UserProfile;
 import com.algoboard.entities.User;
+import com.algoboard.exception.EmailNotVerifiedException;
 import com.algoboard.jwt.JwtService;
 import com.algoboard.services.CustomUserDetailsService;
 import com.algoboard.services.IUserService;
@@ -63,11 +64,29 @@ public class UserController {
     public ResponseEntity<?> signup(@RequestBody User user) {
         try {
             UserProfile newProfile = userService.registerUser(user);
-            return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Signup successful.", newProfile));
+            return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
+                    "Signup successful. Please check your email to verify your account.", newProfile));
         } catch (IllegalArgumentException e) {
             logger.warn("Signup rejected: {}", e.getMessage());
             throw new IllegalArgumentException("Signup failed. Please check your details.");
         }
+    }
+
+    // POST /api/auth/verify-email
+    @PostMapping("/auth/verify-email")
+    public ResponseEntity<?> verifyEmail(@RequestBody Map<String, String> payload) {
+        userService.verifyEmail(payload.get("token"));
+        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
+                "Email verified successfully. You can now sign in.", null));
+    }
+
+    // POST /api/auth/resend-verification
+    @PostMapping("/auth/resend-verification")
+    public ResponseEntity<?> resendVerificationEmail(@RequestBody Map<String, String> payload) {
+        userService.resendVerificationEmail(payload.get("email"));
+        // Always return the same message so account existence is not disclosed.
+        return ResponseEntity.ok(ResponseUtil.createSuccessResponse(
+                "If an unverified account exists for that email, a new verification link has been sent.", null));
     }
 
     // POST /api/auth/login
@@ -93,6 +112,12 @@ public class UserController {
                     jwtService.getExpirationTime() / 1000);
 
             return ResponseEntity.ok(ResponseUtil.createSuccessResponse("Login successful", authResponse));
+        } catch (EmailNotVerifiedException e) {
+            // The credentials were valid, so this is not a failed login attempt.
+            // Re-send the verification link automatically.
+            userService.resendVerificationEmail(email);
+            throw new EmailNotVerifiedException(
+                    "Your email address is not verified. A new verification link has been sent to your inbox.");
         } catch (IllegalArgumentException e) {
             loginAttemptService.recordFailure(LOGIN_SCOPE, email, ip);
             throw e;

@@ -8,19 +8,24 @@ import com.algoboard.entities.Codechef;
 import com.algoboard.entities.Codeforces;
 import com.algoboard.entities.Leetcode;
 import com.algoboard.entities.User;
+import com.algoboard.exception.EmailNotVerifiedException;
 import com.algoboard.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -32,6 +37,7 @@ public class UserService implements IUserService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
     private static final String REGISTRATION_FAILED = "Registration could not be completed.";
+    private static final long DEFAULT_VERIFICATION_EXPIRY_HOURS = 24L;
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -39,16 +45,21 @@ public class UserService implements IUserService {
     private final Validation validation;
     private final ProfileFetchingService profileFetchingService;
     private final ContestFetchingService contestFetchingService;
+    private final EmailService emailService;
+
+    @Value("${app.email.verification-expiry-hours:24}")
+    private long verificationExpiryHours;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
             CacheService cacheService, Validation validation, ProfileFetchingService profileFetchingService,
-            ContestFetchingService contestFetchingService) {
+            ContestFetchingService contestFetchingService, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.cacheService = cacheService;
         this.validation = validation;
         this.profileFetchingService = profileFetchingService;
         this.contestFetchingService = contestFetchingService;
+        this.emailService = emailService;
     }
 
     @Override
@@ -95,8 +106,14 @@ public class UserService implements IUserService {
 
             user.setId(null);
             user.setTokenVersion(0L);
+            user.setEmailVerified(false);
+            user.setEmailVerificationToken(null);
+            user.setEmailVerificationTokenExpiry(null);
             user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+            String verificationToken = issueVerificationToken(user);
             userRepository.save(user);
+            emailService.sendVerificationEmail(user, verificationToken);
             return createProfile(user);
         } catch (DataIntegrityViolationException e) {
             throw new IllegalArgumentException(REGISTRATION_FAILED);
@@ -117,9 +134,87 @@ public class UserService implements IUserService {
 
         User user = userRepository.findByEmailIgnoreCase(email);
         if (user != null && passwordEncoder.matches(password, user.getPassword())) {
+            if (!user.isEmailVerified()) {
+                throw new EmailNotVerifiedException("Your email address is not verified.");
+            }
             return createProfile(user);
         }
         throw new IllegalArgumentException("Invalid email or password.");
+    }
+
+    @Override
+    public UserProfile verifyEmail(String token) {
+        try {
+            if (token == null || token.isBlank()) {
+                throw new IllegalArgumentException("This verification link is invalid.");
+            }
+
+            User user = userRepository.findByEmailVerificationToken(token.trim());
+            if (user == null) {
+                throw new IllegalArgumentException(
+                        "This verification link is invalid or has already been used.");
+            }
+            if (user.getEmailVerificationTokenExpiry() == null
+                    || user.getEmailVerificationTokenExpiry().isBefore(Instant.now())) {
+                throw new IllegalArgumentException(
+                        "This verification link has expired. Please request a new one.");
+            }
+
+            user.setEmailVerified(true);
+            user.setEmailVerificationToken(null);
+            user.setEmailVerificationTokenExpiry(null);
+            userRepository.save(user);
+            return createProfile(user);
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Email verification failed", e);
+            throw new IllegalArgumentException("Unable to verify email. Please try again.");
+        }
+    }
+
+    @Override
+    public void resendVerificationEmail(String email) {
+        try {
+            email = normalizeEmail(email);
+            if (email == null || email.isEmpty()) {
+                return;
+            }
+
+            User user = userRepository.findByEmailIgnoreCase(email);
+            if (user == null || user.isEmailVerified()) {
+                return;
+            }
+
+            // Re-use the current token while it is still valid. Rotating it on
+            // every resend would invalidate links that were already delivered,
+            // which is why a "fresh" link could suddenly be rejected.
+            String verificationToken = user.getEmailVerificationToken();
+            boolean tokenMissingOrExpired = verificationToken == null
+                    || verificationToken.isBlank()
+                    || user.getEmailVerificationTokenExpiry() == null
+                    || user.getEmailVerificationTokenExpiry().isBefore(Instant.now());
+
+            if (tokenMissingOrExpired) {
+                verificationToken = issueVerificationToken(user);
+                userRepository.save(user);
+            }
+
+            emailService.sendVerificationEmail(user, verificationToken);
+        } catch (Exception e) {
+            // Do not reveal whether an account exists, and never break the caller.
+            logger.warn("Could not resend verification email: {}", e.getClass().getSimpleName());
+        }
+    }
+
+    private String issueVerificationToken(User user) {
+        String token = UUID.randomUUID().toString().replace("-", "");
+        long expiryHours = verificationExpiryHours > 0
+                ? verificationExpiryHours
+                : DEFAULT_VERIFICATION_EXPIRY_HOURS;
+        user.setEmailVerificationToken(token);
+        user.setEmailVerificationTokenExpiry(Instant.now().plus(expiryHours, ChronoUnit.HOURS));
+        return token;
     }
 
     @Override

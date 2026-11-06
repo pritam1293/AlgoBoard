@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { MESSAGE_CLASSES, BUTTON_CLASSES } from "../../constants/styles";
 import FormInput from "../common/FormInput";
@@ -6,6 +7,7 @@ import LoadingSpinner from "../common/LoadingSpinner";
 
 const LoginForm = ({ onSwitchToSignup }) => {
   const { login, validateLoginForm } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -47,10 +49,20 @@ const LoginForm = ({ onSwitchToSignup }) => {
     try {
       await login(loginPayload);
     } catch (error) {
-      setErrors({
-        general:
-          error?.message || "Login failed. Please check your credentials.",
-      });
+      const message =
+        error?.message || "Login failed. Please check your credentials.";
+
+      if (message.toLowerCase().includes("not verified")) {
+        navigate(
+          `/verify-email-sent?email=${encodeURIComponent(
+            loginPayload.email.trim()
+          )}`,
+          { replace: true }
+        );
+        return;
+      }
+
+      setErrors({ general: message });
     } finally {
       setIsLoading(false);
     }

@@ -95,6 +95,24 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const verifyEmail = async (token) => {
+    try {
+      return await authService.verifyEmail(token);
+    } catch (error) {
+      throw new Error(error?.message || "Email verification failed.");
+    }
+  };
+
+  const resendVerification = async (email) => {
+    try {
+      return await authService.resendVerification(email);
+    } catch (error) {
+      throw new Error(
+        error?.message || "Could not resend the verification email."
+      );
+    }
+  };
+
   const logout = () => {
     authService.logout();
     setUser(null);
@@ -199,6 +217,8 @@ export const AuthProvider = ({ children }) => {
     profileMessage,
     login,
     signup,
+    verifyEmail,
+    resendVerification,
     logout,
     updateUser,
     updateProfile,

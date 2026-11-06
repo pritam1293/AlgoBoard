@@ -44,6 +44,21 @@ const DEFAULT_THEME = {
 const getTheme = (platform) =>
   PLATFORM_THEMES[platform?.toLowerCase()] || DEFAULT_THEME;
 
+const getPlatformUrl = (platform) => {
+  switch (platform?.toLowerCase()) {
+    case "codechef":
+      return "https://www.codechef.com/contests";
+    case "codeforces":
+      return "https://codeforces.com/contests";
+    case "leetcode":
+      return "https://leetcode.com/contest/";
+    case "atcoder":
+      return "https://atcoder.jp/contests/";
+    default:
+      return "#";
+  }
+};
+
 const getGreeting = (date) => {
   const hour = date.getHours();
   if (hour < 12) return "Good morning";
@@ -267,12 +282,6 @@ const Home = () => {
   const platformEntries = Object.entries(platformStats);
   const hasPlatformStats = platformEntries.length > 0;
 
-  const peakRating = hasPlatformStats
-    ? Math.max(
-        ...platformEntries.map(([, stat]) => Number(stat?.maxRating) || 0)
-      )
-    : 0;
-
   const totalContests = platformEntries.reduce(
     (sum, [, stat]) => sum + (Number(stat?.contestParticipations) || 0),
     0
@@ -309,23 +318,6 @@ const Home = () => {
       ),
     },
     {
-      label: "Peak rating",
-      value: statsLoading ? "..." : peakRating > 0 ? peakRating.toLocaleString() : "—",
-      hint: "Best rating across platforms",
-      accent: "text-violet-400",
-      glow: "bg-violet-500/10",
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.8}
-            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-          />
-        </svg>
-      ),
-    },
-    {
       label: "Contests played",
       value: statsLoading
         ? "..."
@@ -351,7 +343,7 @@ const Home = () => {
       value: statsLoading
         ? "..."
         : totalSolved > 0
-        ? totalSolved.toLocaleString()
+        ? `${totalSolved.toLocaleString()}+`
         : "—",
       hint: "Tracked from your profiles",
       accent: "text-amber-400",
@@ -404,12 +396,27 @@ const Home = () => {
               {formatDuration(contest.duration)}
             </p>
           </div>
-          <button
-            onClick={() => navigate("/contests")}
-            className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-white/10 hover:text-white"
+          <a
+            href={contest.contestUrl || getPlatformUrl(contest.platform)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-white/10 hover:text-white"
           >
-            Details
-          </button>
+            Contest link
+            <svg
+              className="h-3 w-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+              />
+            </svg>
+          </a>
         </div>
       </div>
     );
@@ -484,7 +491,7 @@ const Home = () => {
         </section>
 
         {/* Overview stats */}
-        <section className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {statCards.map((card) => (
             <div
               key={card.label}

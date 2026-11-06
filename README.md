@@ -144,7 +144,7 @@ A comprehensive competitive programming statistics dashboard that aggregates and
 
 - **Neon PostgreSQL**: Serverless PostgreSQL for persistent user data
 - **Spring Data JPA**: Repository-based persistence with Hibernate
-- **Relational Storage**: User accounts, friends, and platform handles
+- **Relational Storage**: User accounts and platform handles
 - **SSL Connections**: Neon connections use `sslmode=require`
 
 ## 📊 What This Project Accomplishes
@@ -249,6 +249,23 @@ Database schema migrations run automatically on startup via Flyway. Set a strong
 sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -base64 48)|" .env
 ```
 
+### Email Verification Setup
+
+New accounts must verify their email address before they can sign in. Configure SMTP in `.env`:
+
+```bash
+FRONTEND_URL=http://localhost:3000
+MAIL_FROM=no-reply@your-domain.com
+MAIL_HOST=smtp.your-provider.com
+MAIL_PORT=587
+MAIL_USERNAME=your_smtp_username
+MAIL_PASSWORD=your_smtp_password
+MAIL_SMTP_AUTH=true
+MAIL_SMTP_STARTTLS=true
+```
+
+`FRONTEND_URL` is used to build the verification link and must point at the running frontend. If `MAIL_HOST` is left empty, the backend logs the verification link to the console instead of sending an email, which is convenient for local development. Verification links expire after `EMAIL_VERIFICATION_EXPIRY_HOURS` (default `24`).
+
 After the schema has been migrated once, local startups can skip Flyway, Hibernate schema validation, and eager database connections, which significantly reduces startup time against a remote database such as Neon. Add these to `.env`:
 
 ```bash
@@ -289,7 +306,7 @@ npm start
 
 ## 📱 Usage
 
-1. **Sign Up/Login**: Create an account or login to your existing account
+1. **Sign Up/Login**: Create an account, verify your email through the link sent to your inbox, then log in
 2. **Connect Platforms**: Link your competitive programming platform usernames
 3. **View Dashboard**: See an overview of all your connected platforms
 4. **Detailed Analysis**: Click on individual platforms for detailed statistics

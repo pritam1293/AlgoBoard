@@ -65,6 +65,12 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
+
+		<!-- JavaMail - sends account verification emails -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
 		
 		<!-- Spring Boot Web - creates RESTful web services and handles HTTP requests/responses -->
 		<dependency>

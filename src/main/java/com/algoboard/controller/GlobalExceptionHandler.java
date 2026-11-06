@@ -1,5 +1,6 @@
 package com.algoboard.controller;
 
+import com.algoboard.exception.EmailNotVerifiedException;
 import com.algoboard.utils.ResponseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,16 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<Map<String, Object>> handleEmailNotVerified(EmailNotVerifiedException e) {
+        String message = e.getMessage();
+        if (message == null || message.isBlank()) {
+            message = "Your email address is not verified.";
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ResponseUtil.createErrorResponse(message));
+    }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException e) {

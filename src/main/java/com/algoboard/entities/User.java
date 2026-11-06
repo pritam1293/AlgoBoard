@@ -7,6 +7,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "users")
 public class User {
@@ -40,6 +42,15 @@ public class User {
 
     @Column(name = "token_version")
     private Long tokenVersion = 0L;
+
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = false;
+
+    @Column(name = "email_verification_token", length = 64)
+    private String emailVerificationToken;
+
+    @Column(name = "email_verification_token_expiry")
+    private Instant emailVerificationTokenExpiry;
 
     public User() {
 
@@ -123,6 +134,30 @@ public class User {
 
     public void setTokenVersion(long tokenVersion) {
         this.tokenVersion = tokenVersion;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+
+    public String getEmailVerificationToken() {
+        return emailVerificationToken;
+    }
+
+    public void setEmailVerificationToken(String emailVerificationToken) {
+        this.emailVerificationToken = emailVerificationToken;
+    }
+
+    public Instant getEmailVerificationTokenExpiry() {
+        return emailVerificationTokenExpiry;
+    }
+
+    public void setEmailVerificationTokenExpiry(Instant emailVerificationTokenExpiry) {
+        this.emailVerificationTokenExpiry = emailVerificationTokenExpiry;
     }
 
 }

@@ -11,6 +11,24 @@ class AuthService {
     }
   }
 
+  // Verify the email address using the token from the verification link
+  async verifyEmail(token) {
+    try {
+      return await apiService.post("/auth/verify-email", { token });
+    } catch (error) {
+      throw new Error(error.message || "Email verification failed");
+    }
+  }
+
+  // Request a new verification email for an unverified account
+  async resendVerification(email) {
+    try {
+      return await apiService.post("/auth/resend-verification", { email });
+    } catch (error) {
+      throw new Error(error.message || "Could not resend the verification email");
+    }
+  }
+
   // Login user
   async login(credentials) {
     try {

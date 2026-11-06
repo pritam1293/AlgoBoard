@@ -18,6 +18,10 @@ public interface IUserService {
 
     public UserProfile authenticateUser(String email, String password);
 
+    public UserProfile verifyEmail(String token);
+
+    public void resendVerificationEmail(String email);
+
     public UserProfile getUserProfile(String email);
 
     public PublicUserProfile getPublicProfile(String email);
